@@ -2,7 +2,10 @@ package web
 
 import "github.com/kataras/iris"
 
-import "github.com/jysperm/deploying/web/handlers"
+import (
+  "github.com/jysperm/deploying/config"
+  "github.com/jysperm/deploying/web/handlers"
+)
 
 func init() {
   app := iris.New()
@@ -11,9 +14,9 @@ func init() {
     ctx.ServeFile("./web/frontend/public/index.html", true)
   })
 
-  app.Get("/hello", handlers.Index)
+  app.Post("/accounts", handlers.RegisterAccount)
 
   app.StaticWeb("/assets", "./web/frontend/public")
 
-  app.Listen(":7000")
+  app.Listen(config.Port)
 }

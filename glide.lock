@@ -1,5 +1,5 @@
-hash: 3aee7d8d73bdbb0cfed5edbe2090e786b57f0cfe5adb41b196ec4369ee4c3bb3
-updated: 2017-01-25T23:02:15.846907077+08:00
+hash: 1b0efb70ed663754c380485d623480dcaf95a2d8f119f740669ad74aed1b5f13
+updated: 2017-02-02T23:09:58.858758641+08:00
 imports:
 - name: github.com/coreos/etcd
   version: 8ba2897a21e4fc51b298ca553d251318425f93ae
@@ -62,7 +62,7 @@ imports:
 - name: github.com/kataras/go-websocket
   version: fc72e1e9e152437b26bfca6a51bb3a93f1939120
 - name: github.com/kataras/iris
-  version: cdd5370166aa32f98543e2a71c87e6b8627faf96
+  version: b794d630fdab4f3fa1b7bec7921ae559fd9a4bf9
   subpackages:
   - iris
 - name: github.com/klauspost/compress
@@ -115,6 +115,4 @@ imports:
   - rate
 - name: gopkg.in/square/go-jose.v1
   version: 296c7f1463ec9b712176dc804dea0173d06dc728
-  subpackages:
-  - cipher
 testImports: []

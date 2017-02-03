@@ -1,21 +1,23 @@
 package etcd
 
-import etcd "github.com/coreos/etcd/client"
+import (
+	etcd "github.com/coreos/etcd/client"
 
-import "github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploying/config"
+)
 
 var etcdConfig = etcd.Config{
-  Endpoints: config.EtcdEndpoints,
+	Endpoints: config.EtcdEndpoints,
 }
 
 var Keys etcd.KeysAPI
 
 func init() {
-  connection, err := etcd.New(etcdConfig)
+	connection, err := etcd.New(etcdConfig)
 
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 
-  Keys = etcd.NewKeysAPI(connection)
+	Keys = etcd.NewKeysAPI(connection)
 }

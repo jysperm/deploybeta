@@ -4,7 +4,9 @@ import etcd "github.com/coreos/etcd/client"
 
 import "github.com/jysperm/deploying/config"
 
-var etcdConfig = etcd.Config{Endpoints: config.EtcdEndpoints}
+var etcdConfig = etcd.Config{
+  Endpoints: config.EtcdEndpoints,
+}
 
 var Keys etcd.KeysAPI
 

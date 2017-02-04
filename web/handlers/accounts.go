@@ -10,19 +10,29 @@ import (
 )
 
 func RegisterAccount(ctx *iris.Context) {
-	account := &accountModel.Account{}
-
-	err := ctx.ReadJSON(account)
+	params := map[string]string{}
+	err := ctx.ReadJSON(&params)
 
 	if err != nil {
 		ctx.JSON(iris.StatusBadRequest, NewHttpError(err))
 		return
 	}
 
-	err = accountModel.Register(account)
+	account := &accountModel.Account{
+		Username: params["username"],
+		Email:    params["email"],
+	}
+
+	err = accountModel.Register(account, params["password"])
 
 	if err != nil && strings.Contains(err.Error(), "Key already exists") {
 		ctx.JSON(iris.StatusConflict, NewHttpError(err))
+		return
+	} else if err != nil && err == accountModel.ErrInvalidUsername {
+		ctx.JSON(iris.StatusBadRequest, NewHttpError(err))
+		return
+	} else if err != nil {
+		ctx.JSON(iris.StatusInternalServerError, NewHttpError(err))
 		return
 	}
 

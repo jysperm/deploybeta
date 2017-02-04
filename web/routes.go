@@ -2,21 +2,21 @@ package web
 
 import "github.com/kataras/iris"
 
-import (
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/web/handlers"
-)
+import "github.com/jysperm/deploying/web/handlers"
+
+var app = iris.New()
 
 func init() {
-	app := iris.New()
-
 	app.Get("/", func(ctx *iris.Context) {
 		ctx.ServeFile("./web/frontend/public/index.html", true)
 	})
 
 	app.Post("/accounts", handlers.RegisterAccount)
+	app.Post("/sessions", handlers.CreateSession)
 
 	app.StaticWeb("/assets", "./web/frontend/public")
+}
 
-	app.Listen(config.Port)
+func Listen(port string) {
+	app.Listen(port)
 }

@@ -1,8 +1,11 @@
 package web
 
-import "github.com/kataras/iris"
+import (
+	"github.com/kataras/iris"
 
-import "github.com/jysperm/deploying/web/handlers"
+	"github.com/jysperm/deploying/web/handlers"
+	"github.com/jysperm/deploying/web/handlers/helpers"
+)
 
 var app = iris.New()
 
@@ -11,10 +14,14 @@ func init() {
 		ctx.ServeFile("./web/frontend/public/index.html", true)
 	})
 
+	app.StaticWeb("/assets", "./web/frontend/public")
+
 	app.Post("/accounts", handlers.RegisterAccount)
 	app.Post("/sessions", handlers.CreateSession)
 
-	app.StaticWeb("/assets", "./web/frontend/public")
+	app.Use(&helpers.AuthenticateMiddleware{})
+
+	app.Get("/session", handlers.CurrentAccount)
 }
 
 func Listen(port string) {

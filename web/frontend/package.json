@@ -10,7 +10,11 @@
     "gulp-rename": "^1.2.2",
     "gulp-uglify": "^2.0.1",
     "gulp-webpack": "^1.5.0",
+    "lodash": "^4.17.4",
     "react": "^15.4.2",
-    "react-dom": "^15.4.2"
+    "react-bootstrap": "^0.30.7",
+    "react-dom": "^15.4.2",
+    "react-router": "^3.0.2",
+    "whatwg-fetch": "^2.0.2"
   }
 }

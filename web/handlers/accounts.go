@@ -38,3 +38,16 @@ func RegisterAccount(ctx *iris.Context) {
 
 	ctx.JSON(iris.StatusCreated, NewAccountResponse(account))
 }
+
+func CurrentAccount(ctx *iris.Context) {
+	account, ok := ctx.Get("account").(*accountModel.Account)
+
+	if !ok {
+		ctx.JSON(iris.StatusInternalServerError, HttpError{
+			Error: "casting to account",
+		})
+		return
+	}
+
+	ctx.JSON(iris.StatusOK, NewAccountResponse(account))
+}

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 
+	etcdClient "github.com/coreos/etcd/client"
+
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/services/etcd"
 )
@@ -31,7 +33,7 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 		Username: account.Username,
 	}
 
-	jsonBytes, err := json.Marshal(account)
+	jsonBytes, err := json.Marshal(session)
 
 	if err != nil {
 		return nil, err
@@ -40,6 +42,26 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 	_, err = etcd.Keys.Create(context.Background(), sessionKey, string(jsonBytes))
 
 	return session, err
+}
+
+func FindByToken(token string) (*Session, error) {
+	sessionKey := fmt.Sprint("/sessions/", token)
+
+	resp, err := etcd.Keys.Get(context.Background(), sessionKey, &etcdClient.GetOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	session := &Session{}
+
+	err = json.Unmarshal([]byte(resp.Node.Value), session)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }
 
 func randomString(length int) (string, error) {

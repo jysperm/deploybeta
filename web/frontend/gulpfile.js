@@ -16,7 +16,10 @@ gulp.task('frontend-styles', () => {
 
 gulp.task('frontend-libs', () => {
   return gulp.src('lib/**/*.js')
-    .pipe(gulp.dest('public/scripts'));
+    .pipe(babel({
+      presets: ['es2015'],
+    }))
+    .pipe(gulp.dest('public/scripts/lib'));
 });
 
 gulp.task('frontend-components', () => {
@@ -25,11 +28,11 @@ gulp.task('frontend-components', () => {
       presets: ['es2015'],
       plugins: ['transform-react-jsx']
     }))
-    .pipe(gulp.dest('public/scripts'));
+    .pipe(gulp.dest('public/scripts/components'));
 });
 
-gulp.task('frontend-scripts', () => {
-  return gulp.src('public/scripts/**/*.js')
+gulp.task('frontend-scripts', ['frontend-libs', 'frontend-components'], () => {
+  return gulp.src('public/scripts/components/index.js')
     .pipe(webpack({
       output: {
         filename: 'bundled.js'

@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"regexp"
 
-	etcdClient "github.com/coreos/etcd/client"
+	etcd "github.com/coreos/etcd/clientv3"
+
+	"github.com/jysperm/deploying/lib/services"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
-
-	"github.com/jysperm/deploying/lib/services/etcd"
 )
 
 var ErrInvalidUsername = errors.New("invalid username")
+var ErrUsernameConflict = errors.New("username conflict")
+var ErrAccountNotFound = errors.New("account not found")
 
 type Account struct {
 	Username     string `json:"username"`
@@ -43,23 +45,38 @@ func Register(account *Account, password string) error {
 		return err
 	}
 
-	_, err = etcd.Keys.Create(context.Background(), accountKey, string(jsonBytes))
+	resp, err := services.EtcdClient.Txn(context.Background()).
+		If(etcd.Compare(etcd.CreateRevision(accountKey), "=", 0)).
+		Then(etcd.OpPut(accountKey, string(jsonBytes))).
+		Commit()
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUsernameConflict
+	}
+
+	return nil
 }
 
 func FindByName(username string) (*Account, error) {
 	accountKey := fmt.Sprint("/accounts/", username)
 
-	resp, err := etcd.Keys.Get(context.Background(), accountKey, &etcdClient.GetOptions{})
+	resp, err := services.EtcdClient.Get(context.Background(), accountKey)
 
 	if err != nil {
 		return nil, err
 	}
 
+	if len(resp.Kvs) == 0 {
+		return nil, ErrAccountNotFound
+	}
+
 	account := &Account{}
 
-	err = json.Unmarshal([]byte(resp.Node.Value), account)
+	err = json.Unmarshal([]byte(resp.Kvs[0].Value), account)
 
 	if err != nil {
 		return nil, err

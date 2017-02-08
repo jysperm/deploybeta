@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"strings"
-
 	"github.com/kataras/iris"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
@@ -21,7 +19,7 @@ func CreateSession(ctx *iris.Context) {
 
 	account, err := accountModel.FindByName(params["username"])
 
-	if err != nil && strings.Contains(err.Error(), "Key not found") {
+	if err != nil && err == accountModel.ErrAccountNotFound {
 		ctx.JSON(iris.StatusUnauthorized, NewHttpError(err))
 		return
 	} else if err != nil {

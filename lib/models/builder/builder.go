@@ -62,10 +62,12 @@ func BuildImage(opts types.ImageBuildOptions, url string, depth int) error {
 		return err
 	}
 
-	_, err = client.ImageBuild(ctx, content, opts)
+	response, err := client.ImageBuild(ctx, content, opts)
 	if err != nil {
 		return err
 	}
+
+	defer response.Body.Close()
 
 	return nil
 }

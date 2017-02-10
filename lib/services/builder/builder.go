@@ -3,6 +3,7 @@ package builder
 import (
 	"crypto/sha1"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/docker/docker/api/types"
@@ -10,27 +11,28 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
 	"srcd.works/go-git.v4"
+	"srcd.works/go-git.v4/plumbing"
 )
 
-func pullRepository(url string, depth int) (string, error) {
-	tempDir := os.TempDir()
+func pullRepository(url string, branch string) (string, error) {
 	hash := sha1.New()
 	io.WriteString(hash, url)
-	newDir := tempDir + string(hash.Sum(nil))
-	err := os.MkdirAll(newDir, os.ModePerm)
+	hashURL := hash.Sum(nil)
+
+	tempDir, err := ioutil.TempDir("", string(hashURL))
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
-	_, err = git.PlainClone(newDir, false, &git.CloneOptions{
-		URL:   url,
-		Depth: depth,
+	_, err = git.PlainClone(tempDir, false, &git.CloneOptions{
+		URL:           url,
+		ReferenceName: plumbing.ReferenceName(branch),
 	})
 	if err != nil {
 		return "", err
 	}
 
-	return newDir, nil
+	return tempDir, nil
 }
 
 func tarRepository(path string) (io.ReadCloser, error) {
@@ -44,7 +46,7 @@ func tarRepository(path string) (io.ReadCloser, error) {
 }
 
 //BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
-func BuildImage(opts types.ImageBuildOptions, url string, depth int) error {
+func BuildImage(opts types.ImageBuildOptions, url string, branch string) error {
 	client, err := client.NewEnvClient()
 	if err != nil {
 		return err
@@ -52,22 +54,24 @@ func BuildImage(opts types.ImageBuildOptions, url string, depth int) error {
 
 	ctx := context.Background()
 
-	dirPath, err := pullRepository(url, depth)
+	dirPath, err := pullRepository(url, branch)
 	if err != nil {
 		return err
 	}
 
 	content, err := tarRepository(dirPath)
+	defer content.Close()
 	if err != nil {
 		return err
 	}
 
 	response, err := client.ImageBuild(ctx, content, opts)
+	defer response.Body.Close()
 	if err != nil {
 		return err
 	}
 
-	defer response.Body.Close()
+	defer os.RemoveAll(dirPath)
 
 	return nil
 }

@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"strings"
-
 	"github.com/kataras/iris"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
@@ -25,7 +23,7 @@ func RegisterAccount(ctx *iris.Context) {
 
 	err = accountModel.Register(account, params["password"])
 
-	if err != nil && strings.Contains(err.Error(), "Key already exists") {
+	if err != nil && err == accountModel.ErrUsernameConflict {
 		ctx.JSON(iris.StatusConflict, NewHttpError(err))
 		return
 	} else if err != nil && err == accountModel.ErrInvalidUsername {
@@ -40,14 +38,7 @@ func RegisterAccount(ctx *iris.Context) {
 }
 
 func CurrentAccount(ctx *iris.Context) {
-	account, ok := ctx.Get("account").(*accountModel.Account)
-
-	if !ok {
-		ctx.JSON(iris.StatusInternalServerError, HttpError{
-			Error: "casting to account",
-		})
-		return
-	}
+	account := ctx.Get("account").(*accountModel.Account)
 
 	ctx.JSON(iris.StatusOK, NewAccountResponse(account))
 }

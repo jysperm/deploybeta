@@ -5,14 +5,18 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
-	etcdClient "github.com/coreos/etcd/client"
+	etcd "github.com/coreos/etcd/clientv3"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
-	"github.com/jysperm/deploying/lib/services/etcd"
+	"github.com/jysperm/deploying/lib/services"
 )
+
+var ErrTokenConflict = errors.New("token conflict")
+var ErrTokenNotFound = errors.New("token not found")
 
 type Session struct {
 	Token    string `json:"token"`
@@ -39,7 +43,18 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 		return nil, err
 	}
 
-	_, err = etcd.Keys.Create(context.Background(), sessionKey, string(jsonBytes))
+	resp, err := services.EtcdClient.Txn(context.Background()).
+		If(etcd.CreateRevision(sessionKey)).
+		Then(etcd.OpPut(sessionKey, string(jsonBytes))).
+		Commit()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Succeeded == false {
+		return nil, ErrTokenConflict
+	}
 
 	return session, err
 }
@@ -47,15 +62,19 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 func FindByToken(token string) (*Session, error) {
 	sessionKey := fmt.Sprint("/sessions/", token)
 
-	resp, err := etcd.Keys.Get(context.Background(), sessionKey, &etcdClient.GetOptions{})
+	resp, err := services.EtcdClient.Get(context.Background(), sessionKey)
 
 	if err != nil {
 		return nil, err
 	}
 
+	if len(resp.Kvs) == 0 {
+		return nil, ErrTokenNotFound
+	}
+
 	session := &Session{}
 
-	err = json.Unmarshal([]byte(resp.Node.Value), session)
+	err = json.Unmarshal([]byte(resp.Kvs[0].Value), session)
 
 	if err != nil {
 		return nil, err

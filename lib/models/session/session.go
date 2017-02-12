@@ -2,17 +2,15 @@ package session
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	etcd "github.com/coreos/etcd/clientv3"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/services"
+	"github.com/jysperm/deploying/lib/utils"
 )
 
 var ErrTokenConflict = errors.New("token conflict")
@@ -24,12 +22,7 @@ type Session struct {
 }
 
 func CreateToken(account *accountModel.Account) (*Session, error) {
-	sessionToken, err := randomString(32)
-
-	if err != nil {
-		return nil, err
-	}
-
+	sessionToken := utils.RandomString(32)
 	sessionKey := fmt.Sprint("/sessions/", sessionToken)
 
 	session := &Session{
@@ -81,18 +74,4 @@ func FindByToken(token string) (*Session, error) {
 	}
 
 	return session, nil
-}
-
-func randomString(length int) (string, error) {
-	buffer := make([]byte, length)
-
-	_, err := rand.Read(buffer)
-
-	if err != nil {
-		return "", err
-	}
-
-	base64String := base64.StdEncoding.EncodeToString(buffer)
-
-	return strings.Replace(base64String, "/", "-", -1), nil
 }

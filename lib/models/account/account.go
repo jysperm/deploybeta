@@ -7,10 +7,10 @@ import (
 	"regexp"
 
 	etcd "github.com/coreos/etcd/clientv3"
-
-	"github.com/jysperm/deploying/lib/services"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
+
+	"github.com/jysperm/deploying/lib/services"
 )
 
 var ErrInvalidUsername = errors.New("invalid username")

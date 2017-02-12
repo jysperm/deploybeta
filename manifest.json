@@ -1,0 +1,16 @@
+{
+    "dependencies": {
+        "github.com/coreos/etcd": {
+            "version": "^3.1.0"
+        },
+        "github.com/labstack/echo": {
+            "version": "^3.0.0"
+        },
+        "golang.org/x/crypto": {
+            "branch": "master"
+        },
+        "golang.org/x/net": {
+            "branch": "master"
+        }
+    }
+}

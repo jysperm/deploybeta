@@ -1,19 +1,20 @@
 package handlers
 
 import (
-	"github.com/kataras/iris"
+	"net/http"
+
+	"github.com/labstack/echo"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
-func RegisterAccount(ctx *iris.Context) {
+func RegisterAccount(ctx echo.Context) error {
 	params := map[string]string{}
-	err := ctx.ReadJSON(&params)
+	err := ctx.Bind(&params)
 
 	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	account := &accountModel.Account{
@@ -24,21 +25,16 @@ func RegisterAccount(ctx *iris.Context) {
 	err = accountModel.Register(account, params["password"])
 
 	if err != nil && err == accountModel.ErrUsernameConflict {
-		ctx.JSON(iris.StatusConflict, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusConflict, err)
 	} else if err != nil && err == accountModel.ErrInvalidUsername {
-		ctx.JSON(iris.StatusBadRequest, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusBadRequest, err)
 	} else if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	ctx.JSON(iris.StatusCreated, NewAccountResponse(account))
+	return ctx.JSON(http.StatusCreated, NewAccountResponse(account))
 }
 
-func CurrentAccount(ctx *iris.Context) {
-	account := ctx.Get("account").(*accountModel.Account)
-
-	ctx.JSON(iris.StatusOK, NewAccountResponse(account))
+func CurrentAccount(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK, NewAccountResponse(GetSessionAccount(ctx)))
 }

@@ -1,29 +1,26 @@
 package web
 
 import (
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploying/web/handlers"
 	"github.com/jysperm/deploying/web/handlers/helpers"
 )
 
-var app = iris.New()
+var app = echo.New()
 
 func init() {
-	app.Get("/", func(ctx *iris.Context) {
-		ctx.ServeFile("./web/frontend/public/index.html", true)
-	})
+	app.File("/", "./web/frontend/public/index.html")
+	app.Static("/assets", "./web/frontend/public")
 
-	app.StaticWeb("/assets", "./web/frontend/public")
+	app.POST("/accounts", handlers.RegisterAccount)
+	app.POST("/sessions", handlers.CreateSession)
 
-	app.Post("/accounts", handlers.RegisterAccount)
-	app.Post("/sessions", handlers.CreateSession)
+	app.Use(helpers.AuthenticateMiddleware)
 
-	app.Use(&helpers.AuthenticateMiddleware{})
-
-	app.Get("/session", handlers.CurrentAccount)
+	app.GET("/session/account", handlers.CurrentAccount)
 }
 
 func Listen(port string) {
-	app.Listen(port)
+	app.Start(port)
 }

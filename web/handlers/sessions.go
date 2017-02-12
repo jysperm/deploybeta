@@ -1,45 +1,42 @@
 package handlers
 
 import (
-	"github.com/kataras/iris"
+	"net/http"
+
+	"github.com/labstack/echo"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
-func CreateSession(ctx *iris.Context) {
+func CreateSession(ctx echo.Context) error {
 	params := map[string]string{}
-	err := ctx.ReadJSON(&params)
+	err := ctx.Bind(&params)
 
 	if err != nil {
-		ctx.JSON(iris.StatusBadRequest, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	account, err := accountModel.FindByName(params["username"])
 
 	if err != nil && err == accountModel.ErrAccountNotFound {
-		ctx.JSON(iris.StatusUnauthorized, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusUnauthorized, err)
 	} else if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	err = account.ComparePassword(params["password"])
 
 	if err != nil {
-		ctx.JSON(iris.StatusUnauthorized, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusUnauthorized, err)
 	}
 
 	session, err := sessionModel.CreateToken(account)
 
 	if err != nil {
-		ctx.JSON(iris.StatusInternalServerError, NewHttpError(err))
-		return
+		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	ctx.JSON(iris.StatusCreated, NewSessionResponse(session))
+	return ctx.JSON(http.StatusCreated, NewSessionResponse(session))
 }

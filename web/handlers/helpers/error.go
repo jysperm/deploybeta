@@ -1,11 +1,11 @@
 package helpers
 
-type HttpError struct {
-	Error string `json:"error"`
-}
+import (
+	"net/http"
 
-func NewHttpError(err error) HttpError {
-	return HttpError{
-		Error: err.Error(),
-	}
+	"github.com/labstack/echo"
+)
+
+func NewHTTPError(code int, err error) error {
+	return echo.NewHTTPError(http.StatusConflict, NewErrorResponse(err))
 }

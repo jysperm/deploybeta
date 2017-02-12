@@ -1,10 +1,11 @@
 package builder
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/docker/docker/api/types"
+	dockerbuilder "github.com/docker/docker/builder"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/gitutils"
@@ -12,7 +13,8 @@ import (
 )
 
 func pullRepository(url string) (string, error) {
-	if path, err := gitutils.Clone(url); err != nil {
+	path, err := gitutils.Clone(url)
+	if err != nil {
 		return "", err
 	}
 	return path, nil
@@ -25,7 +27,6 @@ func tarRepository(path string) (io.ReadCloser, error) {
 	}
 
 	return content, nil
-
 }
 
 //BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
@@ -48,7 +49,12 @@ func BuildImage(opts types.ImageBuildOptions, url string, branch string) error {
 		return err
 	}
 
-	response, err := client.ImageBuild(ctx, content, opts)
+	buildCtx, relDockerfile, err := dockerbuilder.GetContextFromReader(content, opts.Dockerfile)
+	if err != nil {
+		return nil, err
+	}
+	opts.Dockerfile = relDockerfile
+	response, err := client.ImageBuild(ctx, buildCtx, opts)
 	defer response.Body.Close()
 	if err != nil {
 		return err

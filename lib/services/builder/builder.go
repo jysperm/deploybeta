@@ -1,38 +1,21 @@
 package builder
 
 import (
-	"crypto/sha1"
-	"io"
 	"io/ioutil"
 	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/gitutils"
 	"golang.org/x/net/context"
-	"srcd.works/go-git.v4"
-	"srcd.works/go-git.v4/plumbing"
 )
 
-func pullRepository(url string, branch string) (string, error) {
-	hash := sha1.New()
-	io.WriteString(hash, url)
-	hashURL := hash.Sum(nil)
-
-	tempDir, err := ioutil.TempDir("", string(hashURL))
-	if err != nil {
-		return "", nil
-	}
-
-	_, err = git.PlainClone(tempDir, false, &git.CloneOptions{
-		URL:           url,
-		ReferenceName: plumbing.ReferenceName(branch),
-	})
-	if err != nil {
+func pullRepository(url string) (string, error) {
+	if path, err := gitutils.Clone(url); err != nil {
 		return "", err
 	}
-
-	return tempDir, nil
+	return path, nil
 }
 
 func tarRepository(path string) (io.ReadCloser, error) {

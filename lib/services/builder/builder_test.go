@@ -8,16 +8,11 @@ import (
 
 func TestBuildImage(t *testing.T) {
 	opts := types.ImageBuildOptions{
-		Tags:           []string{"docker-test", "ubuntu"},
-		SuppressOutput: true,
-		NoCache:        false,
-		Remove:         true,
-		ForceRemove:    true,
-		PullParent:     true,
-		Isolation:      "",
+		Tags:       []string{"docker-test"},
+		Dockerfile: "Dockerfile",
 	}
 
-	_, err := BuildImage(opts, "https://github.com/mason96112569/docker-test.git")
+	err := BuildImage(opts, "https://github.com/mason96112569/docker-test.git")
 	if err != nil {
 		t.Error(err)
 	}

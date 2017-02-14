@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/gitutils"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -30,7 +31,19 @@ func tarRepository(path string) (io.ReadCloser, error) {
 }
 
 //BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
-func BuildImage(opts types.ImageBuildOptions, url string, branch string) error {
+func BuildImage(opts types.ImageBuildOptions, url string) error {
+	switch {
+	case opts.Tags == nil:
+		return errors.New("Need one or more tags")
+	case opts.Dockerfile == "":
+		return errors.New("Need a name of Dockerfile")
+	}
+	opts.NoCache = true
+	opts.Remove = true
+	opts.ForceRemove = true
+	opts.SuppressOutput = true
+	opts.Isolation = ""
+
 	client, err := client.NewEnvClient()
 	if err != nil {
 		return err
@@ -38,7 +51,7 @@ func BuildImage(opts types.ImageBuildOptions, url string, branch string) error {
 
 	ctx := context.Background()
 
-	dirPath, err := pullRepository(url, branch)
+	dirPath, err := pullRepository(url)
 	if err != nil {
 		return err
 	}
@@ -51,7 +64,7 @@ func BuildImage(opts types.ImageBuildOptions, url string, branch string) error {
 
 	buildCtx, relDockerfile, err := dockerbuilder.GetContextFromReader(content, opts.Dockerfile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	opts.Dockerfile = relDockerfile
 	response, err := client.ImageBuild(ctx, buildCtx, opts)

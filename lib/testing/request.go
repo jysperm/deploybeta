@@ -9,16 +9,16 @@ import (
 	"github.com/labstack/echo"
 )
 
-func RequestJSON(handler echo.HandlerFunc, method string, url string, body interface{}) (*httptest.ResponseRecorder, error) {
+func RequestJSON(handler echo.HandlerFunc, method string, url string, body interface{}) (*httptest.ResponseRecorder, map[string]string, error) {
 	app := echo.New()
 
-	json, err := json.Marshal(body)
+	jsonBody, err := json.Marshal(body)
 
 	if err != nil {
 		panic(err)
 	}
 
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(json))
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
 
 	if err != nil {
 		panic(err)
@@ -30,5 +30,15 @@ func RequestJSON(handler echo.HandlerFunc, method string, url string, body inter
 	ctx := app.NewContext(req, res)
 	err = handler(ctx)
 
-	return res, err
+	response := map[string]string{}
+
+	if err == nil {
+		err := json.Unmarshal(res.Body.Bytes(), &response)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return res, response, err
 }

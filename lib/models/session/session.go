@@ -75,3 +75,11 @@ func FindByToken(token string) (*Session, error) {
 
 	return session, nil
 }
+
+func DeleteByToken(token string) error {
+	sessionKey := fmt.Sprint("/sessions/", token)
+
+	_, err := services.EtcdClient.Delete(context.Background(), sessionKey)
+
+	return err
+}

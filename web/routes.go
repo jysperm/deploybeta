@@ -7,9 +7,9 @@ import (
 	"github.com/jysperm/deploying/web/handlers/helpers"
 )
 
-var app = echo.New()
+func CreateWebServer() *echo.Echo {
+	app := echo.New()
 
-func init() {
 	app.File("/", "./web/frontend/public/index.html")
 	app.Static("/assets", "./web/frontend/public")
 
@@ -19,8 +19,6 @@ func init() {
 	app.Use(helpers.AuthenticateMiddleware)
 
 	app.GET("/session/account", handlers.CurrentAccount)
-}
 
-func Listen(port string) {
-	app.Start(port)
+	return app
 }

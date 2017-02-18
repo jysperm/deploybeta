@@ -5,7 +5,7 @@ baseUri: https://deploying.cloud
 mediaType: application/json
 
 securitySchemes:
-  apiToken:
+  sessionToken:
     type: Basic Authentication
     describedBy:
       headers:
@@ -30,6 +30,14 @@ types:
       username: username
       token: string
 
+  application:
+    properties:
+      name: string
+      owner: username
+      gitRepository?: string
+      instances: number
+      version?: string
+
 resourceTypes:
   Account:
     get:
@@ -49,6 +57,7 @@ resourceTypes:
         201:
           body:
             type: account
+        400:
         409:
 
   Sessions:
@@ -63,7 +72,42 @@ resourceTypes:
             type: session
         401:
 
-  Session:
+  Application:
+    patch:
+      body:
+        properties:
+          gitRepository?: string
+          instances?: number
+          version?: string
+      responses:
+        201:
+          body:
+            type: application
+        409:
+
+    delete:
+      responses:
+        200:
+
+  Applications:
+    get:
+      responses:
+        200:
+          body:
+            type: application[]
+
+    post:
+      body:
+        properties:
+          name: string
+          gitRepository?: string
+          instances: number
+          version?: string
+      responses:
+        201:
+          body:
+            type: application
+        409:
 
 /accounts:
   type: Accounts
@@ -72,4 +116,12 @@ resourceTypes:
   type: Sessions
 
 /session/account:
+  securedBy: [ sessionToken ]
   type: Account
+
+/apps:
+  securedBy: [ sessionToken ]
+  type: Applications
+
+  /{name}:
+    type: Application

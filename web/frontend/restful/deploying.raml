@@ -1,0 +1,75 @@
+#%RAML 1.0
+title: Deploying API
+version: v1
+baseUri: https://deploying.cloud
+mediaType: application/json
+
+securitySchemes:
+  apiToken:
+    type: Basic Authentication
+    describedBy:
+      headers:
+        Authorization: string
+      responses:
+        401:
+
+types:
+  username:
+    type: string
+    pattern: ^[A-Za-z0-9_-]+$
+
+  email: string
+
+  account:
+    properties:
+      username: username
+      email: email
+
+  session:
+    properties:
+      username: username
+      token: string
+
+resourceTypes:
+  Account:
+    get:
+      responses:
+        200:
+          body:
+            type: account
+
+  Accounts:
+    post:
+      body:
+        properties:
+          username: username
+          password: string
+          email: email
+      responses:
+        201:
+          body:
+            type: account
+        409:
+
+  Sessions:
+    post:
+      body:
+        properties:
+          username: username
+          password: string
+      responses:
+        201:
+          body:
+            type: session
+        401:
+
+  Session:
+
+/accounts:
+  type: Accounts
+
+/sessions:
+  type: Sessions
+
+/session/account:
+  type: Account

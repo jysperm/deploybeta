@@ -85,6 +85,14 @@ func FindByName(username string) (*Account, error) {
 	return account, nil
 }
 
+func DeleteByName(username string) error {
+	accountKey := fmt.Sprint("/accounts/", username)
+
+	_, err := services.EtcdClient.Delete(context.Background(), accountKey)
+
+	return err
+}
+
 func (account *Account) ComparePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(password))
 }

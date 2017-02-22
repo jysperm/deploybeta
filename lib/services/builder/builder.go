@@ -1,17 +1,17 @@
 package builder
 
 import (
-	"bytes"
+	"bufio"
+	"encoding/json"
+	"errors"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/docker/docker/api/types"
-	dockerbuilder "github.com/docker/docker/builder"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/gitutils"
-	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -32,13 +32,53 @@ func buildContext(path string) (io.ReadCloser, error) {
 	return content, nil
 }
 
+func jsonParse(s []byte) (string, error) {
+	var f interface{}
+	if err := json.Unmarshal(s, &f); err != nil {
+		return "", err
+	}
+	m := f.(map[string]interface{})
+	for k, v := range m {
+		switch vv := v.(type) {
+		case string:
+			if k == "stream" && strings.HasPrefix(vv, "sha256") {
+				return vv[7:], nil
+			}
+			if k == "error" {
+				return "", errors.New(vv)
+			}
+		}
+
+	}
+	return "", nil
+}
+
+func readResponse(r io.ReadCloser) (string, error) {
+	var shasum string
+	var buildErr error
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil && err != io.EOF {
+			return "", err
+		}
+
+		shasum, buildErr = jsonParse(line)
+		if buildErr != nil {
+			return "", buildErr
+		}
+	}
+	return shasum, nil
+}
+
 //BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
 func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
-	switch {
-	case opts.Tags == nil:
-		return "", errors.New("Need one or more tags")
-	case opts.Dockerfile == "":
-		return "", errors.New("Need a name of Dockerfile")
+	if opts.Dockerfile == "" {
+		opts.Dockerfile = "Dockerfile"
 	}
 	opts.NoCache = false
 	opts.Remove = true
@@ -57,31 +97,23 @@ func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 		return "", err
 	}
 
-	content, err := buildContext(dirPath)
-	defer content.Close()
+	buildCtx, err := buildContext(dirPath)
 	if err != nil {
 		return "", err
 	}
-
-	buildCtx, relDockerfile, err := dockerbuilder.GetContextFromReader(content, opts.Dockerfile)
-	if err != nil {
-		return "", err
-	}
-	opts.Dockerfile = relDockerfile
-	response, err := client.ImageBuild(ctx, buildCtx, opts)
-	defer response.Body.Close()
-	if err != nil {
-		return "", err
-	}
-
-	buildBuf := bytes.NewBuffer(nil)
-	err = jsonmessage.DisplayJSONMessagesStream(response.Body, buildBuf, os.Stdout.Fd(), false, nil)
-	if err != nil {
-		return "", err
-	}
-
-	imageID := buildBuf.String()[7:19]
+	defer buildCtx.Close()
 	defer os.RemoveAll(dirPath)
 
-	return imageID, nil
+	response, err := client.ImageBuild(ctx, buildCtx, opts)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+
+	id, err := readResponse(response.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
 }

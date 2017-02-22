@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -13,11 +14,11 @@ func TestBuildImage(t *testing.T) {
 		Dockerfile: "Dockerfile",
 	}
 
-	id, err := BuildImage(opts, "https://github.com/mason96112569/docker-test.git")
+	shasum, err := BuildImage(opts, "https://github.com/mason96112569/docker-test.git")
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log("Image ID is " + id)
+	t.Log(shasum)
 }
 
 func TestBuildFailure(t *testing.T) {
@@ -30,7 +31,7 @@ func TestBuildFailure(t *testing.T) {
 	if err != nil {
 		t.Log(err.Error())
 	} else {
-		t.Error("It should have an error")
+		t.Error(errors.New("It should have a error"))
 	}
 
 }

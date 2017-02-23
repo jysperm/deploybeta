@@ -32,7 +32,7 @@ func buildContext(path string) (io.ReadCloser, error) {
 	return content, nil
 }
 
-func parseResponse(r io.ReadCloser) (string, error) {
+func extractShasum(r io.ReadCloser) (string, error) {
 	var shasum string
 	var buildErr error
 	reader := bufio.NewReader(r)
@@ -108,7 +108,7 @@ func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 	}
 	defer response.Body.Close()
 
-	id, err := parseResponse(response.Body)
+	id, err := extractShasum(response.Body)
 	if err != nil {
 		return "", err
 	}

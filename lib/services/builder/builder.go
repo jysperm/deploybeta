@@ -32,28 +32,7 @@ func buildContext(path string) (io.ReadCloser, error) {
 	return content, nil
 }
 
-func jsonParse(s []byte) (string, error) {
-	var f interface{}
-	if err := json.Unmarshal(s, &f); err != nil {
-		return "", err
-	}
-	m := f.(map[string]interface{})
-	for k, v := range m {
-		switch vv := v.(type) {
-		case string:
-			if k == "stream" && strings.HasPrefix(vv, "sha256") {
-				return vv[7:], nil
-			}
-			if k == "error" {
-				return "", errors.New(vv)
-			}
-		}
-
-	}
-	return "", nil
-}
-
-func readResponse(r io.ReadCloser) (string, error) {
+func parseResponse(r io.ReadCloser) (string, error) {
 	var shasum string
 	var buildErr error
 	reader := bufio.NewReader(r)
@@ -63,11 +42,30 @@ func readResponse(r io.ReadCloser) (string, error) {
 			break
 		}
 
-		if err != nil && err != io.EOF {
+		if err != nil {
 			return "", err
 		}
 
-		shasum, buildErr = jsonParse(line)
+		shasum, buildErr = func(s []byte) (string, error) {
+			var f interface{}
+			if err := json.Unmarshal(s, &f); err != nil {
+				return "", err
+			}
+			m := f.(map[string]interface{})
+			for k, v := range m {
+				switch vv := v.(type) {
+				case string:
+					if k == "stream" && strings.HasPrefix(vv, "sha256") {
+						return vv[len("sha256:") : len(vv)-1], nil
+					}
+					if k == "error" {
+						return "", errors.New(vv)
+					}
+				}
+
+			}
+			return "", nil
+		}(line)
 		if buildErr != nil {
 			return "", buildErr
 		}
@@ -110,7 +108,7 @@ func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 	}
 	defer response.Body.Close()
 
-	id, err := readResponse(response.Body)
+	id, err := parseResponse(response.Body)
 	if err != nil {
 		return "", err
 	}

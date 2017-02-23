@@ -3,6 +3,9 @@
         "github.com/coreos/etcd": {
             "version": "^3.1.0"
         },
+        "github.com/docker/docker": {
+            "version": "^1.13.1"
+        },
         "github.com/labstack/echo": {
             "version": "^3.0.0"
         },

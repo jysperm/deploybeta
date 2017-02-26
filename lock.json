@@ -1,15 +1,6 @@
 {
-    "memo": "c86ca95bcaa97292ad767c17e73f8eded3ea681595ed8d10518113741b51138a",
+    "memo": "b152c0cb10a2ceece32b681bf281691a9f0257007047cf5ef6416230f69a035c",
     "projects": [
-        {
-            "name": "github.com/Azure/go-ansiterm",
-            "branch": "master",
-            "revision": "fa152c58bc15761d0200cb75fe958b89a9d4888e",
-            "packages": [
-                ".",
-                "winterm"
-            ]
-        },
         {
             "name": "github.com/Microsoft/go-winio",
             "version": "v0.3.8",
@@ -39,7 +30,8 @@
             "version": "v3.1.0",
             "revision": "8ba2897a21e4fc51b298ca553d251318425f93ae",
             "packages": [
-                "clientv3"
+                "clientv3",
+                "mvcc/mvccpb"
             ]
         },
         {
@@ -47,8 +39,6 @@
             "version": "v2.6.0",
             "revision": "89c0dabba84ec82bd4357e848bedc6fb4a61d221",
             "packages": [
-                ".",
-                "digest",
                 "reference"
             ]
         },
@@ -58,7 +48,6 @@
             "revision": "092cba3727bb9b4a2f0e922cd6c0f93ea270e363",
             "packages": [
                 "api/types",
-                "builder",
                 "client",
                 "pkg/archive",
                 "pkg/gitutils"
@@ -97,22 +86,6 @@
             "packages": [
                 "jsonpb",
                 "proto"
-            ]
-        },
-        {
-            "name": "github.com/gorilla/context",
-            "version": "v1.1",
-            "revision": "a85d2e53ba63bdea074dbbbb5983f0516974e87b",
-            "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "github.com/gorilla/mux",
-            "version": "v1.3.0",
-            "revision": "392c28fe23e1c45ddba891b0320b3b5df220beea",
-            "packages": [
-                "."
             ]
         },
         {
@@ -174,22 +147,28 @@
             ]
         },
         {
+            "name": "github.com/moul/http2curl",
+            "branch": "master",
+            "revision": "4e24498b31dba4683efb9d35c1c8a91e2eda28c8",
+            "packages": [
+                "."
+            ]
+        },
+        {
             "name": "github.com/opencontainers/runc",
             "version": "v0.1.1",
             "revision": "baf6536d6259209c3edfa2b22237af82942d3dfa",
             "packages": [
-                "libcontainer/configs",
-                "libcontainer/devices",
                 "libcontainer/system",
                 "libcontainer/user"
             ]
         },
         {
-            "name": "github.com/opencontainers/runtime-spec",
-            "version": "v0.5.0",
-            "revision": "78e6667ae2d67aad100b28ee9580b41b7a24e667",
+            "name": "github.com/parnurzeal/gorequest",
+            "version": "v0.2.15",
+            "revision": "a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3",
             "packages": [
-                "specs-go"
+                "."
             ]
         },
         {
@@ -258,15 +237,6 @@
             ]
         },
         {
-            "name": "github.com/vbatts/tar-split",
-            "version": "v0.10.1",
-            "revision": "809b755cafaf89fe267c12a944754d29d1dede27",
-            "packages": [
-                "tar/asm",
-                "tar/storage"
-            ]
-        },
-        {
             "name": "golang.org/x/crypto",
             "branch": "master",
             "revision": "641ab6b32049cabca26c30bf27baaae445bf4175",
@@ -285,6 +255,7 @@
                 "http2",
                 "http2/hpack",
                 "proxy",
+                "publicsuffix",
                 "trace"
             ]
         },
@@ -295,14 +266,6 @@
             "packages": [
                 "unix",
                 "windows"
-            ]
-        },
-        {
-            "name": "golang.org/x/time",
-            "branch": "master",
-            "revision": "f51c12702a4d776e4c1fa9b0fabab841babae631",
-            "packages": [
-                "rate"
             ]
         },
         {

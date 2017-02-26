@@ -16,14 +16,12 @@ func CreateWebServer() *echo.Echo {
 	app.POST("/accounts", handlers.RegisterAccount)
 	app.POST("/sessions", handlers.CreateSession)
 
-	app.Use(helpers.AuthenticateMiddleware)
+	app.GET("/session/account", handlers.CurrentAccount, helpers.AuthenticateMiddleware)
 
-	app.GET("/session/account", handlers.CurrentAccount)
-
-	app.GET("/apps", handlers.GetMyApps)
-	app.POST("/apps", handlers.CreateApp)
-	app.PATCH("/apps/:name", handlers.UpdateApp)
-	app.DELETE("/apps/:name", handlers.DeleteApp)
+	app.GET("/apps", handlers.GetMyApps, helpers.AuthenticateMiddleware)
+	app.POST("/apps", handlers.CreateApp, helpers.AuthenticateMiddleware)
+	app.PATCH("/apps/:name", handlers.UpdateApp, helpers.AuthenticateMiddleware)
+	app.DELETE("/apps/:name", handlers.DeleteApp, helpers.AuthenticateMiddleware)
 
 	return app
 }

@@ -6,7 +6,7 @@ export default class LayoutView extends Component {
     return <Grid>
       <Row>
         <PageHeader>
-          Deploying <small>Containerized platform based on Docker Swarm, Openresty and ELK</small>
+          Deploying <small>A simple container platform based on reliable solutions.</small>
         </PageHeader>
       </Row>
       {this.props.children}

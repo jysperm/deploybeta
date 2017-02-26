@@ -20,5 +20,10 @@ func CreateWebServer() *echo.Echo {
 
 	app.GET("/session/account", handlers.CurrentAccount)
 
+	app.GET("/apps", handlers.GetMyApps)
+	app.POST("/apps", handlers.CreateApp)
+	app.PATCH("/apps/:name", handlers.UpdateApp)
+	app.DELETE("/apps/:name", handlers.DeleteApp)
+
 	return app
 }

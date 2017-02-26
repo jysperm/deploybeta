@@ -2,6 +2,7 @@ package helpers
 
 import (
 	accountModel "github.com/jysperm/deploying/lib/models/account"
+	appModel "github.com/jysperm/deploying/lib/models/app"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
 )
 
@@ -29,4 +30,8 @@ func NewAccountResponse(account *accountModel.Account) AccountResponse {
 
 func NewSessionResponse(session *sessionModel.Session) sessionModel.Session {
 	return *session
+}
+
+func NewAppResponse(app *appModel.Application) appModel.Application {
+	return *app
 }

@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {hashHistory} from 'react-router'
 import {Row, Col, Tabs, Tab, Form, FormGroup, FormControl, ControlLabel, Button} from 'react-bootstrap';
 import _ from 'lodash';
 
@@ -7,7 +8,7 @@ import LayoutView from './layout'
 
 export default class LoginView extends Component {
   render() {
-    return <LayoutView>
+    return <LayoutView pageHeader={true}>
       <Row>
         <Tabs defaultActiveKey={2} id='signup-or-login'>
           <Tab eventKey={1} title='Sign up'>
@@ -89,7 +90,9 @@ class SignupTab extends Component {
         method: 'POST',
         body: _.pick(this.state, 'username', 'password')
       }).then( session => {
+        localStorage.setItem('username', session.username);
         localStorage.setItem('sessionToken', session.token);
+        hashHistory.push('/console');
       });
     }).catch( err => {
       alert(err.message);
@@ -150,7 +153,9 @@ class LoginTab extends Component {
       method: 'POST',
       body: _.pick(this.state, 'username', 'password')
     }).then( session => {
+      localStorage.setItem('username', session.username);
       localStorage.setItem('sessionToken', session.token);
+      hashHistory.push('/console');
     }).catch( err => {
       alert(err.message);
     });

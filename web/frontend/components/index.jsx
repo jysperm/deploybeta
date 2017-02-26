@@ -5,6 +5,7 @@ import {Row, Button} from 'react-bootstrap';
 
 import LayoutView from './layout'
 import LoginView from './login'
+import ConsoleView from './console'
 
 class RootView extends Component {
   render() {
@@ -12,6 +13,7 @@ class RootView extends Component {
       <Router path='/'>
         <IndexRoute component={IndexView} />
         <Route path='/login' component={LoginView} />
+        <Route path='/console' component={ConsoleView} />
       </Router>
     </Router>;
   }
@@ -19,10 +21,17 @@ class RootView extends Component {
 
 class IndexView extends Component {
   render() {
-    return <LayoutView>
-      <Row>
-        <Button href='#/login' bsStyle='primary' bsSize='large'>Login or Sign up</Button>
-      </Row>
+    const username = localStorage.getItem('username');
+    var button;
+
+    if (username) {
+      button = <Button href='#/console' bsStyle='primary' bsSize='large'>Back to console as {username}</Button>;
+    } else {
+      button = <Button href='#/login' bsStyle='primary' bsSize='large'>Login or Sign up</Button>;
+    }
+
+    return <LayoutView pageHeader={true}>
+      <Row>{button}</Row>
     </LayoutView>;
   }
 }

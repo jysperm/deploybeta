@@ -53,6 +53,20 @@ func TestCreateApp(t *testing.T) {
 		t.Errorf("res.StatusCode %v", res.StatusCode)
 	}
 
+	apps := []appModel.Application{}
+
+	res, _, errs = Request("GET", "/apps").
+		Set("Authorization", session.Token).
+		EndStruct(&apps)
+
+	if len(errs) != 0 {
+		t.Error(errs)
+	}
+
+	if apps[0].Name != appName {
+		t.Errorf("appName %v", apps[0].Name)
+	}
+
 	accountModel.DeleteByName(session.Username)
 	sessionModel.DeleteByToken(session.Token)
 	appModel.DeleteByName(appName)

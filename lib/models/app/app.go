@@ -9,6 +9,7 @@ import (
 
 	etcd "github.com/coreos/etcd/clientv3"
 	etcdpb "github.com/coreos/etcd/mvcc/mvccpb"
+	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/services"
 )
 
@@ -105,6 +106,49 @@ func DeleteByName(name string) error {
 	_, err := services.EtcdClient.Delete(context.Background(), appKey)
 
 	return err
+}
+
+func GetAppsOfAccount(account *accountModel.Account) (result []Application, err error) {
+	accountAppsKey := fmt.Sprintf("/account/%s/apps", account.Username)
+	resp, err := services.EtcdClient.Get(context.Background(), accountAppsKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Kvs) == 0 {
+		return result, nil
+	}
+
+	accountApps := []string{}
+	err = json.Unmarshal([]byte(resp.Kvs[0].Value), &accountApps)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, appName := range accountApps {
+		appKey := fmt.Sprint("/apps/", appName)
+		resp, err = services.EtcdClient.Get(context.Background(), appKey)
+
+		if err != nil {
+			return result, err
+		}
+
+		app := Application{}
+
+		if len(resp.Kvs) != 0 {
+			err = json.Unmarshal([]byte(resp.Kvs[0].Value), &app)
+
+			if err != nil {
+				return result, err
+			}
+
+			result = append(result, app)
+		}
+	}
+
+	return result, nil
 }
 
 func (app *Application) UpdateGitRepository(GgtRepository string) error {

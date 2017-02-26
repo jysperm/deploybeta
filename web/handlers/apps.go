@@ -10,7 +10,14 @@ import (
 )
 
 func GetMyApps(ctx echo.Context) error {
-	return nil
+	account := GetSessionAccount(ctx)
+	apps, err := appModel.GetAppsOfAccount(account)
+
+	if err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, apps)
 }
 
 func CreateApp(ctx echo.Context) error {

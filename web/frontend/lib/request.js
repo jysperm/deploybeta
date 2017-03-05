@@ -1,11 +1,18 @@
 import 'whatwg-fetch';
 import _ from 'lodash';
 
-export function requestJson(url, options) {
+export function requestJson(url, options = {}) {
+  options.headers = options.headers || {};
+
   if (options.body) {
-    options.headers = options.headers || {};
     options.headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(options.body);
+  }
+
+  const sessionToken = localStorage.getItem('sessionToken');
+
+  if (sessionToken) {
+    options.headers['Authorization'] = sessionToken;
   }
 
   return fetch(url, options).then( res => {

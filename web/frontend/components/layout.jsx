@@ -3,12 +3,14 @@ import {Grid, Row, PageHeader} from 'react-bootstrap';
 
 export default class LayoutView extends Component {
   render() {
+    const pageHeader = <Row>
+      <PageHeader>
+        Deploying <small>A simple container platform based on reliable solutions.</small>
+      </PageHeader>
+    </Row>;
+
     return <Grid>
-      <Row>
-        <PageHeader>
-          Deploying <small>Containerized platform based on Docker Swarm, Openresty and ELK</small>
-        </PageHeader>
-      </Row>
+      {this.props.pageHeader && pageHeader}
       {this.props.children}
     </Grid>;
   }

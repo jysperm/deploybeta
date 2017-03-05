@@ -11,7 +11,6 @@ import (
 
 	"github.com/jysperm/deploying/lib/models/app"
 	"github.com/jysperm/deploying/lib/services"
-	"github.com/jysperm/deploying/lib/services/builder"
 
 	"golang.org/x/net/context"
 )
@@ -31,20 +30,12 @@ func init() {
 	}
 }
 
-//CreateService will build a image from Dockerfile and deploy a service
-func CreateService(app app.Application) error {
-	versionTag := fmt.Sprintf("%s:%s", app.Name, app.Version)
-	buildOpts := types.ImageBuildOptions{
-		Tags: []string{versionTag},
-	}
-	shasum, err := builder.BuildImage(buildOpts, app.GitRepository)
-	if err != nil {
-		return err
-	}
-
+//UpdateService will update or create a app
+func UpdateService(app app.Application, create bool) error {
+	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
-	imageName := fmt.Sprintf("%s@sha256:%s", versionTag, shasum)
-	containerSpec := swarm.ContainerSpec{Image: imageName}
+	image := fmt.Sprintf("%s:%s", app.Name, app.Version)
+	containerSpec := swarm.ContainerSpec{Image: image}
 	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec}
 	replicatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
 	serviceMode := swarm.ServiceMode{Replicated: &replicatedService}
@@ -63,74 +54,33 @@ func CreateService(app app.Application) error {
 		Mode:         serviceMode,
 		EndpointSpec: &endpointSpec,
 	}
-	serviceResponse, err := swarmClient.ServiceCreate(context.Background(), serviceSpec, types.ServiceCreateOptions{})
-	if err != nil {
-		return err
+
+	if create {
+		serviceResponse, err := swarmClient.ServiceCreate(context.Background(), serviceSpec, types.ServiceCreateOptions{})
+		if err != nil {
+			return err
+		}
+		upstreamConfig.Port, err = extractPort(serviceResponse.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		serviceID, err := extractServiceID(app.Name)
+		if err != nil {
+			return err
+		}
+		_, err = swarmClient.ServiceUpdate(context.Background(), serviceID, swarm.Version{}, serviceSpec, types.ServiceUpdateOptions{})
+		if err != nil {
+			return err
+		}
+
+		upstreamConfig.Port, err = extractPort(serviceID)
+		if err != nil {
+			return err
+		}
 	}
 
-	publishedPort, err := extractPort(serviceResponse.ID)
-	if err != nil {
-		return err
-	}
-	upstream, err := json.Marshal([]UpstreamConfig{UpstreamConfig{Port: publishedPort}})
-	if err != nil {
-		return err
-	}
-	upstreamKey := fmt.Sprintf("/upstream/%s", app.Name)
-	if _, err := services.EtcdClient.Put(context.Background(), upstreamKey, string(upstream)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-//UpdateService will updaate the config of given app
-func UpdateService(app app.Application) error {
-	serviceID, err := extractServiceID(app.Name)
-	if err != nil {
-		return err
-	}
-
-	versionTag := fmt.Sprintf("%s:%s", app.Name, app.Version)
-	buildOpts := types.ImageBuildOptions{
-		Tags: []string{versionTag},
-	}
-	shasum, err := builder.BuildImage(buildOpts, app.GitRepository)
-	if err != nil {
-		return err
-	}
-
-	uint64Instances := uint64(app.Instances)
-	imageName := fmt.Sprintf("%s@sha256:%s", versionTag, shasum)
-	containerSpec := swarm.ContainerSpec{Image: imageName}
-	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec}
-	replcatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
-	serviceMode := swarm.ServiceMode{Replicated: &replcatedService}
-	portConfig := swarm.PortConfig{
-		Protocol:    swarm.PortConfigProtocolTCP,
-		TargetPort:  3000,
-		PublishMode: swarm.PortConfigPublishModeIngress,
-	}
-	endpointSpec := swarm.EndpointSpec{
-		Mode:  "vip",
-		Ports: []swarm.PortConfig{portConfig},
-	}
-	serviceSpec := swarm.ServiceSpec{
-		Annotations:  swarm.Annotations{Name: app.Name},
-		TaskTemplate: taskSpec,
-		Mode:         serviceMode,
-		EndpointSpec: &endpointSpec,
-	}
-	_, err = swarmClient.ServiceUpdate(context.Background(), serviceID, swarm.Version{}, serviceSpec, types.ServiceUpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	publishedPort, err := extractPort(serviceID)
-	if err != nil {
-		return err
-	}
-	upstream, err := json.Marshal([]UpstreamConfig{UpstreamConfig{Port: publishedPort}})
+	upstream, err := json.Marshal([]UpstreamConfig{upstreamConfig})
 	if err != nil {
 		return err
 	}

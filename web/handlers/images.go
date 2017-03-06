@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -35,17 +34,10 @@ func CreateImage(ctx echo.Context) error {
 	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
-	var image struct {
-		Shasum  string
-		Version string
-	}
-	image.Shasum = shasum
-	image.Version = version
 
-	imageJSON, err := json.Marshal(image)
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusCreated, imageJSON)
+	return ctx.JSON(http.StatusCreated, NewImageResponse(shasum, version))
 }

@@ -35,3 +35,15 @@ func NewSessionResponse(session *sessionModel.Session) sessionModel.Session {
 func NewAppResponse(app *appModel.Application) appModel.Application {
 	return *app
 }
+
+type ImageResponse struct {
+	Shasum  string
+	Version string
+}
+
+func NewImageResponse(shasum string, version string) ImageResponse {
+	return ImageResponse{
+		Shasum:  shasum,
+		Version: version,
+	}
+}

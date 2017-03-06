@@ -31,7 +31,14 @@ func init() {
 }
 
 //UpdateService will update or create a app
-func UpdateService(app app.Application, create bool) error {
+func UpdateService(app app.Application) error {
+	var create bool
+	serviceID, err := extractServiceID(app.Name)
+	if err != nil && err.Error() == "Not found service" {
+		create = true
+	} else {
+		create = false
+	}
 	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
 	image := fmt.Sprintf("%s:%s", app.Name, app.Version)
@@ -65,7 +72,7 @@ func UpdateService(app app.Application, create bool) error {
 			return err
 		}
 	} else {
-		serviceID, err := extractServiceID(app.Name)
+		serviceID, err = extractServiceID(app.Name)
 		if err != nil {
 			return err
 		}

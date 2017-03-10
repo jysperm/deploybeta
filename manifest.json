@@ -10,7 +10,7 @@
             "version": "^3.0.0"
         },
         "github.com/parnurzeal/gorequest": {
-            "version": ">=0.2.15, <1.0.0"
+            "version": "v0.2.15"
         },
         "golang.org/x/crypto": {
             "branch": "master"

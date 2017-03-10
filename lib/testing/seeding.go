@@ -2,6 +2,7 @@ package testing
 
 import (
 	accountModel "github.com/jysperm/deploying/lib/models/account"
+	appModel "github.com/jysperm/deploying/lib/models/app"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
 	"github.com/jysperm/deploying/lib/utils"
 )
@@ -31,4 +32,19 @@ func SeedSession(account *accountModel.Account) sessionModel.Session {
 	}
 
 	return *session
+}
+
+func SeedApp(gitRepository string) appModel.Application {
+	app := appModel.Application{
+		Name:          utils.RandomString(10),
+		GitRepository: gitRepository,
+		Instances:     1,
+	}
+
+	err := appModel.CreateApp(&app)
+	if err != nil {
+		panic(err)
+	}
+
+	return app
 }

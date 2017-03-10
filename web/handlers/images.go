@@ -9,8 +9,11 @@ import (
 
 	"github.com/docker/docker/api/types"
 
+	"github.com/jysperm/deploying/lib/services"
 	"github.com/jysperm/deploying/lib/services/builder"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
+
+	"golang.org/x/net/context"
 )
 
 func generateVersion() string {
@@ -39,5 +42,9 @@ func CreateImage(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	imageKey := fmt.Sprintf("/apps/%s/versions/%s", params["name"], version)
+	if _, err := services.EtcdClient.Put(context.Background(), imageKey, version); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
 	return ctx.JSON(http.StatusCreated, NewImageResponse(shasum, version))
 }

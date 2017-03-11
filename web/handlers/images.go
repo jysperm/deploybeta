@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 
+	appModel "github.com/jysperm/deploying/lib/models/app"
 	"github.com/jysperm/deploying/lib/services"
 	"github.com/jysperm/deploying/lib/services/builder"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
@@ -22,10 +23,8 @@ func generateVersion() string {
 }
 
 func CreateImage(ctx echo.Context) error {
-	params := map[string]string{}
-	err := ctx.Bind(&params)
-
-	if err != nil {
+	params := new(appModel.Application)
+	if err := ctx.Bind(params); err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
@@ -33,16 +32,12 @@ func CreateImage(ctx echo.Context) error {
 	buildOpts := types.ImageBuildOptions{
 		Tags: []string{version},
 	}
-	shasum, err := builder.BuildImage(buildOpts, params["gitRepository"])
-	if err != nil {
-		return NewHTTPError(http.StatusBadRequest, err)
-	}
-
+	shasum, err := builder.BuildImage(buildOpts, params.GitRepository)
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	imageKey := fmt.Sprintf("/apps/%s/versions/%s", params["name"], version)
+	imageKey := fmt.Sprintf("/apps/%s/versions/%s", params.Name, version)
 	if _, err := services.EtcdClient.Put(context.Background(), imageKey, version); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

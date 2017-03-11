@@ -4,49 +4,34 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jysperm/deploying/config"
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	appModel "github.com/jysperm/deploying/lib/models/app"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
 	. "github.com/jysperm/deploying/lib/testing"
-	"github.com/jysperm/deploying/web"
+	"github.com/jysperm/deploying/web/handlers/helpers"
 )
-
-func init() {
-	go web.CreateWebServer().Start(config.Port)
-}
 
 func TestCreateImage(t *testing.T) {
 	account, _ := SeedAccount()
 	session := SeedSession(&account)
-	app := SeedApp("https://github.com/jysperm/deploying-samples.git")
+	app := SeedApp("https://github.com/mason96112569/docker-test.git")
 
-	resBody := appModel.Application{}
+	var imageResponse helpers.ImageResponse
 
-	res, _, errs := Request("POST", "/apps").
+	imageKey := fmt.Sprintf("/apps/%s/images", app.Name)
+	res, _, errs := Request("POST", imageKey).
 		Set("Authorization", session.Token).
-		SendStruct(map[string]string{
-			"name": app.Name,
-		}).EndStruct(&resBody)
+		SendStruct(app).
+		EndStruct(&imageResponse)
 
-	t.Log("Created app", resBody)
+	t.Log(imageResponse)
 
 	if len(errs) != 0 {
 		t.Error(errs)
 	}
 
 	if res.StatusCode != 201 {
-		t.Errorf("res.StatusCode %v", res.StatusCode)
-
-	}
-
-	imageKey := fmt.Sprintf("/apps/%s/images", app.Name)
-	res, _, errs = Request("POST", imageKey).
-		Set("Authorization", session.Token).
-		EndStruct(app)
-
-	if len(errs) != 0 {
-		t.Error(errs)
+		t.Error("res.StatusCode", res.StatusCode)
 	}
 
 	accountModel.DeleteByName(session.Username)

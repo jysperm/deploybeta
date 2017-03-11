@@ -41,8 +41,7 @@ func SeedApp(gitRepository string) appModel.Application {
 		Instances:     1,
 	}
 
-	err := appModel.CreateApp(&app)
-	if err != nil {
+	if err := appModel.CreateApp(&app); err != nil {
 		panic(err)
 	}
 

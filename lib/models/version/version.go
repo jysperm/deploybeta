@@ -19,7 +19,7 @@ type Version struct {
 }
 
 func CreateVersion(app *appModel.Application) (Version, error) {
-	version := generateTag()
+	version := generateTag(app.Name)
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
 
 	buildOpts := types.ImageBuildOptions{
@@ -47,7 +47,8 @@ func DeleteVersion(app appModel.Application, version string) error {
 	return nil
 }
 
-func generateTag() string {
+func generateTag(name string) string {
 	now := time.Now()
-	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	version := fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	return fmt.Sprintf("%s:%s", name, version)
 }

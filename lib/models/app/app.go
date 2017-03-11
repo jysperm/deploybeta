@@ -24,7 +24,7 @@ type Application struct {
 	Version       string `json:"version"`
 }
 
-var validName = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+var validName = regexp.MustCompile(`^[a-z0-9_-]+$`)
 
 func CreateApp(app *Application) error {
 	if !validName.MatchString(app.Name) {

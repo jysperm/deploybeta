@@ -27,7 +27,7 @@ func TestCreateImage(t *testing.T) {
 		t.Error(errs)
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != 201 {
 		t.Error("res.StatusCode", res.StatusCode)
 	}
 

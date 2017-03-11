@@ -1,6 +1,8 @@
 package testing
 
 import (
+	"strings"
+
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	appModel "github.com/jysperm/deploying/lib/models/app"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
@@ -36,7 +38,7 @@ func SeedSession(account *accountModel.Account) sessionModel.Session {
 
 func SeedApp(gitRepository string) appModel.Application {
 	app := appModel.Application{
-		Name:          utils.RandomString(10),
+		Name:          strings.ToLower(utils.RandomString(10)),
 		GitRepository: gitRepository,
 		Instances:     1,
 	}

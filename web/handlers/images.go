@@ -26,7 +26,7 @@ func CreateImage(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, NewVersionResponse(&version))
+	return ctx.JSON(http.StatusCreated, NewVersionResponse(&version))
 }
 
 // TODO:

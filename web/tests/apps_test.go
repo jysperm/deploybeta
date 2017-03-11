@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jysperm/deploying/config"
@@ -19,7 +20,7 @@ func init() {
 func TestCreateApp(t *testing.T) {
 	account, _ := SeedAccount()
 	session := SeedSession(&account)
-	appName := utils.RandomString(10)
+	appName := strings.ToLower(utils.RandomString(10))
 
 	resBody := appModel.Application{}
 

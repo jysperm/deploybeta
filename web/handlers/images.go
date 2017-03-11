@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -14,6 +15,10 @@ func CreateImage(ctx echo.Context) error {
 	app, err := appModel.FindByName(ctx.Param("name"))
 	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if err == nil && app == nil {
+		return NewHTTPError(http.StatusBadRequest, errors.New("Not found Application"))
 	}
 
 	version, err := versionModel.CreateVersion(app)

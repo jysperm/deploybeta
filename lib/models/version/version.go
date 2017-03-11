@@ -19,22 +19,22 @@ type Version struct {
 }
 
 func CreateVersion(app *appModel.Application) (Version, error) {
-	tag := generateTag()
-	tagKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
+	version := generateTag()
+	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
 
 	buildOpts := types.ImageBuildOptions{
-		Tags: []string{tag},
+		Tags: []string{version},
 	}
 	shasum, err := builder.BuildImage(buildOpts, app.GitRepository)
 	if err != nil {
 		return Version{}, err
 	}
 
-	if _, err := services.EtcdClient.Put(context.Background(), tagKey, shasum); err != nil {
+	if _, err := services.EtcdClient.Put(context.Background(), versionKey, shasum); err != nil {
 		return Version{}, err
 	}
 
-	return Version{Shasum: shasum, Tag: tag}, nil
+	return Version{Shasum: shasum, Tag: version}, nil
 }
 
 func DeleteVersion(app appModel.Application, version string) error {

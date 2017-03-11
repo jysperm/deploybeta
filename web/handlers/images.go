@@ -11,17 +11,12 @@ import (
 )
 
 func CreateImage(ctx echo.Context) error {
-	params := map[string]string{}
-	if err := ctx.Bind(&params); err != nil {
-		return NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	app, err := appModel.FindByName(params["name"])
+	app, err := appModel.FindByName(ctx.Param("name"))
 	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := versionModel.CreateVersion(&app)
+	version, err := versionModel.CreateVersion(app)
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

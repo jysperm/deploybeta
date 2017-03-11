@@ -21,9 +21,6 @@ func TestCreateImage(t *testing.T) {
 	imageKey := fmt.Sprintf("/apps/%s/images", app.Name)
 	res, _, errs := Request("POST", imageKey).
 		Set("Authorization", session.Token).
-		SendStruct(map[string]string{
-			"name": app.Name,
-		}).
 		EndStruct(&imageResponse)
 
 	if len(errs) != 0 {

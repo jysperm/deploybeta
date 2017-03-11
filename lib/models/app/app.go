@@ -163,16 +163,19 @@ func (app *Application) UpdateVersion(version string) error {
 	return nil
 }
 
-func FindByName(name string) (Application, error) {
+func FindByName(name string) (*Application, error) {
 	appKey := fmt.Sprintf("/apps/%s", name)
 	resp, err := services.EtcdClient.Get(context.Background(), appKey)
 	if err != nil {
-		return Application{}, err
+		return nil, err
+	}
+	if len(resp.Kvs) == 0 {
+		return nil, nil
 	}
 	var appFound Application
 	if err := json.Unmarshal(resp.Kvs[0].Value, &appFound); err != nil {
-		return Application{}, err
+		return nil, err
 	}
 
-	return appFound, nil
+	return &appFound, nil
 }

@@ -4,6 +4,7 @@ import (
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	appModel "github.com/jysperm/deploying/lib/models/app"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
+	versionModel "github.com/jysperm/deploying/lib/models/version"
 )
 
 type ErrorResponse struct {
@@ -36,14 +37,6 @@ func NewAppResponse(app *appModel.Application) appModel.Application {
 	return *app
 }
 
-type ImageResponse struct {
-	Shasum  string
-	Version string
-}
-
-func NewImageResponse(shasum string, version string) ImageResponse {
-	return ImageResponse{
-		Shasum:  shasum,
-		Version: version,
-	}
+func NewVersionResponse(version *versionModel.Version) versionModel.Version {
+	return *version
 }

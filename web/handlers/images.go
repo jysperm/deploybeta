@@ -1,45 +1,35 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/labstack/echo"
 
-	"github.com/docker/docker/api/types"
-
 	appModel "github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/services"
-	"github.com/jysperm/deploying/lib/services/builder"
+	versionModel "github.com/jysperm/deploying/lib/models/version"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
-
-	"golang.org/x/net/context"
 )
 
-func generateVersion() string {
-	now := time.Now()
-	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-}
-
 func CreateImage(ctx echo.Context) error {
-	params := new(appModel.Application)
-	if err := ctx.Bind(params); err != nil {
+	params := map[string]string{}
+	if err := ctx.Bind(&params); err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version := generateVersion()
-	buildOpts := types.ImageBuildOptions{
-		Tags: []string{version},
+	app, err := appModel.FindByName(params["name"])
+	if err != nil {
+		return NewHTTPError(http.StatusBadRequest, err)
 	}
-	shasum, err := builder.BuildImage(buildOpts, params.GitRepository)
+
+	version, err := versionModel.CreateVersion(&app)
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	imageKey := fmt.Sprintf("/apps/%s/versions/%s", params.Name, version)
-	if _, err := services.EtcdClient.Put(context.Background(), imageKey, version); err != nil {
-		return NewHTTPError(http.StatusInternalServerError, err)
-	}
-	return ctx.JSON(http.StatusCreated, NewImageResponse(shasum, version))
+	return ctx.JSON(http.StatusOK, NewVersionResponse(&version))
+}
+
+// TODO:
+func DeleteImage(ctx echo.Context) error {
+	return nil
 }

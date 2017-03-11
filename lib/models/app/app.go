@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	etcdpb "github.com/coreos/etcd/mvcc/mvccpb"
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/services"
+	"golang.org/x/net/context"
 )
 
 var ErrInvalidName = errors.New("invalid app name")
@@ -161,4 +161,18 @@ func (app *Application) UpdateInstances(instances int) error {
 
 func (app *Application) UpdateVersion(version string) error {
 	return nil
+}
+
+func FindByName(name string) (Application, error) {
+	appKey := fmt.Sprintf("/apps/%s", name)
+	resp, err := services.EtcdClient.Get(context.Background(), appKey)
+	if err != nil {
+		return Application{}, err
+	}
+	var appFound Application
+	if err := json.Unmarshal(resp.Kvs[0].Value, &appFound); err != nil {
+		return Application{}, err
+	}
+
+	return appFound, nil
 }

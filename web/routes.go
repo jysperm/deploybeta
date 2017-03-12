@@ -22,6 +22,7 @@ func CreateWebServer() *echo.Echo {
 	app.POST("/apps", handlers.CreateApp, helpers.AuthenticateMiddleware)
 	app.PATCH("/apps/:name", handlers.UpdateApp, helpers.AuthenticateMiddleware)
 	app.DELETE("/apps/:name", handlers.DeleteApp, helpers.AuthenticateMiddleware)
+	app.POST("/apps/:name/images", handlers.CreateImage, helpers.AuthenticateMiddleware)
 
 	return app
 }

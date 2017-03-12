@@ -37,6 +37,12 @@ types:
       gitRepository?: string
       instances: number
       version?: string
+    
+  image:
+    properties: 
+      shasum: string
+      tag: string
+
 
 resourceTypes:
   Account:
@@ -109,6 +115,13 @@ resourceTypes:
             type: application
         409:
 
+    Images:
+      post:
+        responses:
+          201:
+            body:
+              type: image
+
 /accounts:
   type: Accounts
 
@@ -125,3 +138,6 @@ resourceTypes:
 
   /{name}:
     type: Application
+    
+    /images:
+      type: Images

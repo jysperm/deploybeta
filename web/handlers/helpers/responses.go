@@ -4,6 +4,7 @@ import (
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	appModel "github.com/jysperm/deploying/lib/models/app"
 	sessionModel "github.com/jysperm/deploying/lib/models/session"
+	versionModel "github.com/jysperm/deploying/lib/models/version"
 )
 
 type ErrorResponse struct {
@@ -34,4 +35,8 @@ func NewSessionResponse(session *sessionModel.Session) sessionModel.Session {
 
 func NewAppResponse(app *appModel.Application) appModel.Application {
 	return *app
+}
+
+func NewVersionResponse(version *versionModel.Version) versionModel.Version {
+	return *version
 }

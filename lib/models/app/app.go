@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"regexp"
 
-	etcd "github.com/coreos/etcd/clientv3"
-	etcdpb "github.com/coreos/etcd/mvcc/mvccpb"
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/services"
 	"golang.org/x/net/context"
@@ -34,69 +32,28 @@ func CreateApp(app *Application) error {
 	appKey := fmt.Sprint("/apps/", app.Name)
 	accountAppsKey := fmt.Sprintf("/account/%s/apps", app.Owner)
 
-	appBytes, err := json.Marshal(app)
+	tran := services.NewEtcdTransaction()
+
+	tran.WatchJSON(accountAppsKey, &[]string{})
+	tran.CreateJSON(appKey, app)
+
+	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
+		accountApps := *watchedKeys[accountAppsKey].(*[]string)
+
+		tran.PutJSONOnSuccess(accountAppsKey, append(accountApps, app.Name))
+
+		return nil
+	})
 
 	if err != nil {
 		return err
 	}
 
-	resp, err := services.EtcdClient.Get(context.Background(), accountAppsKey)
-
-	if err != nil {
-		return err
-	}
-
-	var accountAppsKeyValue *etcdpb.KeyValue
-	var accountApps []string
-
-	compares := []etcd.Cmp{
-		etcd.Compare(etcd.CreateRevision(appKey), "=", 0),
-	}
-
-	ops := []etcd.Op{
-		etcd.OpPut(appKey, string(appBytes)),
-	}
-
-	if len(resp.Kvs) > 0 {
-		accountAppsKeyValue = resp.Kvs[0]
-		err = json.Unmarshal([]byte(resp.Kvs[0].Value), &accountApps)
-
-		if err != nil {
-			return err
-		}
-
-		compares = append(compares, etcd.Compare(etcd.Version(accountAppsKey), "=", accountAppsKeyValue.Version))
-
-		accountAppsBytes, err := json.Marshal(append(accountApps, app.Name))
-
-		if err != nil {
-			return err
-		}
-
-		ops = append(ops, etcd.OpPut(accountAppsKey, string(accountAppsBytes)))
-	} else {
-		compares = append(compares, etcd.Compare(etcd.CreateRevision(appKey), "=", 0))
-
-		accountAppsBytes, err := json.Marshal([]string{app.Name})
-
-		if err != nil {
-			return err
-		}
-
-		ops = append(ops, etcd.OpPut(accountAppsKey, string(accountAppsBytes)))
-	}
-
-	txnResp, err := services.EtcdClient.Txn(context.Background()).If(compares...).Then(ops...).Commit()
-
-	if err != nil {
-		return err
-	}
-
-	if txnResp.Succeeded == false {
+	if resp.Succeeded == false {
 		return ErrUpdateConflict
+	} else {
+		return nil
 	}
-
-	return nil
 }
 
 // TODO: Delete app name from `/account/:name/apps`
@@ -151,7 +108,7 @@ func GetAppsOfAccount(account *accountModel.Account) (result []Application, err 
 	return result, nil
 }
 
-func (app *Application) UpdateGitRepository(GgtRepository string) error {
+func (app *Application) UpdateGitRepository(gitRepository string) error {
 	return nil
 }
 

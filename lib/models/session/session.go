@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	etcdv3 "github.com/coreos/etcd/clientv3"
-
 	"github.com/jysperm/deploying/lib/etcd"
 	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/utils"
@@ -30,16 +28,11 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 		Username: account.Username,
 	}
 
-	jsonBytes, err := json.Marshal(session)
+	tran := etcd.NewTransaction()
 
-	if err != nil {
-		return nil, err
-	}
+	tran.CreateJSON(sessionKey, session)
 
-	resp, err := etcd.Client.Txn(context.Background()).
-		If(etcdv3.CreateRevision(sessionKey)).
-		Then(etcdv3.OpPut(sessionKey, string(jsonBytes))).
-		Commit()
+	resp, err := tran.Execute()
 
 	if err != nil {
 		return nil, err

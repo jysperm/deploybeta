@@ -32,7 +32,7 @@ func CreateApp(app *Application) error {
 	appKey := fmt.Sprint("/apps/", app.Name)
 	accountAppsKey := fmt.Sprintf("/account/%s/apps", app.Owner)
 
-	tran := etcd.NewEtcdTransaction()
+	tran := etcd.NewTransaction()
 
 	tran.WatchJSON(accountAppsKey, &[]string{})
 	tran.CreateJSON(appKey, app)

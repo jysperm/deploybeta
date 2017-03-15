@@ -7,7 +7,7 @@ import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
 )
 
-type EtcdTransaction struct {
+type Transaction struct {
 	watchedKeys map[string]interface{}
 	compares    []etcdv3.Cmp
 	successOps  []etcdv3.Op
@@ -15,17 +15,17 @@ type EtcdTransaction struct {
 	err         error
 }
 
-func NewEtcdTransaction() *EtcdTransaction {
-	return &EtcdTransaction{
+func NewTransaction() *Transaction {
+	return &Transaction{
 		watchedKeys: make(map[string]interface{}),
 	}
 }
 
-func (tran *EtcdTransaction) WatchJSON(key string, schema interface{}) {
+func (tran *Transaction) WatchJSON(key string, schema interface{}) {
 	tran.watchedKeys[key] = schema
 }
 
-func (tran *EtcdTransaction) CreateJSON(key string, data interface{}) {
+func (tran *Transaction) CreateJSON(key string, data interface{}) {
 	dataBytes, err := json.Marshal(data)
 
 	if err != nil {
@@ -39,7 +39,7 @@ func (tran *EtcdTransaction) CreateJSON(key string, data interface{}) {
 	}
 }
 
-func (tran *EtcdTransaction) PutJSONOnSuccess(key string, data interface{}) {
+func (tran *Transaction) PutJSONOnSuccess(key string, data interface{}) {
 	dataBytes, err := json.Marshal(data)
 
 	if err != nil {
@@ -49,7 +49,7 @@ func (tran *EtcdTransaction) PutJSONOnSuccess(key string, data interface{}) {
 	}
 }
 
-func (tran *EtcdTransaction) Execute(resolvers ...func(map[string]interface{}) error) (*etcdv3.TxnResponse, error) {
+func (tran *Transaction) Execute(resolvers ...func(map[string]interface{}) error) (*etcdv3.TxnResponse, error) {
 	if tran.err != nil {
 		return nil, tran.err
 	}

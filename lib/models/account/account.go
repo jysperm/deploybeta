@@ -39,7 +39,7 @@ func Register(account *Account, password string) error {
 
 	accountKey := fmt.Sprint("/accounts/", account.Username)
 
-	tran := etcd.NewEtcdTransaction()
+	tran := etcd.NewTransaction()
 
 	tran.CreateJSON(accountKey, account)
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"regexp"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 
@@ -39,16 +38,12 @@ func Register(account *Account, password string) error {
 	account.PasswordHash = string(passwordHash)
 
 	accountKey := fmt.Sprint("/accounts/", account.Username)
-	jsonBytes, err := json.Marshal(account)
 
-	if err != nil {
-		return err
-	}
+	tran := services.NewEtcdTransaction()
 
-	resp, err := services.EtcdClient.Txn(context.Background()).
-		If(etcd.Compare(etcd.CreateRevision(accountKey), "=", 0)).
-		Then(etcd.OpPut(accountKey, string(jsonBytes))).
-		Commit()
+	tran.CreateJSON(accountKey, account)
+
+	resp, err := tran.Execute()
 
 	if err != nil {
 		return err

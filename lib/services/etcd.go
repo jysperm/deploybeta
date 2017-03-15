@@ -67,7 +67,7 @@ func (tran *EtcdTransaction) PutJSONOnSuccess(key string, data interface{}) {
 	}
 }
 
-func (tran *EtcdTransaction) Execute(resolver func(map[string]interface{}) error) (*etcdv3.TxnResponse, error) {
+func (tran *EtcdTransaction) Execute(resolvers ...func(map[string]interface{}) error) (*etcdv3.TxnResponse, error) {
 	if tran.err != nil {
 		return nil, tran.err
 	}
@@ -92,10 +92,12 @@ func (tran *EtcdTransaction) Execute(resolver func(map[string]interface{}) error
 		}
 	}
 
-	err := resolver(tran.watchedKeys)
+	for _, resolver := range resolvers {
+		err := resolver(tran.watchedKeys)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return EtcdClient.Txn(context.Background()).

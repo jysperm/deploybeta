@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/jysperm/deploying/lib/etcd"
 	accountModel "github.com/jysperm/deploying/lib/models/account"
-	"github.com/jysperm/deploying/lib/services"
 	"golang.org/x/net/context"
 )
 
@@ -32,7 +32,7 @@ func CreateApp(app *Application) error {
 	appKey := fmt.Sprint("/apps/", app.Name)
 	accountAppsKey := fmt.Sprintf("/account/%s/apps", app.Owner)
 
-	tran := services.NewEtcdTransaction()
+	tran := etcd.NewEtcdTransaction()
 
 	tran.WatchJSON(accountAppsKey, &[]string{})
 	tran.CreateJSON(appKey, app)
@@ -60,14 +60,14 @@ func CreateApp(app *Application) error {
 func DeleteByName(name string) error {
 	appKey := fmt.Sprint("/apps/", name)
 
-	_, err := services.EtcdClient.Delete(context.Background(), appKey)
+	_, err := etcd.Client.Delete(context.Background(), appKey)
 
 	return err
 }
 
 func GetAppsOfAccount(account *accountModel.Account) (result []Application, err error) {
 	accountAppsKey := fmt.Sprintf("/account/%s/apps", account.Username)
-	resp, err := services.EtcdClient.Get(context.Background(), accountAppsKey)
+	resp, err := etcd.Client.Get(context.Background(), accountAppsKey)
 
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func GetAppsOfAccount(account *accountModel.Account) (result []Application, err 
 
 	for _, appName := range accountApps {
 		appKey := fmt.Sprint("/apps/", appName)
-		resp, err = services.EtcdClient.Get(context.Background(), appKey)
+		resp, err = etcd.Client.Get(context.Background(), appKey)
 
 		if err != nil {
 			return result, err
@@ -122,7 +122,7 @@ func (app *Application) UpdateVersion(version string) error {
 
 func FindByName(name string) (*Application, error) {
 	appKey := fmt.Sprintf("/apps/%s", name)
-	resp, err := services.EtcdClient.Get(context.Background(), appKey)
+	resp, err := etcd.Client.Get(context.Background(), appKey)
 	if err != nil {
 		return nil, err
 	}

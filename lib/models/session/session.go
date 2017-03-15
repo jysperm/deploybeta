@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	etcd "github.com/coreos/etcd/clientv3"
+	etcdv3 "github.com/coreos/etcd/clientv3"
 
+	"github.com/jysperm/deploying/lib/etcd"
 	accountModel "github.com/jysperm/deploying/lib/models/account"
-	"github.com/jysperm/deploying/lib/services"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -36,9 +36,9 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 		return nil, err
 	}
 
-	resp, err := services.EtcdClient.Txn(context.Background()).
-		If(etcd.CreateRevision(sessionKey)).
-		Then(etcd.OpPut(sessionKey, string(jsonBytes))).
+	resp, err := etcd.Client.Txn(context.Background()).
+		If(etcdv3.CreateRevision(sessionKey)).
+		Then(etcdv3.OpPut(sessionKey, string(jsonBytes))).
 		Commit()
 
 	if err != nil {
@@ -55,7 +55,7 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 func FindByToken(token string) (*Session, error) {
 	sessionKey := fmt.Sprint("/sessions/", token)
 
-	resp, err := services.EtcdClient.Get(context.Background(), sessionKey)
+	resp, err := etcd.Client.Get(context.Background(), sessionKey)
 
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func FindByToken(token string) (*Session, error) {
 func DeleteByToken(token string) error {
 	sessionKey := fmt.Sprint("/sessions/", token)
 
-	_, err := services.EtcdClient.Delete(context.Background(), sessionKey)
+	_, err := etcd.Client.Delete(context.Background(), sessionKey)
 
 	return err
 }

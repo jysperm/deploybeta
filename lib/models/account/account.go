@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/jysperm/deploying/lib/etcd"
+
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
-
-	"github.com/jysperm/deploying/lib/services"
 )
 
 var ErrInvalidUsername = errors.New("invalid username")
@@ -39,7 +39,7 @@ func Register(account *Account, password string) error {
 
 	accountKey := fmt.Sprint("/accounts/", account.Username)
 
-	tran := services.NewEtcdTransaction()
+	tran := etcd.NewEtcdTransaction()
 
 	tran.CreateJSON(accountKey, account)
 
@@ -59,7 +59,7 @@ func Register(account *Account, password string) error {
 func FindByName(username string) (*Account, error) {
 	accountKey := fmt.Sprint("/accounts/", username)
 
-	resp, err := services.EtcdClient.Get(context.Background(), accountKey)
+	resp, err := etcd.Client.Get(context.Background(), accountKey)
 
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func FindByName(username string) (*Account, error) {
 func DeleteByName(username string) error {
 	accountKey := fmt.Sprint("/accounts/", username)
 
-	_, err := services.EtcdClient.Delete(context.Background(), accountKey)
+	_, err := etcd.Client.Delete(context.Background(), accountKey)
 
 	return err
 }

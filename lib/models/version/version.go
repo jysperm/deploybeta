@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/jysperm/deploying/lib/etcd"
 	appModel "github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/services"
 	"github.com/jysperm/deploying/lib/services/builder"
 )
 
@@ -31,7 +31,7 @@ func CreateVersion(app *appModel.Application) (Version, error) {
 		return Version{}, err
 	}
 
-	if _, err := services.EtcdClient.Put(context.Background(), versionKey, shasum); err != nil {
+	if _, err := etcd.Client.Put(context.Background(), versionKey, shasum); err != nil {
 		return Version{}, err
 	}
 
@@ -41,7 +41,7 @@ func CreateVersion(app *appModel.Application) (Version, error) {
 func DeleteVersion(app appModel.Application, version string) error {
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
 
-	if _, err := services.EtcdClient.Delete(context.Background(), versionKey); err != nil {
+	if _, err := etcd.Client.Delete(context.Background(), versionKey); err != nil {
 		return err
 	}
 

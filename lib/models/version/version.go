@@ -42,7 +42,7 @@ func CreateVersion(app *appModel.Application) (*Version, error) {
 		return nil, err
 	}
 
-	return &Version{Shasum: shasum, Tag: version}, nil
+	return &newVersion, nil
 }
 
 func DeleteVersion(app appModel.Application, version string) error {
@@ -55,8 +55,8 @@ func DeleteVersion(app appModel.Application, version string) error {
 	return nil
 }
 
-func LookupVersion(app appModel.Application, version string) (*Version, error) {
-	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
+func FindByTag(app appModel.Application, tag string) (*Version, error) {
+	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
 
 	resp, err := services.EtcdClient.Get(context.Background(), versionKey)
 	if err != nil {
@@ -64,6 +64,7 @@ func LookupVersion(app appModel.Application, version string) (*Version, error) {
 	}
 
 	var v Version
+	fmt.Println(string(resp.Kvs[0].Value))
 	if err := json.Unmarshal(resp.Kvs[0].Value, &v); err != nil {
 		return nil, err
 	}
@@ -72,5 +73,5 @@ func LookupVersion(app appModel.Application, version string) (*Version, error) {
 }
 func generateTag() string {
 	now := time.Now()
-	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	return fmt.Sprintf("%d%d%d%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 }

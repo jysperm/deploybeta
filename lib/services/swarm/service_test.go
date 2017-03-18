@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"fmt"
 	"testing"
 
 	appModel "github.com/jysperm/deploying/lib/models/app"
@@ -22,14 +23,21 @@ func init() {
 	}
 }
 
-func TestUpdateService(t *testing.T) {
+func TestCreateService(t *testing.T) {
 	if err := UpdateService(seedApp); err != nil {
 		t.Error(err)
 	}
 }
 
-func TestRemoveService(t *testing.T) {
-	if err := RemoveService(seedApp); err != nil {
+func TestUpdateService(t *testing.T) {
+	seedApp.GitRepository = "https://github.com/jysperm/deploying-samples"
+	imageVersion, err := versionModel.CreateVersion(&seedApp)
+	if err != nil {
+		t.Error(err)
+	}
+	seedApp.Version = imageVersion.Tag
+	fmt.Println(seedApp)
+	if err := UpdateService(seedApp); err != nil {
 		t.Error(err)
 	}
 }

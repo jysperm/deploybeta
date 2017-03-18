@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 
 	"github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/models/version"
 	"github.com/jysperm/deploying/lib/services"
 	"golang.org/x/net/context"
 )
@@ -33,22 +33,22 @@ func init() {
 //UpdateService will update or create a app
 func UpdateService(app app.Application) error {
 	var create bool
+	var err error
 	serviceID, err := extractServiceID(app.Name)
 	if err != nil && err.Error() == "Not found service" {
 		create = true
 	} else {
 		create = false
 	}
-	v, err := version.LookupVersion(app, app.Version)
-	if err != nil {
+	if err != nil && err.Error() != "Not found service" {
 		return err
 	}
 
 	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
-	image := fmt.Sprintf("%s:%s@sha256:%s", app.Name, app.Version, v.Shasum)
+	image := fmt.Sprintf("%s:%s", app.Name, app.Version)
 	containerSpec := swarm.ContainerSpec{Image: image}
-	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec}
+	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec, ForceUpdate: 1}
 	replicatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
 	serviceMode := swarm.ServiceMode{Replicated: &replicatedService}
 	portConfig := swarm.PortConfig{
@@ -72,24 +72,16 @@ func UpdateService(app app.Application) error {
 		if err != nil {
 			return err
 		}
-		upstreamConfig.Port, err = extractPort(serviceResponse.ID)
-		if err != nil {
-			return err
-		}
+		serviceID = serviceResponse.ID
 	} else {
-		serviceID, err = extractServiceID(app.Name)
-		if err != nil {
+		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, swarm.Version{}, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
 			return err
 		}
-		_, err = swarmClient.ServiceUpdate(context.Background(), serviceID, swarm.Version{}, serviceSpec, types.ServiceUpdateOptions{})
-		if err != nil {
-			return err
-		}
+	}
 
-		upstreamConfig.Port, err = extractPort(serviceID)
-		if err != nil {
-			return err
-		}
+	upstreamConfig.Port, err = extractPort(serviceID)
+	if err != nil {
+		return err
 	}
 
 	upstream, err := json.Marshal([]UpstreamConfig{upstreamConfig})
@@ -124,14 +116,19 @@ func RemoveService(app app.Application) error {
 
 func extractServiceID(name string) (string, error) {
 	var serviceID string
-	services, err := swarmClient.ServiceList(context.Background(), types.ServiceListOptions{})
+	query := filters.NewArgs()
+	query.Add("name", name)
+	listOpts := types.ServiceListOptions{
+		Filters: query,
+	}
+	services, err := swarmClient.ServiceList(context.Background(), listOpts)
 	if err != nil {
 		return "", err
 	}
-
 	for _, i := range services {
 		if i.Spec.Annotations.Name == name {
 			serviceID = i.ID
+			break
 		}
 	}
 	if serviceID == "" {

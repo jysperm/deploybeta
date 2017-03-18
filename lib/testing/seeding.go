@@ -40,7 +40,7 @@ func SeedApp(gitRepository string) appModel.Application {
 	app := appModel.Application{
 		Name:          strings.ToLower(utils.RandomString(10)),
 		GitRepository: gitRepository,
-		Instances:     1,
+		Instances:     3,
 	}
 
 	if err := appModel.CreateApp(&app); err != nil {

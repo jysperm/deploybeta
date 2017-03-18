@@ -1,4 +1,4 @@
-package services
+package etcd
 
 import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
@@ -10,12 +10,12 @@ var etcdConfig = etcdv3.Config{
 	Endpoints: config.EtcdEndpoints,
 }
 
-var EtcdClient *etcdv3.Client
+var Client *etcdv3.Client
 
 func init() {
 	var err error
 
-	EtcdClient, err = etcdv3.New(etcdConfig)
+	Client, err = etcdv3.New(etcdConfig)
 
 	if err != nil {
 		panic(err)

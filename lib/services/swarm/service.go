@@ -10,8 +10,8 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/jysperm/deploying/lib/models/app"
+	"github.com/jysperm/deploying/lib/models/version"
 	"github.com/jysperm/deploying/lib/services"
-
 	"golang.org/x/net/context"
 )
 
@@ -39,9 +39,14 @@ func UpdateService(app app.Application) error {
 	} else {
 		create = false
 	}
+	v, err := version.LookupVersion(app, app.Version)
+	if err != nil {
+		return err
+	}
+
 	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
-	image := fmt.Sprintf("%s:%s", app.Name, app.Version)
+	image := fmt.Sprintf("%s:%s@sha256:%s", app.Name, app.Version, v.Shasum)
 	containerSpec := swarm.ContainerSpec{Image: image}
 	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec}
 	replicatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
@@ -136,10 +141,18 @@ func extractServiceID(name string) (string, error) {
 }
 
 func extractPort(serviceID string) (uint32, error) {
-	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
-	if err != nil {
-		return 0, nil
+	var srv swarm.Service
+	var err error
+	var portConfig swarm.PortConfig
+	for {
+		srv, _, err = swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
+		if err != nil {
+			return 0, err
+		}
+		if len(srv.Endpoint.Ports) != 0 {
+			portConfig = srv.Endpoint.Ports[0]
+			break
+		}
 	}
-	portConfig := service.Endpoint.Ports[0]
 	return portConfig.PublishedPort, nil
 }

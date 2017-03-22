@@ -1,7 +1,6 @@
 package swarm
 
 import (
-	"fmt"
 	"testing"
 
 	appModel "github.com/jysperm/deploying/lib/models/app"
@@ -10,13 +9,13 @@ import (
 )
 
 var seedApp appModel.Application
-var imageVersion *versionModel.Version
+var imageVersion versionModel.Version
 var shasum string
 
 func init() {
 	var err error
-	seedApp = SeedApp("https://github.com/mason96112569/docker-test.git")
-	imageVersion, err = versionModel.CreateVersion(&seedApp)
+	seedApp = SeedApp("https://github.com/mason96112569/docker-test")
+	imageVersion, err = versionModel.CreateVersion(&seedApp, "")
 	seedApp.Version = imageVersion.Tag
 	if err != nil {
 		panic(err)
@@ -31,13 +30,18 @@ func TestCreateService(t *testing.T) {
 
 func TestUpdateService(t *testing.T) {
 	seedApp.GitRepository = "https://github.com/jysperm/deploying-samples"
-	imageVersion, err := versionModel.CreateVersion(&seedApp)
+	imageVersion, err := versionModel.CreateVersion(&seedApp, "")
 	if err != nil {
 		t.Error(err)
 	}
 	seedApp.Version = imageVersion.Tag
-	fmt.Println(seedApp)
 	if err := UpdateService(seedApp); err != nil {
-		t.Error(err)
+		panic(err)
+	}
+}
+
+func TestRemoveService(t *testing.T) {
+	if err := RemoveService(seedApp); err != nil {
+		panic(err)
 	}
 }

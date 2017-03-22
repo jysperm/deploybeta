@@ -11,18 +11,27 @@ import (
 
 	"github.com/jysperm/deploying/lib/etcd"
 	appModel "github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/services/"
 	"github.com/jysperm/deploying/lib/services/builder"
 )
 
+const DefaultRegistry = "localhost:5000"
+
 type Version struct {
-	Shasum string `json:"shasum"`
-	Tag    string `json:"tag"`
+	Shasum   string `json:"shasum"`
+	Tag      string `json:"tag"`
+	Registry string `json:"registry"`
 }
 
-func CreateVersion(app *appModel.Application) (*Version, error) {
+func CreateVersion(app *appModel.Application, registry string) (Version, error) {
 	version := generateTag()
-	nameVersion := fmt.Sprintf("%s:%s", app.Name, version)
+
+	var nameVersion string
+	var newVersion Version
+	if registry == "" {
+		nameVersion = fmt.Sprintf("%s/%s:%s", DefaultRegistry, app.Name, version)
+	} else {
+		nameVersion = fmt.Sprintf("%s/%s:%s", registry, app.Name, version)
+	}
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
 
 	buildOpts := types.ImageBuildOptions{
@@ -30,19 +39,30 @@ func CreateVersion(app *appModel.Application) (*Version, error) {
 	}
 	shasum, err := builder.BuildImage(buildOpts, app.GitRepository)
 	if err != nil {
-		return nil, err
+		return Version{}, err
 	}
 
-	newVersion := Version{Shasum: shasum, Tag: version}
+	if err := builder.PushImage(nameVersion); err != nil {
+		return Version{}, err
+	}
+
+	newVersion.Shasum = shasum
+	newVersion.Tag = version
+	if registry == "" {
+		newVersion.Registry = DefaultRegistry
+	} else {
+		newVersion.Registry = registry
+	}
+
 	jsonVersion, err := json.Marshal(newVersion)
 	if err != nil {
-		return nil, err
+		return Version{}, err
 	}
-	if _, err := services.EtcdClient.Put(context.Background(), versionKey, string(jsonVersion)); err != nil {
-		return nil, err
+	if _, err := etcd.Client.Put(context.Background(), versionKey, string(jsonVersion)); err != nil {
+		return Version{}, err
 	}
 
-	return &newVersion, nil
+	return newVersion, nil
 }
 
 func DeleteVersion(app appModel.Application, version string) error {
@@ -58,19 +78,19 @@ func DeleteVersion(app appModel.Application, version string) error {
 func FindByTag(app appModel.Application, tag string) (*Version, error) {
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
 
-	resp, err := services.EtcdClient.Get(context.Background(), versionKey)
+	resp, err := etcd.Client.Get(context.Background(), versionKey)
 	if err != nil {
 		return nil, err
 	}
 
 	var v Version
-	fmt.Println(string(resp.Kvs[0].Value))
 	if err := json.Unmarshal(resp.Kvs[0].Value, &v); err != nil {
 		return nil, err
 	}
 
 	return &v, nil
 }
+
 func generateTag() string {
 	now := time.Now()
 	return fmt.Sprintf("%d%d%d%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())

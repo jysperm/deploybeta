@@ -21,7 +21,7 @@ func CreateImage(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, errors.New("Not found Application"))
 	}
 
-	version, err := versionModel.CreateVersion(app)
+	version, err := versionModel.CreateVersion(app, "")
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

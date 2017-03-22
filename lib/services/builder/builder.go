@@ -15,6 +15,16 @@ import (
 	"golang.org/x/net/context"
 )
 
+var swarmClient *client.Client
+
+func init() {
+	var err error
+	swarmClient, err = client.NewEnvClient()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func cloneRepository(url string) (string, error) {
 	path, err := gitutils.Clone(url)
 	if err != nil {
@@ -73,6 +83,44 @@ func extractShasum(r io.ReadCloser) (string, error) {
 	return shasum, nil
 }
 
+func PushImage(image string) error {
+	swarmClient, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	if _, err := swarmClient.ImagePush(context.Background(), image, types.ImagePushOptions{All: true, RegistryAuth: "123"}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func PullImage(image string) error {
+	swarmClient, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	if _, err := swarmClient.ImagePull(context.Background(), image, types.ImagePullOptions{All: true, RegistryAuth: "123"}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func LookupRepoTag(name string, id string) (string, error) {
+	var tag string
+	inspect, _, err := swarmClient.ImageInspectWithRaw(context.Background(), id)
+	if err != nil {
+		return "", err
+	}
+
+	for _, i := range inspect.RepoTags {
+		if strings.Contains(i, name) {
+			tag = i
+			break
+		}
+	}
+	return tag, nil
+}
+
 //BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
 func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 	if opts.Dockerfile == "" {
@@ -82,13 +130,6 @@ func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 	opts.Remove = true
 	opts.SuppressOutput = true
 	opts.Isolation = ""
-
-	client, err := client.NewEnvClient()
-	if err != nil {
-		return "", err
-	}
-
-	ctx := context.Background()
 
 	dirPath, err := cloneRepository(url)
 	if err != nil {
@@ -102,7 +143,7 @@ func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 	defer buildCtx.Close()
 	defer os.RemoveAll(dirPath)
 
-	response, err := client.ImageBuild(ctx, buildCtx, opts)
+	response, err := swarmClient.ImageBuild(context.Background(), buildCtx, opts)
 	if err != nil {
 		return "", err
 	}

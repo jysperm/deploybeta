@@ -10,8 +10,10 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 
+	"github.com/jysperm/deploying/lib/etcd"
 	"github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/services"
+	"github.com/jysperm/deploying/lib/models/version"
+	"github.com/jysperm/deploying/lib/services/builder"
 	"golang.org/x/net/context"
 )
 
@@ -44,11 +46,20 @@ func UpdateService(app app.Application) error {
 		return err
 	}
 
+	currentVersion, err := version.FindByTag(app, app.Version)
+	if err != nil {
+		return err
+	}
+
+	repoTag, err := builder.LookupRepoTag(app.Name, currentVersion.Shasum)
+	if err != nil {
+		return err
+	}
+
 	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
-	image := fmt.Sprintf("%s:%s", app.Name, app.Version)
-	containerSpec := swarm.ContainerSpec{Image: image}
-	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec, ForceUpdate: 1}
+	containerSpec := swarm.ContainerSpec{Image: repoTag}
+	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec}
 	replicatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
 	serviceMode := swarm.ServiceMode{Replicated: &replicatedService}
 	portConfig := swarm.PortConfig{
@@ -74,9 +85,15 @@ func UpdateService(app app.Application) error {
 		}
 		serviceID = serviceResponse.ID
 	} else {
-		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, swarm.Version{}, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
+		serviceIndex, err := extractServiceIndex(serviceID)
+		if err != nil {
 			return err
 		}
+
+		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, serviceIndex, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
+			return err
+		}
+
 	}
 
 	upstreamConfig.Port, err = extractPort(serviceID)
@@ -89,7 +106,7 @@ func UpdateService(app app.Application) error {
 		return err
 	}
 	upstreamKey := fmt.Sprintf("/upstream/%s", app.Name)
-	if _, err := services.EtcdClient.Put(context.Background(), upstreamKey, string(upstream)); err != nil {
+	if _, err := etcd.Client.Put(context.Background(), upstreamKey, string(upstream)); err != nil {
 		return err
 	}
 
@@ -107,7 +124,7 @@ func RemoveService(app app.Application) error {
 	}
 
 	upstreamKey := fmt.Sprintf("/upstream/%s", app.Name)
-	if _, err := services.EtcdClient.Delete(context.Background(), upstreamKey); err != nil {
+	if _, err := etcd.Client.Delete(context.Background(), upstreamKey); err != nil {
 		return err
 	}
 
@@ -152,4 +169,12 @@ func extractPort(serviceID string) (uint32, error) {
 		}
 	}
 	return portConfig.PublishedPort, nil
+}
+
+func extractServiceIndex(serviceID string) (swarm.Version, error) {
+	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
+	if err != nil {
+		return swarm.Version{}, err
+	}
+	return service.Meta.Version, nil
 }

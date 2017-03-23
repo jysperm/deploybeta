@@ -25,7 +25,7 @@ gulp.task('frontend-libs', () => {
 gulp.task('frontend-components', () => {
   return gulp.src('components/*.jsx')
     .pipe(babel({
-      presets: ['es2015'],
+      presets: ['es2015', 'stage-0'],
       plugins: ['transform-react-jsx']
     }))
     .pipe(gulp.dest('public/scripts/components'));

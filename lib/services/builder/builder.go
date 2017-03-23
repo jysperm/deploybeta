@@ -84,22 +84,7 @@ func extractShasum(r io.ReadCloser) (string, error) {
 }
 
 func PushImage(image string) error {
-	swarmClient, err := client.NewEnvClient()
-	if err != nil {
-		return err
-	}
 	if _, err := swarmClient.ImagePush(context.Background(), image, types.ImagePushOptions{All: true, RegistryAuth: "123"}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func PullImage(image string) error {
-	swarmClient, err := client.NewEnvClient()
-	if err != nil {
-		return err
-	}
-	if _, err := swarmClient.ImagePull(context.Background(), image, types.ImagePullOptions{All: true, RegistryAuth: "123"}); err != nil {
 		return err
 	}
 	return nil

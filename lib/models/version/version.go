@@ -93,5 +93,5 @@ func FindByTag(app appModel.Application, tag string) (*Version, error) {
 
 func generateTag() string {
 	now := time.Now()
-	return fmt.Sprintf("%d%d%d%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 }

@@ -85,12 +85,12 @@ func UpdateService(app app.Application) error {
 		}
 		serviceID = serviceResponse.ID
 	} else {
-		serviceIndex, err := extractServiceIndex(serviceID)
+		internalVersion, err := extractInternalVersion(serviceID)
 		if err != nil {
 			return err
 		}
 
-		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, serviceIndex, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
+		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, internalVersion, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
 			return err
 		}
 
@@ -171,7 +171,7 @@ func extractPort(serviceID string) (uint32, error) {
 	return portConfig.PublishedPort, nil
 }
 
-func extractServiceIndex(serviceID string) (swarm.Version, error) {
+func extractInternalVersion(serviceID string) (swarm.Version, error) {
 	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
 	if err != nil {
 		return swarm.Version{}, err

@@ -47,11 +47,7 @@ func CreateVersion(app *appModel.Application, registry string) (Version, error) 
 
 	newVersion.Shasum = shasum
 	newVersion.Tag = version
-	if registry == "" {
-		newVersion.Registry = DefaultRegistry
-	} else {
-		newVersion.Registry = registry
-	}
+	newVersion.Registry = registry
 
 	jsonVersion, err := json.Marshal(newVersion)
 	if err != nil {

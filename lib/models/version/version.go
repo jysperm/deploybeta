@@ -9,9 +9,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/jysperm/deploying/lib/builder"
 	"github.com/jysperm/deploying/lib/etcd"
 	appModel "github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/services/builder"
 )
 
 const DefaultRegistry = "localhost:5000"

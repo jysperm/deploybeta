@@ -1,6 +1,7 @@
 package version
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,14 +14,23 @@ import (
 	"github.com/jysperm/deploying/lib/services/builder"
 )
 
+const DefaultRegistry = "localhost:5000"
+
 type Version struct {
-	Shasum string `json:"shasum"`
-	Tag    string `json:"tag"`
+	Shasum   string `json:"shasum"`
+	Tag      string `json:"tag"`
+	Registry string `json:"registry"`
 }
 
-func CreateVersion(app *appModel.Application) (Version, error) {
+func CreateVersion(app *appModel.Application, registry string) (Version, error) {
 	version := generateTag()
-	nameVersion := fmt.Sprintf("%s:%s", app.Name, version)
+
+	var nameVersion string
+	var newVersion Version
+	if registry == "" {
+		registry = DefaultRegistry
+	}
+	nameVersion = fmt.Sprintf("%s/%s:%s", registry, app.Name, version)
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
 
 	buildOpts := types.ImageBuildOptions{
@@ -31,11 +41,23 @@ func CreateVersion(app *appModel.Application) (Version, error) {
 		return Version{}, err
 	}
 
-	if _, err := etcd.Client.Put(context.Background(), versionKey, shasum); err != nil {
+	if err := builder.PushImage(nameVersion); err != nil {
 		return Version{}, err
 	}
 
-	return Version{Shasum: shasum, Tag: version}, nil
+	newVersion.Shasum = shasum
+	newVersion.Tag = version
+	newVersion.Registry = registry
+
+	jsonVersion, err := json.Marshal(newVersion)
+	if err != nil {
+		return Version{}, err
+	}
+	if _, err := etcd.Client.Put(context.Background(), versionKey, string(jsonVersion)); err != nil {
+		return Version{}, err
+	}
+
+	return newVersion, nil
 }
 
 func DeleteVersion(app appModel.Application, version string) error {
@@ -46,6 +68,22 @@ func DeleteVersion(app appModel.Application, version string) error {
 	}
 
 	return nil
+}
+
+func FindByTag(app appModel.Application, tag string) (*Version, error) {
+	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
+
+	resp, err := etcd.Client.Get(context.Background(), versionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var v Version
+	if err := json.Unmarshal(resp.Kvs[0].Value, &v); err != nil {
+		return nil, err
+	}
+
+	return &v, nil
 }
 
 func generateTag() string {

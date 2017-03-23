@@ -10,10 +10,10 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 
+	"github.com/jysperm/deploying/lib/builder"
 	"github.com/jysperm/deploying/lib/etcd"
 	"github.com/jysperm/deploying/lib/models/app"
 	"github.com/jysperm/deploying/lib/models/version"
-	"github.com/jysperm/deploying/lib/services/builder"
 	"golang.org/x/net/context"
 )
 

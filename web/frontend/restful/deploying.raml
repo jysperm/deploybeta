@@ -38,11 +38,11 @@ types:
       instances: number
       version?: string
 
-  image:
+  version:
     properties:
+      registry: string
       shasum: string
       tag: string
-
 
 resourceTypes:
   Account:
@@ -115,12 +115,12 @@ resourceTypes:
             type: application
         409:
 
-  Images:
+  Versions:
     post:
       responses:
         201:
           body:
-            type: image
+            type: version
 
 /accounts:
   type: Accounts
@@ -139,5 +139,5 @@ resourceTypes:
   /{name}:
     type: Application
 
-    /images:
-      type: Images
+    /versions:
+      type: Versions

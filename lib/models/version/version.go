@@ -28,10 +28,9 @@ func CreateVersion(app *appModel.Application, registry string) (Version, error) 
 	var nameVersion string
 	var newVersion Version
 	if registry == "" {
-		nameVersion = fmt.Sprintf("%s/%s:%s", DefaultRegistry, app.Name, version)
-	} else {
-		nameVersion = fmt.Sprintf("%s/%s:%s", registry, app.Name, version)
+		registry = DefaultRegistry
 	}
+	nameVersion = fmt.Sprintf("%s/%s:%s", registry, app.Name, version)
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
 
 	buildOpts := types.ImageBuildOptions{

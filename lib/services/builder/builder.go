@@ -15,6 +15,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+const RegistryAuthParam = "deploying"
+
 var swarmClient *client.Client
 
 func init() {
@@ -84,7 +86,7 @@ func extractShasum(r io.ReadCloser) (string, error) {
 }
 
 func PushImage(image string) error {
-	if _, err := swarmClient.ImagePush(context.Background(), image, types.ImagePushOptions{All: true, RegistryAuth: "123"}); err != nil {
+	if _, err := swarmClient.ImagePush(context.Background(), image, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam}); err != nil {
 		return err
 	}
 	return nil

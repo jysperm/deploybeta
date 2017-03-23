@@ -20,6 +20,8 @@ types:
 
   email: string
 
+  versionTag: string
+
   account:
     properties:
       username: username
@@ -34,15 +36,16 @@ types:
     properties:
       name: string
       owner: username
-      gitRepository?: string
+      gitRepository: string
       instances: number
-      version?: string
+      version: version
+      versions?: version[]
 
   version:
     properties:
       registry: string
       shasum: string
-      tag: string
+      tag: versionTag
 
 resourceTypes:
   Account:
@@ -115,8 +118,30 @@ resourceTypes:
             type: application
         409:
 
+  Version:
+    post:
+      body:
+        properties:
+          gitTag: string
+      responses:
+        201:
+          body:
+            type: version
+
+    put:
+      body:
+        properties:
+          tag: versionTag
+      responses:
+        201:
+          body:
+            type: version
+
   Versions:
     post:
+      body:
+        properties:
+          gitTag: string
       responses:
         201:
           body:
@@ -128,9 +153,9 @@ resourceTypes:
 /sessions:
   type: Sessions
 
-/session/account:
-  securedBy: [ sessionToken ]
-  type: Account
+  /account:
+    securedBy: [ sessionToken ]
+    type: Account
 
 /apps:
   securedBy: [ sessionToken ]
@@ -138,6 +163,9 @@ resourceTypes:
 
   /{name}:
     type: Application
+
+    /version:
+      type: Version
 
     /versions:
       type: Versions

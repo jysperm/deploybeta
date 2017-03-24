@@ -10,8 +10,7 @@ import (
 func TestBuildImage(t *testing.T) {
 
 	opts := types.ImageBuildOptions{
-		Tags:       []string{"docker-test"},
-		Dockerfile: "Dockerfile",
+		Tags: []string{"docker-test"},
 	}
 
 	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "")
@@ -23,8 +22,7 @@ func TestBuildImage(t *testing.T) {
 
 func TestBuildFailure(t *testing.T) {
 	opts := types.ImageBuildOptions{
-		Tags:       []string{"failure"},
-		Dockerfile: "Dockerfile",
+		Tags: []string{"failure"},
 	}
 
 	_, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "failure")

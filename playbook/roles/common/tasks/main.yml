@@ -8,3 +8,8 @@
     - htop
     - software-properties-common
     - vim
+
+- name: ensures directory exists
+  file:
+    path: '/root/downloads'
+    state: 'directory'

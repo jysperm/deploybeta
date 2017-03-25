@@ -1,0 +1,10 @@
+---
+- name: install apt packages
+  apt: name={{item}}
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - htop
+    - software-properties-common
+    - vim

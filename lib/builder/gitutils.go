@@ -4,12 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"regexp"
 
 	"github.com/docker/docker/pkg/urlutil"
 )
 
-func Clone(remoteURL string, param string) (string, error) {
+var validCommitHash = regexp.MustCompile("^[0-9a-f]{7,40}$")
+
+func Clone(remoteURL string, gitTag string) (string, error) {
 	if !urlutil.IsGitURL(remoteURL) {
 		return "", errors.New("Not a valid git URL")
 	}
@@ -19,7 +23,24 @@ func Clone(remoteURL string, param string) (string, error) {
 		return "", err
 	}
 
-	if output, err := git("clone", remoteURL, "--branch", param, root); err != nil {
+	if gitTag == "" {
+		gitTag = "master"
+	}
+
+	if !validCommitHash.MatchString(gitTag) {
+		if output, err := git("clone", remoteURL, "--branch", gitTag, root); err != nil {
+			return "", fmt.Errorf("Error trying to use git: %s (%s) ", err, output)
+		}
+		return root, nil
+	}
+
+	if output, err := git("clone", remoteURL, root); err != nil {
+		return "", fmt.Errorf("Error trying to use git: %s (%s) ", err, output)
+	}
+	if err := os.Chdir(root); err != nil {
+		return "", err
+	}
+	if output, err := git("checkout", gitTag); err != nil {
 		return "", fmt.Errorf("Error trying to use git: %s (%s) ", err, output)
 	}
 

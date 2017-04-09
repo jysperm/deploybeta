@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"regexp"
 
@@ -37,10 +36,7 @@ func Clone(remoteURL string, gitTag string) (string, error) {
 	if output, err := git("clone", remoteURL, root); err != nil {
 		return "", fmt.Errorf("Error trying to use git: %s (%s) ", err, output)
 	}
-	if err := os.Chdir(root); err != nil {
-		return "", err
-	}
-	if output, err := git("checkout", gitTag); err != nil {
+	if output, err := git("checkout", gitTag, "-C", root); err != nil {
 		return "", fmt.Errorf("Error trying to use git: %s (%s) ", err, output)
 	}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/docker/docker/pkg/gitutils"
 	"golang.org/x/net/context"
 )
 
@@ -27,8 +26,11 @@ func init() {
 	}
 }
 
-func cloneRepository(url string) (string, error) {
-	path, err := gitutils.Clone(url)
+func cloneRepository(url string, param string) (string, error) {
+	if param == "" {
+		param = "master"
+	}
+	path, err := Clone(url, param)
 	if err != nil {
 		return "", err
 	}
@@ -109,7 +111,7 @@ func LookupRepoTag(name string, id string) (string, error) {
 }
 
 //BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
-func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
+func BuildImage(opts types.ImageBuildOptions, url string, param string) (string, error) {
 	if opts.Dockerfile == "" {
 		opts.Dockerfile = "Dockerfile"
 	}
@@ -118,7 +120,7 @@ func BuildImage(opts types.ImageBuildOptions, url string) (string, error) {
 	opts.SuppressOutput = true
 	opts.Isolation = ""
 
-	dirPath, err := cloneRepository(url)
+	dirPath, err := cloneRepository(url, param)
 	if err != nil {
 		return "", err
 	}

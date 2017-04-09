@@ -33,7 +33,6 @@
     mode: '0700'
 
 - name: create systemd service
-  changed_when: 'True'
   template:
     src: 'etcd.service'
     dest: '/etc/systemd/system/etcd.service'

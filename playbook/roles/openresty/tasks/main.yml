@@ -20,8 +20,11 @@
 
 - name: ensures log directory exists
   file:
-    path: '/var/log/nginx'
+    path: '{{ item }}'
     state: 'directory'
+  with_items:
+    - '/var/log/nginx'
+    - '/etc/nginx/sites-enabled'
 
 - name: download openresty
   get_url:

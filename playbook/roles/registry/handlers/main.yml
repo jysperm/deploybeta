@@ -1,0 +1,6 @@
+---
+- name: restart openresty
+  service:
+    name: 'openresty'
+    state: 'restarted'
+    enabled: 'yes'

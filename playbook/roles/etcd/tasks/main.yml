@@ -1,0 +1,42 @@
+---
+- name: download etcd
+  get_url:
+    url: 'https://github.com/coreos/etcd/releases/download/v3.1.4/{{ etcd_release }}.tar.gz'
+    dest: '/root/downloads/{{ etcd_release }}.tar.gz'
+
+- name: unarchive etcd
+  unarchive:
+    src: '/root/downloads/{{ etcd_release }}.tar.gz'
+    dest: '/root/downloads'
+    remote_src: 'yes'
+
+- name: install etcd
+  copy:
+    src: '/root/downloads/{{ etcd_release }}/{{ item }}'
+    dest: '/usr/local/bin'
+    mode: '0755'
+    remote_src: 'yes'
+  with_items:
+    - etcd
+    - etcdctl
+
+- name: create etcd user
+  user:
+    name: 'etcd'
+
+- name: prepare data dir
+  file:
+    path: '/var/lib/etcd'
+    state: 'directory'
+    owner: 'etcd'
+    group: 'etcd'
+    mode: '0700'
+
+- name: create systemd service
+  template:
+    src: 'etcd.service'
+    dest: '/etc/systemd/system/etcd.service'
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart etcd

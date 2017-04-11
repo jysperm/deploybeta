@@ -1,0 +1,9 @@
+---
+- name: reload systemd
+  command: systemctl daemon-reload
+
+- name: restart openresty
+  service:
+    name: 'openresty'
+    state: 'restarted'
+    enabled: 'yes'

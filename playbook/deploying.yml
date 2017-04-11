@@ -1,0 +1,15 @@
+---
+- hosts: all
+  roles:
+    - common
+    - docker
+    - etcd
+    - openresty
+
+- hosts: all[0]
+  vars:
+    registry:
+      name: registry1
+      domain: registry1.dcloud.run
+  roles:
+    - registry

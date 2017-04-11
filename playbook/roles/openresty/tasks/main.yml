@@ -1,0 +1,80 @@
+---
+- name: install apt packages
+  apt: name={{item}}
+  with_items:
+    - build-essential
+    - libncurses5-dev
+    - libpcre3-dev
+    - libreadline-dev
+    - libssl-dev
+    - make
+    - perl
+    - python-pip
+
+- name: install ngxtop
+  pip: name=ngxtop
+
+- name: create www-data user
+  user:
+    name: 'www-data'
+
+- name: ensures log directory exists
+  file:
+    path: '{{ item }}'
+    state: 'directory'
+  with_items:
+    - '/var/log/nginx'
+    - '/etc/nginx/sites-enabled'
+
+- name: download openresty
+  get_url:
+    url: 'https://openresty.org/download/{{ openresty_release }}.tar.gz'
+    dest: '/root/downloads/{{ openresty_release }}.tar.gz'
+
+- name: unarchive openresty
+  unarchive:
+    src: '/root/downloads/{{ openresty_release }}.tar.gz'
+    dest: '/root/downloads'
+    remote_src: 'yes'
+
+- name: clone ngx_http_dyups_module
+  git:
+    repo: 'https://github.com/yzprofile/ngx_http_dyups_module.git'
+    dest: '/root/downloads/ngx_http_dyups_module'
+
+- name: clone lua-resty-http
+  git:
+    repo: 'https://github.com/pintsized/lua-resty-http.git'
+    dest: '/root/downloads/lua-resty-http'
+
+- name: configure openresty
+  command: './configure --add-module=../ngx_http_dyups_module --with-http_stub_status_module'
+  args:
+    chdir: '/root/downloads/{{ openresty_release }}'
+    creates: '/usr/local/openresty'
+
+- name: install openresty
+  command: 'make install'
+  args:
+    chdir: '/root/downloads/{{ openresty_release }}'
+    creates: '/usr/local/openresty'
+
+- name: upload configuration
+  copy:
+    src: '../openresty/{{ item }}'
+    dest: '/usr/local/openresty/nginx'
+  with_items:
+    - 'conf'
+    - 'lib'
+
+- name: install lua-resty-http
+  command: 'cp -r /root/downloads/lua-resty-http/lib/resty /usr/local/openresty/nginx/lib'
+
+- name: create systemd service
+  template:
+    src: 'openresty.service'
+    dest: '/etc/systemd/system/openresty.service'
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart openresty

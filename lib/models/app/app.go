@@ -117,6 +117,32 @@ func (app *Application) UpdateInstances(instances int) error {
 }
 
 func (app *Application) UpdateVersion(version string) error {
+	appKey := fmt.Sprint("/apps/", app.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(appKey, &Application{})
+
+	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
+		app := *watchedKeys[appKey].(*Application)
+
+		app.Version = version
+
+		tran.PutJSONOnSuccess(appKey, app)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	app.Version = version
+
 	return nil
 }
 

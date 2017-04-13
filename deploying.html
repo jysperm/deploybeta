@@ -1,0 +1,169 @@
+<!DOCTYPE HTML><html><head><title>Deploying API API documentation</title><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="generator" content="https://github.com/raml2html/raml2html 6.1.0"><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/styles/default.min.css"><script type="text/javascript" src="https://code.jquery.com/jquery-1.11.0.min.js"></script><script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script><script type="text/javascript">
+      $(document).ready(function() {
+        $('.page-header pre code, .top-resource-description pre code, .modal-body pre code').each(function(i, block) {
+          hljs.highlightBlock(block);
+        });
+
+        $('[data-toggle]').click(function() {
+          var selector = $(this).data('target') + ' pre code';
+          $(selector).each(function(i, block) {
+            hljs.highlightBlock(block);
+          });
+        });
+
+        // open modal on hashes like #_action_get
+        $(window).bind('hashchange', function(e) {
+          var anchor_id = document.location.hash.substr(1); //strip #
+          var element = $('#' + anchor_id);
+
+          // do we have such element + is it a modal?  --> show it
+          if (element.length && element.hasClass('modal')) {
+            element.modal('show');
+          }
+        });
+
+        // execute hashchange on first page load
+        $(window).trigger('hashchange');
+
+        // remove url fragment on modal hide
+        $('.modal').on('hidden.bs.modal', function() {
+          try {
+            if (history && history.replaceState) {
+                history.replaceState({}, '', '#');
+            }
+          } catch(e) {}
+        });
+      });
+    </script><style>
+      .hljs {
+        background: transparent;
+      }
+      .parent {
+        color: #999;
+      }
+      .list-group-item > .badge {
+        float: none;
+        margin-right: 6px;
+      }
+      .panel-title > .methods {
+        float: right;
+      }
+      .badge {
+        border-radius: 0;
+        text-transform: uppercase;
+        width: 70px;
+        font-weight: normal;
+        color: #f3f3f6;
+        line-height: normal;
+      }
+      .badge_get {
+        background-color: #63a8e2;
+      }
+      .badge_post {
+        background-color: #6cbd7d;
+      }
+      .badge_put {
+        background-color: #22bac4;
+      }
+      .badge_delete {
+        background-color: #d26460;
+      }
+      .badge_patch {
+        background-color: #ccc444;
+      }
+      .list-group, .panel-group {
+        margin-bottom: 0;
+      }
+      .panel-group .panel+.panel-white {
+        margin-top: 0;
+      }
+      .panel-group .panel-white {
+        border-bottom: 1px solid #F5F5F5;
+        border-radius: 0;
+      }
+      .panel-white:last-child {
+        border-bottom-color: white;
+        -webkit-box-shadow: none;
+        box-shadow: none;
+      }
+      .panel-white .panel-heading {
+        background: white;
+      }
+      .tab-pane ul {
+        padding-left: 2em;
+      }
+      .tab-pane h1 {
+        font-size: 1.3em;
+      }
+      .tab-pane h2 {
+        font-size: 1.2em;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #ddd;
+      }
+      .tab-pane h3 {
+        font-size: 1.1em;
+      }
+      .tab-content {
+        border-left: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        padding: 10px;
+      }
+      #sidebar {
+        margin-top: 30px;
+        padding-right: 5px;
+        overflow: auto;
+        height: 90%;
+      }
+      .top-resource-description {
+        border-bottom: 1px solid #ddd;
+        background: #fcfcfc;
+        padding: 15px 15px 0 15px;
+        margin: -15px -15px 10px -15px;
+      }
+      .resource-description {
+        border-bottom: 1px solid #fcfcfc;
+        background: #fcfcfc;
+        padding: 15px 15px 0 15px;
+        margin: -15px -15px 10px -15px;
+      }
+      .resource-description p:last-child {
+        margin: 0;
+      }
+      .list-group .badge {
+        float: left;
+      }
+      .method_description {
+        margin-left: 85px;
+      }
+      .method_description p:last-child {
+        margin: 0;
+      }
+      .list-group-item {
+        cursor: pointer;
+      }
+      .list-group-item:hover {
+        background-color: #f5f5f5;
+      }
+      pre code {
+        overflow: auto;
+        word-wrap: normal;
+        white-space: pre;
+      }
+      .items {
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 9.5px;
+        margin: 0 0 10px;
+        font-size: 13px;
+        line-height: 1.42857143;
+      }
+      .examples {
+        margin-left: 0.5em;
+      }
+      .resource-modal li > ul {
+        margin-bottom: 1em;
+      }
+    </style></head><body data-spy="scroll" data-target="#sidebar"><div class="container"><div class="row"><div class="col-md-9" role="main"><div class="page-header"><h1>Deploying API API documentation <small>version v1</small></h1><p>https://deploying.cloud</p></div><div class="panel panel-default"><div class="panel-heading"><h3 id="accounts" class="panel-title">/accounts</h3></div><div class="panel-body"><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_accounts"><span class="parent"></span>/accounts</a> <span class="methods"><a href="#accounts_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_accounts" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#accounts_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="accounts_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent"></span>/accounts</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#accounts_post_request" data-toggle="tab">Request</a></li><li><a href="#accounts_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="accounts_post_request"><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>username</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>password</strong>: <em>required (string)</em></li><li><strong>email</strong>: <em>required (string)</em></li></ul></div><div class="tab-pane" id="accounts_post_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>username</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>email</strong>: <em>required (string)</em></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul><h2>HTTP status code <a href="http://httpstatus.es/400" target="_blank">400</a></h2><h2>HTTP status code <a href="http://httpstatus.es/409" target="_blank">409</a></h2></div></div></div></div></div></div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><h3 id="sessions" class="panel-title">/sessions</h3></div><div class="panel-body"><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_sessions"><span class="parent"></span>/sessions</a> <span class="methods"><a href="#sessions_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_sessions" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#sessions_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="sessions_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent"></span>/sessions</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#sessions_post_request" data-toggle="tab">Request</a></li><li><a href="#sessions_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="sessions_post_request"><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>username</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>password</strong>: <em>required (string)</em></li></ul></div><div class="tab-pane" id="sessions_post_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>username</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>token</strong>: <em>required (string)</em></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul><h2>HTTP status code <a href="http://httpstatus.es/401" target="_blank">401</a></h2></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_sessions_account"><span class="parent">/sessions</span>/account</a> <span class="methods"><a href="#sessions_account_get"><span class="badge badge_get">get <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span></a></span></h4></div><div id="panel_sessions_account" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#sessions_account_get'" class="list-group-item"><span class="badge badge_get">get <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="sessions_account_get"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_get">get <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span> <span class="parent">/sessions</span>/account</h4></div><div class="modal-body"><div class="alert alert-warning"><span class="glyphicon glyphicon-lock" title="Authentication required"></span> Secured by <b>sessionToken</b></div><ul class="nav nav-tabs"><li class="active"><a href="#sessions_account_get_response" data-toggle="tab">Response</a></li><li><a href="#sessions_account_get_securedby" data-toggle="tab">Security</a></li></ul><div class="tab-content"><div class="tab-pane active" id="sessions_account_get_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>username</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>email</strong>: <em>required (string)</em></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul></div><div class="tab-pane" id="sessions_account_get_securedby"><h1>Secured by sessionToken</h1><h3>Headers</h3><ul><li><strong>Authorization</strong>: <em>required (string)</em></li></ul></div></div></div></div></div></div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><h3 id="apps" class="panel-title">/apps</h3></div><div class="panel-body"><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_apps"><span class="parent"></span>/apps</a> <span class="methods"><a href="#apps_get"><span class="badge badge_get">get <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span></a> <a href="#apps_post"><span class="badge badge_post">post <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span></a></span></h4></div><div id="panel_apps" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#apps_get'" class="list-group-item"><span class="badge badge_get">get <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span><div class="method_description"></div><div class="clearfix"></div></div><div onclick="window.location.href = '#apps_post'" class="list-group-item"><span class="badge badge_post">post <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps_get"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_get">get <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span> <span class="parent"></span>/apps</h4></div><div class="modal-body"><div class="alert alert-warning"><span class="glyphicon glyphicon-lock" title="Authentication required"></span> Secured by <b>sessionToken</b></div><ul class="nav nav-tabs"><li class="active"><a href="#apps_get_response" data-toggle="tab">Response</a></li><li><a href="#apps_get_securedby" data-toggle="tab">Security</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps_get_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: array of application</p><p><strong>Items</strong>: application</p><div class="items"><ul><li><strong>name</strong>: <em>required (string)</em></li><li><strong>owner</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>gitRepository</strong>: <em>required (string)</em></li><li><strong>instances</strong>: <em>required (number)</em></li><li><strong>version</strong>: <em>required (object)</em><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li></ul></li><li><strong>versions</strong>: <em>(array of version)</em><p><strong>Items</strong>: version</p><div class="items"><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li></ul></div></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul></div></div><div class="tab-pane" id="apps_get_securedby"><h1>Secured by sessionToken</h1><h3>Headers</h3><ul><li><strong>Authorization</strong>: <em>required (string)</em></li></ul></div></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post <span class="glyphicon glyphicon-lock" title="Authentication required"></span></span> <span class="parent"></span>/apps</h4></div><div class="modal-body"><div class="alert alert-warning"><span class="glyphicon glyphicon-lock" title="Authentication required"></span> Secured by <b>sessionToken</b></div><ul class="nav nav-tabs"><li class="active"><a href="#apps_post_request" data-toggle="tab">Request</a></li><li><a href="#apps_post_response" data-toggle="tab">Response</a></li><li><a href="#apps_post_securedby" data-toggle="tab">Security</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps_post_request"><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>name</strong>: <em>required (string)</em></li><li><strong>gitRepository</strong>: <em>(string)</em></li><li><strong>instances</strong>: <em>required (number)</em></li><li><strong>version</strong>: <em>(string)</em></li></ul></div><div class="tab-pane" id="apps_post_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>name</strong>: <em>required (string)</em></li><li><strong>owner</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>gitRepository</strong>: <em>required (string)</em></li><li><strong>instances</strong>: <em>required (number)</em></li><li><strong>version</strong>: <em>required (object)</em><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li></ul></li><li><strong>versions</strong>: <em>(array of version)</em><p><strong>Items</strong>: version</p><div class="items"><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li></ul></div></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul><h2>HTTP status code <a href="http://httpstatus.es/409" target="_blank">409</a></h2></div><div class="tab-pane" id="apps_post_securedby"><h1>Secured by sessionToken</h1><h3>Headers</h3><ul><li><strong>Authorization</strong>: <em>required (string)</em></li></ul></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_apps__name_"><span class="parent">/apps</span>/{name}</a> <span class="methods"><a href="#apps__name__patch"><span class="badge badge_patch">patch</span></a> <a href="#apps__name__delete"><span class="badge badge_delete">delete</span></a></span></h4></div><div id="panel_apps__name_" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#apps__name__patch'" class="list-group-item"><span class="badge badge_patch">patch</span><div class="method_description"></div><div class="clearfix"></div></div><div onclick="window.location.href = '#apps__name__delete'" class="list-group-item"><span class="badge badge_delete">delete</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps__name__patch"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_patch">patch</span> <span class="parent">/apps</span>/{name}</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#apps__name__patch_request" data-toggle="tab">Request</a></li><li><a href="#apps__name__patch_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps__name__patch_request"><h3>URI Parameters</h3><ul><li><strong>name</strong>: <em>required (string)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>gitRepository</strong>: <em>(string)</em></li><li><strong>instances</strong>: <em>(number)</em></li><li><strong>version</strong>: <em>(string)</em></li></ul></div><div class="tab-pane" id="apps__name__patch_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>name</strong>: <em>required (string)</em></li><li><strong>owner</strong>: <em>required (string - pattern: ^[A-Za-z0-9_-]+$)</em></li><li><strong>gitRepository</strong>: <em>required (string)</em></li><li><strong>instances</strong>: <em>required (number)</em></li><li><strong>version</strong>: <em>required (object)</em><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li></ul></li><li><strong>versions</strong>: <em>(array of version)</em><p><strong>Items</strong>: version</p><div class="items"><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li></ul></div></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul><h2>HTTP status code <a href="http://httpstatus.es/409" target="_blank">409</a></h2></div></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps__name__delete"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_delete">delete</span> <span class="parent">/apps</span>/{name}</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#apps__name__delete_request" data-toggle="tab">Request</a></li><li><a href="#apps__name__delete_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps__name__delete_request"><h3>URI Parameters</h3><ul><li><strong>name</strong>: <em>required (string)</em></li></ul></div><div class="tab-pane" id="apps__name__delete_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_apps__name__version"><span class="parent">/apps/{name}</span>/version</a> <span class="methods"><a href="#apps__name__version_post"><span class="badge badge_post">post</span></a> <a href="#apps__name__version_put"><span class="badge badge_put">put</span></a></span></h4></div><div id="panel_apps__name__version" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#apps__name__version_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div><div onclick="window.location.href = '#apps__name__version_put'" class="list-group-item"><span class="badge badge_put">put</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps__name__version_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/apps/{name}</span>/version</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#apps__name__version_post_request" data-toggle="tab">Request</a></li><li><a href="#apps__name__version_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps__name__version_post_request"><h3>URI Parameters</h3><ul><li><strong>name</strong>: <em>required (string)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>gitTag</strong>: <em>required (string)</em></li></ul></div><div class="tab-pane" id="apps__name__version_post_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul></div></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps__name__version_put"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_put">put</span> <span class="parent">/apps/{name}</span>/version</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#apps__name__version_put_request" data-toggle="tab">Request</a></li><li><a href="#apps__name__version_put_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps__name__version_put_request"><h3>URI Parameters</h3><ul><li><strong>name</strong>: <em>required (string)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>tag</strong>: <em>required (string)</em></li></ul></div><div class="tab-pane" id="apps__name__version_put_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_apps__name__versions"><span class="parent">/apps/{name}</span>/versions</a> <span class="methods"><a href="#apps__name__versions_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_apps__name__versions" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#apps__name__versions_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="apps__name__versions_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/apps/{name}</span>/versions</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#apps__name__versions_post_request" data-toggle="tab">Request</a></li><li><a href="#apps__name__versions_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="apps__name__versions_post_request"><h3>URI Parameters</h3><ul><li><strong>name</strong>: <em>required (string)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>gitTag</strong>: <em>required (string)</em></li></ul></div><div class="tab-pane" id="apps__name__versions_post_response"><h2>HTTP status code <a href="http://httpstatus.es/201" target="_blank">201</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/json</p><p><strong>Type</strong>: object</p><strong>Properties</strong><ul><li><strong>registry</strong>: <em>required (string)</em></li><li><strong>shasum</strong>: <em>required (string)</em></li><li><strong>tag</strong>: <em>required (string)</em></li><li><strong></strong>: <em>( - repeat: function () { return obj[val].apply(obj, arguments); })</em></li></ul></div></div></div></div></div></div></div></div></div></div></div><div class="col-md-3"><div id="sidebar" class="hidden-print affix" role="complementary"><ul class="nav nav-pills nav-stacked"><li><a href="#accounts">/accounts</a></li><li><a href="#sessions">/sessions</a></li><li><a href="#apps">/apps</a></li></ul></div></div></div></div></body></html>

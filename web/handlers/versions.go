@@ -56,7 +56,7 @@ func DeployVersion(ctx echo.Context) error {
 	if err := app.UpdateVersion(version.Tag); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
-
+	app.Version = version.Tag
 	if err := swarm.UpdateService(*app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -86,7 +86,7 @@ func CreateAndDeploy(ctx echo.Context) error {
 	if err := app.UpdateVersion(version.Tag); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
-
+	app.Version = version.Tag
 	if err := swarm.UpdateService(*app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

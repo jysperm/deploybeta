@@ -25,6 +25,7 @@
   with_items:
     - '/var/log/nginx'
     - '/etc/nginx/sites-enabled'
+    - '/var/www/html'
 
 - name: download openresty
   get_url:

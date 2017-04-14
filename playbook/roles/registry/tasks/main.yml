@@ -5,6 +5,10 @@
     state: 'directory'
     mode: '0700'
 
+- name: inspect registry service
+  command: 'docker service inspect {{registry.name}}'
+  register: registry_service
+
 - name: run registry service
   command: >
     docker service create
@@ -13,6 +17,7 @@
       --constraint 'node.hostname == {{ansible_hostname}}'
       --mount type=bind,source=/var/lib/{{registry.name}},destination=/var/lib/registry
         registry:2
+  when: registry_service.stdout.find('no such service') != -1
 
 - name: upload nginx configuration
   template:

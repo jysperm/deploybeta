@@ -3,4 +3,3 @@
   service:
     name: 'openresty'
     state: 'restarted'
-    enabled: 'yes'

@@ -47,10 +47,10 @@ func AppOwnerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		for _, app := range apps {
 			if app.Name == appName {
-				return next(ctx)
+				ctx.Set("app", app)
+				next(ctx)
 			}
 		}
-
 		return NewHTTPError(http.StatusBadRequest, errors.New("Not found application"))
 	}
 }

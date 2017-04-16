@@ -36,11 +36,12 @@ func SeedSession(account *accountModel.Account) sessionModel.Session {
 	return *session
 }
 
-func SeedApp(gitRepository string) appModel.Application {
+func SeedApp(gitRepository string, owner string) appModel.Application {
 	app := appModel.Application{
 		Name:          strings.ToLower(utils.RandomString(10)),
 		GitRepository: gitRepository,
 		Instances:     1,
+		Owner:         owner,
 	}
 
 	if err := appModel.CreateApp(&app); err != nil {

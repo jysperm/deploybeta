@@ -2,7 +2,9 @@ package tests
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
+	"os"
 	"testing"
 
 	accountModel "github.com/jysperm/deploying/lib/models/account"
@@ -16,12 +18,40 @@ import (
 var globalAccount accountModel.Account
 var globalSession sessionModel.Session
 var globalApp appModel.Application
-var globalVersion versionModel.Version
 
-func TestCreateVersion(t *testing.T) {
+func TestMain(m *testing.M) {
+	flag.Parse()
 	globalAccount, _ = SeedAccount()
 	globalSession = SeedSession(&globalAccount)
-	globalApp = SeedApp("https://github.com/jysperm/deploying-samples.git")
+	globalApp = SeedApp("https://github.com/jysperm/deploying-samples.git", globalAccount.Username)
+
+	exitVal := m.Run()
+
+	sessionModel.DeleteByToken(globalSession.Token)
+	accountModel.DeleteByName(globalAccount.Username)
+	swarm.RemoveService(globalApp)
+	os.Exit(exitVal)
+}
+
+func TestCreateVersion(t *testing.T) {
+	var version versionModel.Version
+	requestPath := fmt.Sprintf("/apps/%s/versions", globalApp.Name)
+	res, body, errs := Request("POST", requestPath).
+		Set("Authorization", globalSession.Token).
+		SendStruct(map[string]string{
+			"gitTag": "master",
+		}).EndBytes()
+	if res.StatusCode != 201 || len(errs) != 0 {
+		t.Error(errs)
+	}
+	if err := json.Unmarshal(body, &version); err != nil {
+		t.Error(err)
+	}
+	t.Log("Created version: ", version)
+}
+
+func TestDeployVersion(t *testing.T) {
+	var version versionModel.Version
 
 	requestPath := fmt.Sprintf("/apps/%s/versions", globalApp.Name)
 	res, body, errs := Request("POST", requestPath).
@@ -32,51 +62,39 @@ func TestCreateVersion(t *testing.T) {
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
 	}
-	if err := json.Unmarshal(body, &globalVersion); err != nil {
+
+	if err := json.Unmarshal(body, &version); err != nil {
 		t.Error(err)
 	}
-}
 
-func TestDeployVersion(t *testing.T) {
 	deployPath := fmt.Sprintf("/apps/%s/version", globalApp.Name)
-	res, _, errs := Request("PUT", deployPath).
+	res, _, errs = Request("PUT", deployPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"tag": globalVersion.Tag,
+			"tag": version.Tag,
 		}).EndBytes()
-	if res.StatusCode != 201 || len(errs) != 0 {
+	if res.StatusCode != 200 || len(errs) != 0 {
 		t.Error(errs)
 	}
 
-	accountModel.DeleteByName(globalSession.Username)
-	sessionModel.DeleteByToken(globalSession.Token)
-	versionModel.DeleteVersion(globalApp, globalVersion.Tag)
-	appModel.DeleteByName(globalApp.Name)
-	swarm.RemoveService(globalApp)
+	t.Log("Deployed version: ", version)
 }
 
 func TestCreateAndDeploy(t *testing.T) {
-	account, _ := SeedAccount()
-	session := SeedSession(&account)
-	app := SeedApp("https://github.com/jysperm/deploying-samples.git")
-
-	var appVersion versionModel.Version
-	requestPath := fmt.Sprintf("/apps/%s/version", app.Name)
+	var version versionModel.Version
+	requestPath := fmt.Sprintf("/apps/%s/version", globalApp.Name)
 	res, body, errs := Request("POST", requestPath).
-		Set("Authorization", session.Token).
+		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
 			"gitTag": "master",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
 	}
-	if err := json.Unmarshal(body, &appVersion); err != nil {
+
+	if err := json.Unmarshal(body, &version); err != nil {
 		t.Error(err)
 	}
 
-	accountModel.DeleteByName(session.Username)
-	sessionModel.DeleteByToken(session.Token)
-	versionModel.DeleteVersion(app, appVersion.Tag)
-	appModel.DeleteByName(app.Name)
-	swarm.RemoveService(app)
+	t.Log("Created and Deployed version: ", version)
 }

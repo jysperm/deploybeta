@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -22,10 +21,6 @@ func CreateVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err == nil && app == nil {
-		return NewHTTPError(http.StatusBadRequest, errors.New("Not found Application"))
-	}
-
 	version, err := versionModel.CreateVersion(app, "", params["gitTag"])
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
@@ -44,24 +39,20 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err == nil && app == nil {
-		return NewHTTPError(http.StatusBadRequest, errors.New("Not found Application"))
-	}
-
 	version, err := versionModel.FindByTag(*app, params["tag"])
-	if err != nil && version == nil {
+	if err != nil || version == nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	if err := app.UpdateVersion(version.Tag); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
-	app.Version = version.Tag
+
 	if err := swarm.UpdateService(*app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusCreated, NewVersionResponse(version))
+	return ctx.JSON(http.StatusOK, NewVersionResponse(version))
 }
 
 func CreateAndDeploy(ctx echo.Context) error {
@@ -74,10 +65,6 @@ func CreateAndDeploy(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err == nil && app == nil {
-		return NewHTTPError(http.StatusBadRequest, errors.New("Not found Application"))
-	}
-
 	version, err := versionModel.CreateVersion(app, "", params["gitTag"])
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
@@ -86,7 +73,7 @@ func CreateAndDeploy(ctx echo.Context) error {
 	if err := app.UpdateVersion(version.Tag); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
-	app.Version = version.Tag
+
 	if err := swarm.UpdateService(*app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

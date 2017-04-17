@@ -1,0 +1,4 @@
+---
+- name: install apt package
+  apt:
+    name: 'supervisor'

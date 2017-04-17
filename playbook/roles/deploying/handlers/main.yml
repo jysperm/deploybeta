@@ -1,0 +1,15 @@
+---
+- name: restart openresty
+  service:
+    name: 'openresty'
+    state: restarted
+
+- name: restart supervisor
+  service:
+    name: 'supervisor'
+    state: restarted
+
+- name: restart deploying
+  supervisorctl:
+    name: 'deploying'
+    state: restarted

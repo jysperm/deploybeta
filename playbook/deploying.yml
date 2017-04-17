@@ -5,6 +5,7 @@
     - docker
     - etcd
     - openresty
+    - supervisor
 
 - hosts: dcloud1
   vars:

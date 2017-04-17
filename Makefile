@@ -1,16 +1,18 @@
 OUTPUT=./releases
 REPO=github.com/jysperm/deploying
 
-all: release resouces
+all: pack-tar
 
-release:
-	GOOS=darwin go build -o $(OUTPUT)/deploying-darwin-amd64
+binaries:
 	GOOS=linux go build -o $(OUTPUT)/deploying-linux-amd64
 
-resouces:
+resources:
 	cd frontend && gulp
-	mkdir -p $(OUTPUT)/frontend/public
-	cp -r frontend/public $(OUTPUT)/frontend/public
+	mkdir -p $(OUTPUT)/frontend
+	cp -r frontend/public $(OUTPUT)/frontend
+
+pack-tar: binaries resources
+	cd $(OUTPUT) && tar --exclude *.tar.gz -zcvf deploying-linux-amd64.tar.gz *
 
 test:
 	go test -v $(REPO)/lib/builder

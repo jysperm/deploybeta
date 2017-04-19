@@ -1,0 +1,11 @@
+FROM {{.GolangVerion}}
+
+ADD . /go/src/{{.PackagePath}}
+
+{{.InstallDependencies}}
+
+RUN go install {{.PackagePath}}
+
+ENTRYPOINT /go/bin/{.PackageName}
+
+EXPOSE 3000

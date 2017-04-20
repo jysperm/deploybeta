@@ -1,8 +1,8 @@
-FROM {{.GolangVerion}}
+FROM {{.GoVersion}}
 
 ADD . /go/src/{{.PackagePath}}
 
-{{.InstallDependencies}}
+RUN /go/bin/{{.DepManager}}
 
 RUN go install {{.PackagePath}}
 

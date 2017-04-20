@@ -1,4 +1,4 @@
-package generator
+package golang
 
 import (
 	"os"

@@ -1,4 +1,4 @@
-package generator
+package golang
 
 import (
 	"os"
@@ -10,6 +10,8 @@ const (
 	Go175 = "go:1.7.5"
 	Go181 = "go:1.8.1"
 )
+
+var IsTesting = false
 
 type Dockerfile struct {
 	GoVersion   string
@@ -24,25 +26,27 @@ func GenerateDockerfile(root string, version string, path string, name string) e
 		PackagePath: path,
 		PackageName: name,
 	}
-	currentPath, err := os.Executable()
+
+	execPath, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	templatePath := filepath.Join(currentPath, "builder", "runtimes", "golang", "Dockerfile.template")
+	currentPath, _ := filepath.Split(execPath)
+	if IsTesting {
+		GOPATH := os.Getenv("GOPATH")
+		currentPath = filepath.Join(GOPATH, "src", "github.com", "jysperm", "deploying")
+	}
+	templatePath := filepath.Join(currentPath, "lib", "builder", "runtimes", "golang", "Dockerfile.template")
 	dockerfileTemplate, err := template.ParseFiles(templatePath)
 	if err != nil && dockerfileTemplate == nil {
 		return err
 	}
 
-	if err := CheckDep(root); err != nil {
-		return err
-	} else {
+	if err := CheckDep(root); err == nil {
 		config.DepManager = "dep ensure"
 	}
 
-	if err := CheckGlide(root); err != nil {
-		return err
-	} else {
+	if err := CheckGlide(root); err == nil {
 		config.DepManager = "glide install"
 	}
 
@@ -51,6 +55,7 @@ func GenerateDockerfile(root string, version string, path string, name string) e
 	if err != nil {
 		return err
 	}
+	defer dockerfile.Close()
 
 	if err := dockerfileTemplate.Execute(dockerfile, config); err != nil {
 		return err

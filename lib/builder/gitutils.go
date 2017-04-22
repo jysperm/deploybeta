@@ -6,14 +6,13 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"regexp"
-
-	"github.com/docker/docker/pkg/urlutil"
 )
 
 var validCommitHash = regexp.MustCompile("^[0-9a-f]{7,40}$")
+var validGitURL = regexp.MustCompile(`(^(https|http)://[^\s]*.git$)|(^\w+@\w+\.\w+:[^\s]*.git$)`)
 
 func Clone(remoteURL string, gitTag string) (string, error) {
-	if !urlutil.IsGitURL(remoteURL) {
+	if !validGitURL.MatchString(remoteURL) {
 		return "", errors.New("Not a valid git URL")
 	}
 

@@ -5,26 +5,18 @@ import (
 	"path/filepath"
 )
 
-func CheckDep(root string) error {
-	manifest := filepath.Join(root, "manifest.json")
-	lock := filepath.Join(root, "lock.json")
-	if _, err := os.Stat(manifest); err != nil {
-		return err
+func existsInRoot(file string, root string) bool {
+	path := filepath.Join(root, file)
+	if _, err := os.Stat(path); err != nil {
+		return false
 	}
-	if _, err := os.Stat(lock); err != nil {
-		return err
-	}
-	return nil
+	return true
 }
 
-func CheckGlide(root string) error {
-	glide := filepath.Join(root, "glide.yaml")
-	lock := filepath.Join(root, "glide.lock")
-	if _, err := os.Stat(glide); err != nil {
-		return err
-	}
-	if _, err := os.Stat(lock); err != nil {
-		return err
-	}
-	return nil
+func CheckDep(root string) bool {
+	return existsInRoot("manifest.json", root) && existsInRoot("lock.json", root)
+}
+
+func CheckGlide(root string) bool {
+	return existsInRoot("glide.yaml", root) || existsInRoot("glide.lock", root)
 }

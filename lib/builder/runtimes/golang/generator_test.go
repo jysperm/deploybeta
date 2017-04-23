@@ -17,7 +17,7 @@ func TestGenerateDockerfile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if err := GenerateDockerfile(depRoot, Go181, "github.com/jysperm/deploying-samples", "deploying-samples"); err != nil {
+	if err := GenerateDockerfile(depRoot, "github.com/jysperm/deploying-samples", "deploying-samples"); err != nil {
 		t.Error(err)
 	}
 	dockerfilePath := filepath.Join(depRoot, "Dockerfile")
@@ -31,7 +31,7 @@ func TestGenerateDockerfile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if err := GenerateDockerfile(glideRoot, Go181, "github.com/jysperm/deploying-samples", "deploying-samples"); err != nil {
+	if err := GenerateDockerfile(glideRoot, "github.com/jysperm/deploying-samples", "deploying-samples"); err != nil {
 		t.Error(err)
 	}
 	dockerfilePath = filepath.Join(glideRoot, "Dockerfile")

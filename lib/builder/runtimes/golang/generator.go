@@ -1,30 +1,25 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"text/template"
 )
 
-const (
-	Go175 = "go:1.7.5"
-	Go181 = "go:1.8.1"
-)
-
 var IsTesting = false
 
 type Dockerfile struct {
-	GoVersion   string
 	PackagePath string
 	DepManager  string
 	PackageName string
 }
 
-func GenerateDockerfile(root string, version string, path string, name string) error {
+func GenerateDockerfile(root string, path string, name string) error {
 	config := Dockerfile{
-		GoVersion:   version,
 		PackagePath: path,
 		PackageName: name,
+		DepManager:  "",
 	}
 
 	execPath, err := os.Executable()
@@ -42,12 +37,16 @@ func GenerateDockerfile(root string, version string, path string, name string) e
 		return err
 	}
 
-	if err := CheckDep(root); err == nil {
+	if CheckDep(root) {
 		config.DepManager = "dep ensure"
 	}
 
-	if err := CheckGlide(root); err == nil {
+	if CheckGlide(root) {
 		config.DepManager = "glide install"
+	}
+
+	if config.DepManager == "" {
+		return errors.New("Not found a avaliable package manager")
 	}
 
 	dockerfilePath := filepath.Join(root, "Dockerfile")

@@ -22,7 +22,7 @@ type Version struct {
 	Registry string `json:"registry"`
 }
 
-func CreateVersion(app *appModel.Application, registry string) (Version, error) {
+func CreateVersion(app *appModel.Application, registry string, gitTag string) (Version, error) {
 	version := generateTag()
 
 	var nameVersion string
@@ -36,7 +36,7 @@ func CreateVersion(app *appModel.Application, registry string) (Version, error) 
 	buildOpts := types.ImageBuildOptions{
 		Tags: []string{nameVersion},
 	}
-	shasum, err := builder.BuildImage(buildOpts, app.GitRepository)
+	shasum, err := builder.BuildImage(buildOpts, app.GitRepository, gitTag)
 	if err != nil {
 		return Version{}, err
 	}

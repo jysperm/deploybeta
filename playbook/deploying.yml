@@ -5,11 +5,16 @@
     - docker
     - etcd
     - openresty
+    - supervisor
 
-- hosts: all[0]
+- hosts: dcloud1
   vars:
+    letsencrypt:
+      - registry1.dcloud.run
     registry:
       name: registry1
       domain: registry1.dcloud.run
   roles:
+    - deploying
+    - letsencrypt
     - registry

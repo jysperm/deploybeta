@@ -10,8 +10,8 @@ import (
 func CreateWebServer() *echo.Echo {
 	app := echo.New()
 
-	app.File("/", "./web/frontend/public/index.html")
-	app.Static("/assets", "./web/frontend/public")
+	app.File("/", "./frontend/public/index.html")
+	app.Static("/assets", "./frontend/public")
 
 	app.POST("/accounts", handlers.RegisterAccount)
 	app.POST("/sessions", handlers.CreateSession)

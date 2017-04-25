@@ -14,7 +14,7 @@ func existsInRoot(file string, root string) bool {
 }
 
 func CheckDep(root string) bool {
-	return existsInRoot("manifest.json", root) && existsInRoot("lock.json", root)
+	return existsInRoot("Gopkg.lock", root) && existsInRoot("Gopkg.toml", root)
 }
 
 func CheckGlide(root string) bool {

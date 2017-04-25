@@ -2,8 +2,11 @@ package golang
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"text/template"
 )
 
@@ -15,7 +18,29 @@ type Dockerfile struct {
 	PackageName string
 }
 
-func GenerateDockerfile(root string, path string, name string) error {
+func detectType(remoteURL string) bool {
+	validURLScheme := regexp.MustCompile("(https|http)")
+	return validURLScheme.MatchString(remoteURL)
+}
+
+func extractInfo(remoteURL string) (string, string) {
+	byteURL := []byte(remoteURL)
+	if detectType(remoteURL) {
+		slashIndex := strings.LastIndex(remoteURL, "/") + 1
+		gitIndex := strings.LastIndex(remoteURL, ".git") - 1
+		semicolonIndex := strings.LastIndex(remoteURL, "://") + 3
+		return string(byteURL[slashIndex:gitIndex]), string(byteURL[semicolonIndex:gitIndex])
+	}
+	atIndex := strings.LastIndex(remoteURL, "@") + 1
+	semicolonIndex := strings.LastIndex(remoteURL, ":")
+	slashIndex := strings.LastIndex(remoteURL, "/") + 1
+	gitIndex := strings.LastIndex(remoteURL, ".git") - 1
+	packagePath := fmt.Sprintf("%s/%s", string(byteURL[atIndex:semicolonIndex]), string(byteURL[semicolonIndex+1:gitIndex]))
+	return string(byteURL[slashIndex:gitIndex]), packagePath
+}
+
+func GenerateDockerfile(root string, remoteURL string) error {
+	name, path := extractInfo(remoteURL)
 	config := Dockerfile{
 		PackagePath: path,
 		PackageName: name,

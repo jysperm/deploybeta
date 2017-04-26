@@ -1,0 +1,12 @@
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/labstack/echo"
+
+[[dependencies]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[[dependencies]]
+  branch = "master"
+  name = "golang.org/x/net"

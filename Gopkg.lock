@@ -1,0 +1,199 @@
+memo = "532372717b20cb1c22902b8e3b0fb7c7b3b0e898612ac86ce5493b7639c9fe35"
+
+[[projects]]
+  name = "github.com/Microsoft/go-winio"
+  packages = ["."]
+  revision = "f3b1913901892ada21d52d0cffe1d4c7080d36b7"
+  version = "v0.3.9"
+
+[[projects]]
+  name = "github.com/Sirupsen/logrus"
+  packages = ["."]
+  revision = "ba1b36c82c5e05c4f912a88eab0dcd91a171688f"
+  version = "v0.11.5"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
+
+[[projects]]
+  name = "github.com/coreos/etcd"
+  packages = ["auth/authpb","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb","pkg/tlsutil"]
+  revision = "e5b7ee2d03627ca33201da428b8110ef7c3e95f1"
+  version = "v3.1.6"
+
+[[projects]]
+  name = "github.com/docker/distribution"
+  packages = ["digest","reference"]
+  revision = "a25b9ef0c9fe242ac04bb20d3a028442b7d266b6"
+  version = "v2.6.1"
+
+[[projects]]
+  name = "github.com/docker/docker"
+  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/mount","api/types/network","api/types/reference","api/types/registry","api/types/strslice","api/types/swarm","api/types/time","api/types/versions","api/types/volume","client","pkg/archive","pkg/fileutils","pkg/idtools","pkg/ioutils","pkg/longpath","pkg/pools","pkg/promise","pkg/system","pkg/tlsconfig","pkg/urlutil"]
+  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
+  version = "v1.13.1"
+
+[[projects]]
+  name = "github.com/docker/go-connections"
+  packages = ["nat","sockets","tlsconfig"]
+  revision = "990a1a1a70b0da4c4cb70e117971a4f0babfbf1a"
+  version = "v0.2.1"
+
+[[projects]]
+  name = "github.com/docker/go-units"
+  packages = ["."]
+  revision = "f2d77a61e3c169b43402a0a1e84f06daf29b8190"
+  version = "v0.3.1"
+
+[[projects]]
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/golang/protobuf"
+  packages = ["jsonpb","proto"]
+  revision = "2bba0603135d7d7f5cb73b2125beeda19c09f4ef"
+
+[[projects]]
+  name = "github.com/grpc-ecosystem/go-grpc-prometheus"
+  packages = ["."]
+  revision = "6b7015e65d366bf3f19b2b2a000a831940f0f7e0"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/grpc-ecosystem/grpc-gateway"
+  packages = ["runtime","runtime/internal","utilities"]
+  revision = "589b126116b5fc961939b3e156c29e4d9d58222f"
+  version = "v1.2.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/labstack/echo"
+  packages = ["."]
+  revision = "a87261ecb20801abdd4f52b1863b46c904391e5a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/labstack/gommon"
+  packages = ["color","log"]
+  revision = "9298d710c664bcd21c454120f63a00fb7d484458"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "ded68f7a9561c023e790de24279db7ebf473ea80"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "fc9e8d8ef48496124e79ae0df75490096eccf6fe"
+
+[[projects]]
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  revision = "3247c84500bff8d9fb6d579d800f20b3e091582c"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/moul/http2curl"
+  packages = ["."]
+  revision = "4e24498b31dba4683efb9d35c1c8a91e2eda28c8"
+
+[[projects]]
+  name = "github.com/opencontainers/runc"
+  packages = ["libcontainer/system","libcontainer/user"]
+  revision = "baf6536d6259209c3edfa2b22237af82942d3dfa"
+  version = "v0.1.1"
+
+[[projects]]
+  name = "github.com/parnurzeal/gorequest"
+  packages = ["."]
+  revision = "a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3"
+  version = "v0.2.15"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/prometheus/client_golang"
+  packages = ["prometheus"]
+  revision = "c5b7fccd204277076155f10851dad72b76a49317"
+  version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  revision = "6f3806018612930941127f2a7c6c453ba2c527d2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/common"
+  packages = ["expfmt","internal/bitbucket.org/ww/goautoneg","model"]
+  revision = "9e0844febd9e2856f839c9cb974fbd676d1755a8"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/procfs"
+  packages = [".","xfs"]
+  revision = "6ac8c5d890d415025dd5aae7595bcb2a6e7e2fad"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/valyala/fasttemplate"
+  packages = ["."]
+  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["acme","acme/autocert","bcrypt","blowfish"]
+  revision = "c78caca803c95773f48a844d3dcab04b9bc4d6dd"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","proxy","publicsuffix","trace"]
+  revision = "5602c733f70afc6dcec6766be0d5034d4c4f14de"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "9f30dcbe5be197894515a338a9bda9253567ea8f"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/text"
+  packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  revision = "a9a820217f98f7c8a207ec1e45a874e1fe12c478"
+
+[[projects]]
+  name = "google.golang.org/grpc"
+  packages = [".","codes","credentials","grpclog","internal","keepalive","metadata","naming","peer","stats","tap","transport"]
+  revision = "8050b9cbc271307e5a716a9d782803d09b0d6f2d"
+  version = "v1.2.1"
+
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b"

@@ -2,12 +2,20 @@ package golang
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/jysperm/deploying/lib/utils"
 )
 
+func init() {
+	GOPATH := os.Getenv("GOPATH")
+	root := filepath.Join(GOPATH, "src", "github.com", "jysperm", "deploying")
+	if err := os.Setenv("WORKDIR", root); err != nil {
+		panic(err)
+	}
+}
 func TestGenerateDockerfile(t *testing.T) {
 	depRoot, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "dep")
 	if err != nil {

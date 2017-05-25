@@ -13,7 +13,8 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
 
-	gogenerator "github.com/jysperm/deploying/lib/builder/runtimes/golang"
+	goruntime "github.com/jysperm/deploying/lib/builder/runtimes/golang"
+	"github.com/jysperm/deploying/lib/utils"
 )
 
 const RegistryAuthParam = "deploying"
@@ -32,7 +33,7 @@ func cloneRepository(url string, param string) (string, error) {
 	if param == "" {
 		param = "master"
 	}
-	path, err := Clone(url, param)
+	path, err := utils.Clone(url, param)
 	if err != nil {
 		return "", err
 	}
@@ -126,7 +127,7 @@ func BuildImage(opts types.ImageBuildOptions, url string, param string) (string,
 		return "", err
 	}
 
-	if err := gogenerator.GenerateDockerfile(dirPath, url); err != nil {
+	if err := goruntime.GenerateDockerfile(dirPath, url); err != nil {
 		return "", err
 	}
 

@@ -25,7 +25,7 @@ RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" "/home/deploying/app" && chmod -R 777 "
 WORKDIR "/home/deploying/app"
 
 # install manager of packages
-RUN go get -u "github.com/golang/dep/..."
+RUN go get -u github.com/golang/dep/cmd/dep
 RUN curl "https://glide.sh/get" | sh
 
 ADD . /go/src/{{.PackagePath}}
@@ -34,6 +34,6 @@ RUN cd /go/src/{{.PackagePath}} && /go/bin/{{.DepManager}}
 
 RUN cd /go/src/{{.PackagePath}} && go build && cp -R . /home/deploying/app
 
-CMD /home/deploying/app/{{.PackageName}}
+CMD ["/home/deploying/app/{{.PackageName}}"]
 
 EXPOSE 3000

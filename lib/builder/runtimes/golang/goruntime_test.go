@@ -5,15 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jysperm/deploying/lib/builder"
+	"github.com/jysperm/deploying/lib/utils"
 )
 
-func init() {
-	IsTesting = true
-}
-
 func TestGenerateDockerfile(t *testing.T) {
-	depRoot, err := builder.Clone("https://github.com/jysperm/deploying-samples.git", "dep")
+	depRoot, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "dep")
 	if err != nil {
 		t.Error(err)
 	}
@@ -27,7 +23,7 @@ func TestGenerateDockerfile(t *testing.T) {
 	}
 	t.Log(string(depDockerfile))
 
-	glideRoot, err := builder.Clone("git@github.com:jysperm/deploying-samples.git", "glide")
+	glideRoot, err := utils.Clone("git@github.com:jysperm/deploying-samples.git", "glide")
 	if err != nil {
 		t.Error(err)
 	}

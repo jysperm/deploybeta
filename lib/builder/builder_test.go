@@ -10,10 +10,10 @@ import (
 func TestBuildImage(t *testing.T) {
 
 	opts := types.ImageBuildOptions{
-		Tags: []string{"docker-test"},
+		Tags: []string{"dep-test:latest"},
 	}
 
-	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "")
+	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "dep")
 	if err != nil {
 		t.Error(err)
 	}

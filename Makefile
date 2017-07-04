@@ -16,6 +16,7 @@ pack-tar: binaries resources
 
 test:
 	go test -v $(REPO)/lib/builder
+	go test -v $(REPO)/lib/builder/runtimes/golang
 	go test -v $(REPO)/lib/models/app
 	go test -v $(REPO)/lib/swarm
 	go test -v $(REPO)/web/handlers

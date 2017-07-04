@@ -12,6 +12,9 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
+
+	goruntime "github.com/jysperm/deploying/lib/builder/runtimes/golang"
+	"github.com/jysperm/deploying/lib/utils"
 )
 
 const RegistryAuthParam = "deploying"
@@ -30,7 +33,7 @@ func cloneRepository(url string, param string) (string, error) {
 	if param == "" {
 		param = "master"
 	}
-	path, err := Clone(url, param)
+	path, err := utils.Clone(url, param)
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +58,6 @@ func extractShasum(r io.ReadCloser) (string, error) {
 		if err == io.EOF {
 			break
 		}
-
 		if err != nil {
 			return "", err
 		}
@@ -122,6 +124,10 @@ func BuildImage(opts types.ImageBuildOptions, url string, param string) (string,
 
 	dirPath, err := cloneRepository(url, param)
 	if err != nil {
+		return "", err
+	}
+
+	if err := goruntime.GenerateDockerfile(dirPath, url); err != nil {
 		return "", err
 	}
 

@@ -7,18 +7,16 @@ RUN apt-get update \
   && apt-get -y autoclean
 
 ENV NVM_DIR /usr/local/nvm
-{{if .NodeVerson}}
-ENV NODE_VER {{.NodeVerson}}
-{{- else}}
-ENV NODE_VER 6.11.0
-{{- end}}
+
+ENV NODE_VERSION {{.NodeVersion}}
+
 RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 
 RUN source $NVM_DIR/nvm.sh \
-    && echo $NODE_VER > .nvmrc
-    && nvm install $NODE_VER \
-    && nvm alias default $NODE_VER \
-    && nvm use default
+  && echo $NODE_VERSION > .nvmrc
+  && nvm install $NODE_VERSION \
+  && nvm alias default $NODE_VERSION \
+  && nvm use default
 
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
@@ -44,6 +42,7 @@ RUN set -ex \
   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
 
 RUN mkdir -p "/home/deploying/app"
+WORKDIR "/home/deploying/app"
 ADD . "/home/deploying/app"
 
 {{if .HasYarn}}
@@ -52,6 +51,6 @@ RUN yarn install
 RUN npm install
 {{- end}}
 
-CMD ["npm", "start", "/home/deploying/app"]
+CMD ["npm", "start"]
 
 EXPOSE 3000

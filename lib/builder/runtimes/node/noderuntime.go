@@ -24,11 +24,11 @@ func GenerateDockerfile(vNode string, root string) error {
 		return err
 	}
 
-	if CheckYarn(root) {
+	if runtimes.CheckYarn(root) {
 		config.HasYarn = true
 	}
 
-	if runtimes.GenerateDockerfile(templatePath, root, config); err != nil {
+	if err := runtimes.GenerateDockerfile(templatePath, root, config); err != nil {
 		return err
 	}
 

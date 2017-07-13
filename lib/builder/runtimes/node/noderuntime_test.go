@@ -17,7 +17,7 @@ func init() {
 	}
 }
 
-func TestGenerateDockerfile(t *testing.T) {
+func TestYarn(t *testing.T) {
 	root, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "yarn")
 	if err != nil {
 		t.Error(err)
@@ -25,6 +25,20 @@ func TestGenerateDockerfile(t *testing.T) {
 	if err := GenerateDockerfile("", root); err != nil {
 		t.Error(err)
 	}
+	dockerfilePath := filepath.Join(root, "Dockerfile")
+	content, err := ioutil.ReadFile(dockerfilePath)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(string(content))
+}
+
+func TestNpm(t *testing.T) {
+	root, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "npm")
+	if err != nil {
+		t.Error(err)
+	}
+
 	dockerfilePath := filepath.Join(root, "Dockerfile")
 	content, err := ioutil.ReadFile(dockerfilePath)
 	if err != nil {

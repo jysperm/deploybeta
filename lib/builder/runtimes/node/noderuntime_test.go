@@ -22,7 +22,7 @@ func TestYarn(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if err := GenerateDockerfile("", root); err != nil {
+	if err := GenerateDockerfile("6.11.0", root); err != nil {
 		t.Error(err)
 	}
 	dockerfilePath := filepath.Join(root, "Dockerfile")
@@ -38,7 +38,9 @@ func TestNpm(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
+	if err := GenerateDockerfile("6.11.0", root); err != nil {
+		t.Error(err)
+	}
 	dockerfilePath := filepath.Join(root, "Dockerfile")
 	content, err := ioutil.ReadFile(dockerfilePath)
 	if err != nil {

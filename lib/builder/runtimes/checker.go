@@ -1,9 +1,13 @@
-package golang
+package runtimes
 
 import (
 	"os"
 	"path/filepath"
 )
+
+func CheckYarn(root string) bool {
+	return existsInRoot("yarn.lock", root)
+}
 
 func CheckDep(root string) bool {
 	return existsInRoot("Gopkg.lock", root) && existsInRoot("Gopkg.toml", root)

@@ -29,11 +29,11 @@ func GenerateDockerfile(root string, remoteURL string) error {
 		return err
 	}
 
-	if CheckDep(root) {
+	if runtimes.CheckDep(root) {
 		config.DepManager = "dep ensure"
 	}
 
-	if CheckGlide(root) {
+	if runtimes.CheckGlide(root) {
 		config.DepManager = "glide install"
 	}
 

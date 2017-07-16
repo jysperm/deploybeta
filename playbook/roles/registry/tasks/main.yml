@@ -8,6 +8,7 @@
 - name: inspect registry service
   command: 'docker service inspect {{registry.name}}'
   register: registry_service
+  ignore_errors: yes
 
 - name: run registry service
   command: >
@@ -17,7 +18,7 @@
       --constraint 'node.hostname == {{ansible_hostname}}'
       --mount type=bind,source=/var/lib/{{registry.name}},destination=/var/lib/registry
         registry:2
-  when: registry_service.stdout.find('no such service') != -1
+  when: registry_service.stderr.find('no such service') != -1
 
 - name: upload nginx configuration
   template:

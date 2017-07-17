@@ -111,10 +111,62 @@ func GetAppsOfAccount(account *accountModel.Account) (result []Application, err 
 }
 
 func (app *Application) UpdateGitRepository(gitRepository string) error {
+	appKey := fmt.Sprint("/apps/", app.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(appKey, &Application{})
+
+	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
+		app := *watchedKeys[appKey].(*Application)
+
+		app.GitRepository = gitRepository
+
+		tran.PutJSONOnSuccess(appKey, app)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	app.GitRepository = gitRepository
+
 	return nil
 }
 
 func (app *Application) UpdateInstances(instances int) error {
+	appKey := fmt.Sprint("/apps/", app.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(appKey, &Application{})
+
+	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
+		app := *watchedKeys[appKey].(*Application)
+
+		app.Instances = instances
+
+		tran.PutJSONOnSuccess(appKey, app)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	app.Instances = instances
+
 	return nil
 }
 

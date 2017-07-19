@@ -109,7 +109,7 @@ func GetAppsOfAccount(account *accountModel.Account) (result []Application, err 
 	return result, nil
 }
 
-func (app *Application) UpdateGitRepository(gitRepository string) error {
+func (app *Application) Update(update *Application) error {
 	appKey := fmt.Sprint("/apps/", app.Name)
 
 	tran := etcd.NewTransaction()
@@ -119,7 +119,13 @@ func (app *Application) UpdateGitRepository(gitRepository string) error {
 	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
 		app := *watchedKeys[appKey].(*Application)
 
-		app.GitRepository = gitRepository
+		if update.GitRepository != "" {
+			app.GitRepository = update.GitRepository
+		}
+
+		if update.Instances != 0 {
+			app.Instances = update.Instances
+		}
 
 		tran.PutJSONOnSuccess(appKey, app)
 
@@ -134,37 +140,13 @@ func (app *Application) UpdateGitRepository(gitRepository string) error {
 		return ErrUpdateConflict
 	}
 
-	app.GitRepository = gitRepository
-
-	return nil
-}
-
-func (app *Application) UpdateInstances(instances int) error {
-	appKey := fmt.Sprint("/apps/", app.Name)
-
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(appKey, &Application{})
-
-	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
-		app := *watchedKeys[appKey].(*Application)
-
-		app.Instances = instances
-
-		tran.PutJSONOnSuccess(appKey, app)
-
-		return nil
-	})
-
-	if err != nil {
-		return err
+	if update.GitRepository != "" {
+		app.GitRepository = update.GitRepository
 	}
 
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
+	if update.Instances != 0 {
+		app.Instances = update.Instances
 	}
-
-	app.Instances = instances
 
 	return nil
 }

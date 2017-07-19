@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo"
 
 	appModel "github.com/jysperm/deploying/lib/models/app"
-	versionMdel "github.com/ jysperm/deploying/lib/models/version"
+	versionModel "github.com/jysperm/deploying/lib/models/version"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )

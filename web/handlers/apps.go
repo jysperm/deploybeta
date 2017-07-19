@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo"
 
 	appModel "github.com/jysperm/deploying/lib/models/app"
+	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
@@ -50,9 +51,41 @@ func CreateApp(ctx echo.Context) error {
 }
 
 func UpdateApp(ctx echo.Context) error {
+	appName := ctx.Param("name")
+	app, err := appModel.FindByName(appName)
+	if err != nil {
+		return NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	update := new(appModel.Application)
+	if err := ctx.Bind(update); err != nil {
+		return NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if app.GitRepository != update.GitRepository {
+		if err := app.UpdateGitRepository(update.GitRepository); err != nil {
+			return NewHTTPError(http.StatusInternalServerError, err)
+		}
+	}
+
+	if app.Instances != update.Instances {
+		if err := app.UpdateInstances(update.Instances); err != nil {
+			return NewHTTPError(http.StatusInternalServerError, err)
+		}
+
+		if err := swarm.UpdateService(*app); err != nil {
+			return NewHTTPError(http.StatusInternalServerError, err)
+		}
+	}
+
 	return nil
 }
 
 func DeleteApp(ctx echo.Context) error {
-	return nil
+	appName := ctx.Param("name")
+	if err := appModel.DeleteByName(appName); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.String(http.StatusOK, "")
 }

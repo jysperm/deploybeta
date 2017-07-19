@@ -51,9 +51,8 @@ func CreateApp(app *Application) error {
 
 	if resp.Succeeded == false {
 		return ErrUpdateConflict
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // TODO: Delete app name from `/account/:name/apps`

@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo"
 
 	appModel "github.com/jysperm/deploying/lib/models/app"
+	versionMdel "github.com/ jysperm/deploying/lib/models/version"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
@@ -68,9 +69,21 @@ func UpdateApp(ctx echo.Context) error {
 		}
 	}
 
-	if app.Instances != update.Instances {
-		if err := app.UpdateInstances(update.Instances); err != nil {
-			return NewHTTPError(http.StatusInternalServerError, err)
+	if app.Instances != update.Instances || app.Version != update.Version {
+
+		if app.Instances != update.Instances {
+			if err := app.UpdateInstances(update.Instances); err != nil {
+				return NewHTTPError(http.StatusInternalServerError, err)
+			}
+		}
+
+		if app.Version != update.Version {
+			if version, err := versionModel.FindByTag(*app, update.Version); version == nil && err != nil {
+				return NewHTTPError(http.StatusBadRequest, err)
+			}
+			if err := app.UpdateVersion(update.Version); err != nil {
+				return NewHTTPError(http.StatusInternalServerError, err)
+			}
 		}
 
 		if err := swarm.UpdateService(*app); err != nil {
@@ -78,7 +91,7 @@ func UpdateApp(ctx echo.Context) error {
 		}
 	}
 
-	return nil
+	return ctx.JSON(http.StatusCreated, NewAppResponse(app))
 }
 
 func DeleteApp(ctx echo.Context) error {

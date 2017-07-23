@@ -12,7 +12,7 @@ ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s QUIT $MAINPID
 Restart=always
 RestartSec=10s
-LimitNOFILE=65535
+LimitNOFILE=1048576
 
 [Install]
 WantedBy=multi-user.target

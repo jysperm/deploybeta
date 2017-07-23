@@ -105,7 +105,7 @@ func UpdateService(app app.Application) error {
 	if err != nil {
 		return err
 	}
-	upstreamKey := fmt.Sprintf("/upstream/%s", app.Name)
+	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
 	if _, err := etcd.Client.Put(context.Background(), upstreamKey, string(upstream)); err != nil {
 		return err
 	}

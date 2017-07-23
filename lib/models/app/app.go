@@ -69,6 +69,8 @@ func GetAppsOfAccount(account *accountModel.Account) (result []Application, err 
 	accountAppsKey := fmt.Sprintf("/account/%s/apps", account.Username)
 	resp, err := etcd.Client.Get(context.Background(), accountAppsKey)
 
+	result = make([]Application, 0)
+
 	if err != nil {
 		return nil, err
 	}

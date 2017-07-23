@@ -10,3 +10,12 @@
 
 - name: install apt packages
   apt: name=docker-ce
+
+- name: update systemd service
+  template:
+    src: 'docker.service'
+    dest: '/etc/systemd/system/docker.service'
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart docker

@@ -1,11 +1,9 @@
 ---
 - hosts: all
+  vars:
+    domain: dcloud.run
   roles:
-    - common
-    - docker
-    - etcd
-    - openresty
-    - supervisor
+    - deploying
 
 - hosts: dcloud1
   vars:
@@ -15,6 +13,5 @@
       name: registry1
       domain: registry1.dcloud.run
   roles:
-    - deploying
     - letsencrypt
     - registry

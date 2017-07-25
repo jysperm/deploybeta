@@ -1,12 +1,13 @@
 package golang
 
 import (
-	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 
-	"github.com/jysperm/deploying/lib/builder/runtimes"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -29,19 +30,24 @@ func GenerateDockerfile(root string, remoteURL string) error {
 		return err
 	}
 
-	if runtimes.CheckDep(root) {
+	if utils.CheckDep(root) {
 		config.DepManager = "dep ensure"
 	}
 
-	if runtimes.CheckGlide(root) {
+	if utils.CheckGlide(root) {
 		config.DepManager = "glide install"
 	}
 
-	if config.DepManager == "" {
-		return errors.New("Not found a avaliable package manager")
+	dockerfileTemplate, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return err
 	}
 
-	if err := runtimes.GenerateDockerfile(templatePath, root, config); err != nil {
+	dockerfilePath := filepath.Join(root, "Dockerfile")
+	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
+	defer Dockerfile.Close()
+
+	if err := dockerfileTemplate.Execute(Dockerfile, config); err != nil {
 		return err
 	}
 

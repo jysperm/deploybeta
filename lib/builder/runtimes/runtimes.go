@@ -1,23 +1,43 @@
 package runtimes
 
 import (
-	"os"
-	"path/filepath"
-	"text/template"
+	"errors"
+
+	"github.com/jysperm/deploying/lib/builder/runtimes/golang"
+	"github.com/jysperm/deploying/lib/builder/runtimes/node"
+	"github.com/jysperm/deploying/lib/utils"
 )
 
-func GenerateDockerfile(templatePath string, path string, data interface{}) error {
-	dockerfileTemplate, err := template.ParseFiles(templatePath)
-	if err != nil {
-		return err
-	}
-	dockerfilePath := filepath.Join(path, "Dockerfile")
-	dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
-	defer dockerfile.Close()
+var ErrUnknowType = errors.New("unknown type of project")
 
-	if err := dockerfileTemplate.Execute(dockerfile, data); err != nil {
-		return err
+func Dockerlize(root string, extra interface{}) error {
+	if err := checkGo(root); err == nil {
+		err := golang.GenerateDockerfile(root, (extra).(string))
+		if err != nil {
+			return err
+		}
 	}
 
-	return nil
+	if err := checkNodejs(root); err == nil {
+		err := node.GenerateDockerfile(root, (extra).(string))
+		if err != nil {
+			return err
+		}
+	}
+
+	return ErrUnknowType
+}
+
+func checkGo(root string) error {
+	if utils.CheckDep(root) || utils.CheckGlide(root) {
+		return nil
+	}
+	return ErrUnknowType
+}
+
+func checkNodejs(root string) error {
+	if utils.ExistsInRoot("package.json", root) {
+		return nil
+	}
+	return ErrUnknowType
 }

@@ -1,7 +1,10 @@
 package node
 
 import (
-	"github.com/jysperm/deploying/lib/builder/runtimes"
+	"os"
+	"path/filepath"
+	"text/template"
+
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -10,12 +13,9 @@ type Dockerfile struct {
 	HasYarn     bool
 }
 
-func GenerateDockerfile(vNode string, root string) error {
-	if vNode == "" {
-		vNode = `'lts/*'`
-	}
+func GenerateDockerfile(root string, version string) error {
 	config := Dockerfile{
-		NodeVersion: vNode,
+		NodeVersion: version,
 		HasYarn:     false,
 	}
 
@@ -24,11 +24,20 @@ func GenerateDockerfile(vNode string, root string) error {
 		return err
 	}
 
-	if runtimes.CheckYarn(root) {
+	if utils.CheckYarn(root) {
 		config.HasYarn = true
 	}
 
-	if err := runtimes.GenerateDockerfile(templatePath, root, config); err != nil {
+	dockerfileTemplate, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return err
+	}
+
+	dockerfilePath := filepath.Join(root, "Dockerfile")
+	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
+	defer Dockerfile.Close()
+
+	if err := dockerfileTemplate.Execute(Dockerfile, config); err != nil {
 		return err
 	}
 

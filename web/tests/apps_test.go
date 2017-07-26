@@ -97,11 +97,9 @@ func TestUpdateApp(t *testing.T) {
 		t.Error(errs)
 	}
 
-	if res.StatusCode != 201 {
+	if res.StatusCode != 200 {
 		t.Error("Updateing failed.")
 	}
-
-	t.Log(newApp)
 }
 
 func TestDeleteApp(t *testing.T) {

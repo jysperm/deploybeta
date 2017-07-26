@@ -14,6 +14,12 @@
   version = "1.0.2"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/buger/jsonparser"
+  packages = ["."]
+  revision = "9addec9710dc75a2c77f7233cdfc679aa1af1616"
+
+[[projects]]
   name = "github.com/coreos/etcd"
   packages = ["auth/authpb","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb"]
   revision = "c31bec0f29facff13f7c3e3d948e55dd6689ed42"
@@ -148,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7e9486dba16d36b9ebb5a445bed51cb39efaf06dbdf7e5e2f517a38451264745"
+  inputs-digest = "f658083b6cc9ccfecd6b1562ec469d9728e1fa2d5e4962aa488eb65b05879d1b"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -127,6 +127,8 @@ func (app *Application) Update(update *Application) error {
 			app.Instances = update.Instances
 		}
 
+		update.Version = app.Version
+
 		tran.PutJSONOnSuccess(appKey, app)
 
 		return nil

@@ -16,13 +16,15 @@ func Dockerlize(root string, extra interface{}) error {
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	if err := checkNodejs(root); err == nil {
-		err := node.GenerateDockerfile(root, (extra).(string))
+		err := node.GenerateDockerfile(root)
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	return ErrUnknowType

@@ -53,7 +53,6 @@ func GenerateDockerfile(root string) error {
 	}
 
 	return nil
-
 }
 
 func fetchVerisonList() ([]byte, error) {
@@ -100,10 +99,12 @@ func extraVersion(path string) (string, error) {
 	_, err = jsonparser.ArrayEach(list, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		node, _, _, _ := jsonparser.Get(value, "version")
 		node = node[1:]
+
 		if nodeRange(semver.MustParse(string(node))) && exactNode == "" {
 			exactNode = string(node)
 		}
 	})
+
 	if err != nil {
 		return "", err
 	}

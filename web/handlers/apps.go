@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
+	"strconv"
 
+	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 
 	appModel "github.com/jysperm/deploying/lib/models/app"
+	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
@@ -50,9 +54,61 @@ func CreateApp(ctx echo.Context) error {
 }
 
 func UpdateApp(ctx echo.Context) error {
-	return nil
+	app := ctx.Get("app").(appModel.Application)
+
+	jsonBuf := make([]byte, 1024)
+
+	update := appModel.Application{
+		Name:          app.Name,
+		Owner:         app.Owner,
+		GitRepository: "",
+	}
+
+	if _, err := ctx.Request().Body.Read(jsonBuf); err != nil && err != io.EOF {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	gitRepository, valueType, _, err := jsonparser.Get(jsonBuf, "gitRepository")
+	if err != jsonparser.KeyPathNotFoundError && err != nil {
+		return NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if valueType != jsonparser.Null {
+		update.GitRepository = string(gitRepository)
+	}
+
+	instances, valueType, _, err := jsonparser.Get(jsonBuf, "instances")
+	if err != jsonparser.KeyPathNotFoundError && err != nil {
+		return NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if valueType != jsonparser.Null {
+		realValue, err := strconv.Atoi(string(instances))
+		if err != nil {
+			return err
+		}
+		update.Instances = realValue
+	}
+
+	if err := app.Update(&update); err != nil {
+		return NewHTTPError(http.StatusConflict, err)
+	}
+
+	if app.Instances != update.Instances {
+		err := swarm.UpdateService(app)
+		if err != nil {
+			return NewHTTPError(http.StatusInternalServerError, err)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, NewAppResponse(&app))
 }
 
 func DeleteApp(ctx echo.Context) error {
-	return nil
+	appName := ctx.Param("name")
+	if err := appModel.DeleteByName(appName); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.String(http.StatusOK, "")
 }

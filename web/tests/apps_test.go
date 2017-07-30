@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -71,4 +72,54 @@ func TestCreateApp(t *testing.T) {
 	accountModel.DeleteByName(session.Username)
 	sessionModel.DeleteByToken(session.Token)
 	appModel.DeleteByName(appName)
+}
+
+func TestUpdateApp(t *testing.T) {
+	account, _ := SeedAccount()
+	session := SeedSession(&account)
+	app := SeedApp("https://github.com/jysperm/deploying-samples.git", account.Username)
+
+	update := appModel.Application{
+		Name:          app.Name,
+		Instances:     3,
+		GitRepository: "https://github.com/jysperm/deploying-samples.git",
+	}
+
+	newApp := appModel.Application{}
+
+	updateURL := fmt.Sprintf("/apps/%s", app.Name)
+	res, _, errs := Request("PATCH", updateURL).
+		Set("Authorization", session.Token).
+		SendStruct(update).
+		EndStruct(&newApp)
+
+	if len(errs) != 0 {
+		t.Error(errs)
+	}
+
+	if res.StatusCode != 200 {
+		t.Error("Updateing failed.")
+	}
+}
+
+func TestDeleteApp(t *testing.T) {
+	account, _ := SeedAccount()
+	session := SeedSession(&account)
+	app := SeedApp("https://github.com/jysperm/deploying-samples.git", account.Username)
+
+	deleteURL := fmt.Sprintf("/apps/%s", app.Name)
+
+	res, _, errs := Request("DELETE", deleteURL).
+		Set("Authorization", session.Token).
+		SendStruct(map[string]string{
+			"name": app.Name,
+		}).End()
+
+	if len(errs) != 0 {
+		t.Error(errs)
+	}
+
+	if res.StatusCode != 200 {
+		t.Error("Deleting app failed")
+	}
 }

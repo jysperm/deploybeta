@@ -51,9 +51,8 @@ func CreateApp(app *Application) error {
 
 	if resp.Succeeded == false {
 		return ErrUpdateConflict
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // TODO: Delete app name from `/account/:name/apps`
@@ -110,11 +109,47 @@ func GetAppsOfAccount(account *accountModel.Account) (result []Application, err 
 	return result, nil
 }
 
-func (app *Application) UpdateGitRepository(gitRepository string) error {
-	return nil
-}
+func (app *Application) Update(update *Application) error {
+	appKey := fmt.Sprint("/apps/", app.Name)
 
-func (app *Application) UpdateInstances(instances int) error {
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(appKey, &Application{})
+
+	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
+		app := *watchedKeys[appKey].(*Application)
+
+		if update.GitRepository != "" {
+			app.GitRepository = update.GitRepository
+		}
+
+		if update.Instances != 0 {
+			app.Instances = update.Instances
+		}
+
+		update.Version = app.Version
+
+		tran.PutJSONOnSuccess(appKey, app)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	if update.GitRepository != "" {
+		app.GitRepository = update.GitRepository
+	}
+
+	if update.Instances != 0 {
+		app.Instances = update.Instances
+	}
+
 	return nil
 }
 

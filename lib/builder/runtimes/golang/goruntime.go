@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/jysperm/deploying/lib/builder/runtimes/golang/helpers"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -16,6 +16,15 @@ type Dockerfile struct {
 	PackagePath string
 	DepManager  string
 	PackageName string
+}
+
+var ErrUnknowType = errors.New("unknown type of project")
+
+func Check(root string) error {
+	if checkDep(root) || checkGlide(root) {
+		return nil
+	}
+	return ErrUnknowType
 }
 
 func GenerateDockerfile(root string, remoteURL string) error {
@@ -31,11 +40,11 @@ func GenerateDockerfile(root string, remoteURL string) error {
 		return err
 	}
 
-	if helpers.CheckDep(root) {
+	if checkDep(root) {
 		config.DepManager = "dep ensure"
 	}
 
-	if helpers.CheckGlide(root) {
+	if checkGlide(root) {
 		config.DepManager = "glide install"
 	}
 
@@ -74,4 +83,20 @@ func extractInfo(remoteURL string) (string, string) {
 	gitIndex := strings.LastIndex(remoteURL, ".git") - 1
 	packagePath := fmt.Sprintf("%s/%s", string(byteURL[atIndex:semicolonIndex]), string(byteURL[semicolonIndex+1:gitIndex]))
 	return string(byteURL[slashIndex:gitIndex]), packagePath
+}
+
+func checkDep(root string) bool {
+	return existsInRoot("Gopkg.lock", root) && existsInRoot("Gopkg.toml", root)
+}
+
+func checkGlide(root string) bool {
+	return existsInRoot("glide.yaml", root) || existsInRoot("glide.lock", root)
+}
+
+func existsInRoot(file string, root string) bool {
+	path := filepath.Join(root, file)
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return true
 }

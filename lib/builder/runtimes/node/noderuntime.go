@@ -11,13 +11,21 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/parnurzeal/gorequest"
 
-	"github.com/jysperm/deploying/lib/builder/runtimes/node/helpers"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
 type Dockerfile struct {
 	NodeVersion string
 	HasYarn     bool
+}
+
+var ErrUnknowType = errors.New("unknown type of project")
+
+func Check(root string) error {
+	if existsInRoot("package.json", root) {
+		return nil
+	}
+	return ErrUnknowType
 }
 
 func GenerateDockerfile(root string) error {
@@ -36,7 +44,7 @@ func GenerateDockerfile(root string) error {
 		return err
 	}
 
-	if helpers.CheckYarn(root) {
+	if checkYarn(root) {
 		config.HasYarn = true
 	}
 
@@ -111,4 +119,16 @@ func extraVersion(path string) (string, error) {
 	}
 
 	return exactNode, nil
+}
+
+func checkYarn(root string) bool {
+	return existsInRoot("yarn.lock", root)
+}
+
+func existsInRoot(file string, root string) bool {
+	path := filepath.Join(root, file)
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return true
 }

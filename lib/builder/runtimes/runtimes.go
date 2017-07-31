@@ -1,23 +1,30 @@
 package runtimes
 
 import (
-	"os"
-	"path/filepath"
-	"text/template"
+	"errors"
+
+	"github.com/jysperm/deploying/lib/builder/runtimes/golang"
+	"github.com/jysperm/deploying/lib/builder/runtimes/node"
 )
 
-func GenerateDockerfile(templatePath string, path string, data interface{}) error {
-	dockerfileTemplate, err := template.ParseFiles(templatePath)
-	if err != nil {
-		return err
-	}
-	dockerfilePath := filepath.Join(path, "Dockerfile")
-	dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
-	defer dockerfile.Close()
+var ErrUnknowType = errors.New("unknown type of project")
 
-	if err := dockerfileTemplate.Execute(dockerfile, data); err != nil {
-		return err
+func Dockerlize(root string, extra interface{}) error {
+	if err := golang.Check(root); err == nil {
+		err := golang.GenerateDockerfile(root, (extra).(string))
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
-	return nil
+	if err := node.Check(root); err == nil {
+		err := node.GenerateDockerfile(root)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return ErrUnknowType
 }

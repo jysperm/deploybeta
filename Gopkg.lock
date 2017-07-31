@@ -15,9 +15,14 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
+
+[[projects]]
   name = "github.com/buger/jsonparser"
   packages = ["."]
-  revision = "9addec9710dc75a2c77f7233cdfc679aa1af1616"
+  revision = "8e4b7e09b0d6beb8cfd65b95e47b6b2a09f6dc7f"
 
 [[projects]]
   name = "github.com/coreos/etcd"
@@ -154,6 +159,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f658083b6cc9ccfecd6b1562ec469d9728e1fa2d5e4962aa488eb65b05879d1b"
+  inputs-digest = "972bf995c8598cb189929098206cbb134c7c923d0c577ebbdd5a9a6e42361bec"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -11,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/parnurzeal/gorequest"
 
+	"github.com/jysperm/deploying/lib/builder/runtimes/node/helpers"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -35,7 +36,7 @@ func GenerateDockerfile(root string) error {
 		return err
 	}
 
-	if utils.CheckYarn(root) {
+	if helpers.CheckYarn(root) {
 		config.HasYarn = true
 	}
 

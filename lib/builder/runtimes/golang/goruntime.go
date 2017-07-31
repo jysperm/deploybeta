@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/jysperm/deploying/lib/builder/runtimes/golang/helpers"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -30,11 +31,11 @@ func GenerateDockerfile(root string, remoteURL string) error {
 		return err
 	}
 
-	if utils.CheckDep(root) {
+	if helpers.CheckDep(root) {
 		config.DepManager = "dep ensure"
 	}
 
-	if utils.CheckGlide(root) {
+	if helpers.CheckGlide(root) {
 		config.DepManager = "glide install"
 	}
 

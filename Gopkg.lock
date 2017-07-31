@@ -14,11 +14,11 @@
   version = "1.0.2"
 
 [[projects]]
+  branch = "master"
   name = "github.com/blang/semver"
   packages = ["."]
   revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
-  branch = "master"
-  
+
 [[projects]]
   name = "github.com/buger/jsonparser"
   packages = ["."]

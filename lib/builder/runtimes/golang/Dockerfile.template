@@ -30,7 +30,7 @@ RUN curl "https://glide.sh/get" | sh
 
 ADD . /go/src/{{.PackagePath}}
 
-RUN cd /go/src/{{.PackagePath}} && /go/bin/{{.DepManager}} -v
+RUN cd /go/src/{{.PackagePath}} && /go/bin/{{.DepManager}}
 
 RUN cd /go/src/{{.PackagePath}} && go build && cp -R . /home/deploying/app
 

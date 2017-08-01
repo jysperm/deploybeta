@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/api/types"
 )
 
-func TestDepBuild(t *testing.T) {
+func TestBuildDep(t *testing.T) {
 	opts := types.ImageBuildOptions{
 		Tags: []string{"dep:latest"},
 	}

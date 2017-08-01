@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
 
+	"github.com/jysperm/deploying/lib/builder/runtimes"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -123,6 +124,10 @@ func BuildImage(opts types.ImageBuildOptions, url string, param string) (string,
 
 	dirPath, err := cloneRepository(url, param)
 	if err != nil {
+		return "", err
+	}
+
+	if err := runtimes.Dockerlize(dirPath, url); err != nil {
 		return "", err
 	}
 

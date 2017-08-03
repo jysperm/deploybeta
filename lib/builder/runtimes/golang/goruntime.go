@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -27,7 +29,7 @@ func Check(root string) error {
 	return ErrUnknowType
 }
 
-func GenerateDockerfile(root string, remoteURL string) error {
+func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 	name, path := extractInfo(remoteURL)
 	config := Dockerfile{
 		PackagePath: path,
@@ -37,7 +39,7 @@ func GenerateDockerfile(root string, remoteURL string) error {
 
 	templatePath, err := utils.GetAssetFilePath("lib/builder/runtimes/golang/Dockerfile.template")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if checkDep(root) {
@@ -50,18 +52,19 @@ func GenerateDockerfile(root string, remoteURL string) error {
 
 	dockerfileTemplate, err := template.ParseFiles(templatePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	dockerfilePath := filepath.Join(root, "Dockerfile")
-	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
-	defer Dockerfile.Close()
+	fileBuffer := new(bytes.Buffer)
+	fileWriter := bufio.NewWriter(fileBuffer)
 
-	if err := dockerfileTemplate.Execute(Dockerfile, config); err != nil {
-		return err
+	if err := dockerfileTemplate.Execute(fileWriter, config); err != nil {
+		return nil, err
 	}
 
-	return nil
+	fileWriter.Flush()
+
+	return fileBuffer, nil
 }
 
 func detectType(remoteURL string) bool {

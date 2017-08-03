@@ -39,7 +39,7 @@ func TestCreateVersion(t *testing.T) {
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "master",
+			"gitTag": "npm",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
@@ -57,7 +57,7 @@ func TestDeployVersion(t *testing.T) {
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "master",
+			"gitTag": "npm",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
@@ -86,7 +86,7 @@ func TestCreateAndDeploy(t *testing.T) {
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "master",
+			"gitTag": "npm",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)

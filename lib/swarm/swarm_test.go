@@ -15,7 +15,7 @@ var shasum string
 func init() {
 	var err error
 	seedApp = SeedApp("https://github.com/jysperm/deploying-samples.git", "")
-	imageVersion, err = versionModel.CreateVersion(&seedApp, "", "")
+	imageVersion, err = versionModel.CreateVersion(&seedApp, "", "npm")
 	seedApp.Version = imageVersion.Tag
 	if err != nil {
 		panic(err)
@@ -30,7 +30,7 @@ func TestCreateService(t *testing.T) {
 
 func TestUpdateService(t *testing.T) {
 	seedApp.GitRepository = "https://github.com/jysperm/deploying-samples.git"
-	imageVersion, err := versionModel.CreateVersion(&seedApp, "", "")
+	imageVersion, err := versionModel.CreateVersion(&seedApp, "", "npm")
 	if err != nil {
 		t.Error(err)
 	}

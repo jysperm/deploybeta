@@ -1,6 +1,8 @@
 package node
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -28,20 +30,20 @@ func Check(root string) error {
 	return ErrUnknowType
 }
 
-func GenerateDockerfile(root string) error {
+func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	config := Dockerfile{
 		HasYarn: false,
 	}
 
 	node, err := extraVersion(root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	config.NodeVersion = node
 
 	templatePath, err := utils.GetAssetFilePath("lib/builder/runtimes/node/Dockerfile.template")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if checkYarn(root) {
@@ -50,18 +52,21 @@ func GenerateDockerfile(root string) error {
 
 	dockerfileTemplate, err := template.ParseFiles(templatePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	dockerfilePath := filepath.Join(root, "Dockerfile")
-	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
-	defer Dockerfile.Close()
+	fileBuffer := new(bytes.Buffer)
+	fileWriter := bufio.NewWriter(fileBuffer)
 
-	if err := dockerfileTemplate.Execute(Dockerfile, config); err != nil {
-		return err
+	if err := dockerfileTemplate.Execute(fileWriter, config); err != nil {
+		return nil, err
 	}
 
-	return nil
+	if err := fileWriter.Flush(); err != nil {
+		return nil, err
+	}
+
+	return fileBuffer, nil
 }
 
 func fetchVerisonList() ([]byte, error) {

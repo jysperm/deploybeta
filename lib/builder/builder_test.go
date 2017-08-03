@@ -7,10 +7,9 @@ import (
 	"github.com/docker/docker/api/types"
 )
 
-func TestBuildImage(t *testing.T) {
-
+func TestBuildDep(t *testing.T) {
 	opts := types.ImageBuildOptions{
-		Tags: []string{"dep-test:latest"},
+		Tags: []string{"dep:latest"},
 	}
 
 	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "dep")
@@ -20,9 +19,44 @@ func TestBuildImage(t *testing.T) {
 	t.Log(shasum)
 }
 
-func TestBuildFailure(t *testing.T) {
+func TestBuildGlide(t *testing.T) {
 	opts := types.ImageBuildOptions{
-		Tags: []string{"failure"},
+		Tags: []string{"glide:latest"},
+	}
+
+	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "glide")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(shasum)
+}
+
+func TestBuildNpm(t *testing.T) {
+	opts := types.ImageBuildOptions{
+		Tags: []string{"npm:latest"},
+	}
+
+	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "npm")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(shasum)
+}
+
+func TestBuildYarn(t *testing.T) {
+	opts := types.ImageBuildOptions{
+		Tags: []string{"yarn:latest"},
+	}
+
+	shasum, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "yarn")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(shasum)
+}
+func TestBuildUnknownProject(t *testing.T) {
+	opts := types.ImageBuildOptions{
+		Tags: []string{"failure:latest"},
 	}
 
 	_, err := BuildImage(opts, "https://github.com/jysperm/deploying-samples.git", "failure")

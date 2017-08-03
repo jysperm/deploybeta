@@ -1,6 +1,7 @@
 package runtimes
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/jysperm/deploying/lib/builder/runtimes/golang"
@@ -9,22 +10,22 @@ import (
 
 var ErrUnknowType = errors.New("unknown type of project")
 
-func Dockerlize(root string, extra interface{}) error {
+func Dockerlize(root string, extra interface{}) (*bytes.Buffer, error) {
 	if err := golang.Check(root); err == nil {
-		err := golang.GenerateDockerfile(root, (extra).(string))
+		buf, err := golang.GenerateDockerfile(root, (extra).(string))
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return nil
+		return buf, nil
 	}
 
 	if err := node.Check(root); err == nil {
-		err := node.GenerateDockerfile(root)
+		buf, err := node.GenerateDockerfile(root)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return nil
+		return buf, nil
 	}
 
-	return ErrUnknowType
+	return nil, ErrUnknowType
 }

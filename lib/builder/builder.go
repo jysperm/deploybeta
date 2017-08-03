@@ -2,10 +2,12 @@ package builder
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -13,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
 
+	"github.com/jysperm/deploying/lib/builder/runtimes"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -26,6 +29,73 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+//BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
+func BuildImage(opts types.ImageBuildOptions, url string, param string) (string, error) {
+	if opts.Dockerfile == "" {
+		opts.Dockerfile = "Dockerfile"
+	}
+	opts.NoCache = false
+	opts.Remove = true
+	opts.SuppressOutput = true
+	opts.Isolation = ""
+
+	dirPath, err := cloneRepository(url, param)
+	if err != nil {
+		return "", err
+	}
+
+	fileBuffer, err := runtimes.Dockerlize(dirPath, url)
+	if err != nil {
+		return "", err
+	}
+	if err := writeDockerfile(dirPath, fileBuffer); err != nil {
+		return "", err
+	}
+
+	buildCtx, err := buildContext(dirPath)
+	if err != nil {
+		return "", err
+	}
+	defer buildCtx.Close()
+	defer os.RemoveAll(dirPath)
+
+	response, err := swarmClient.ImageBuild(context.Background(), buildCtx, opts)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+
+	id, err := extractShasum(response.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func PushImage(image string) error {
+	if _, err := swarmClient.ImagePush(context.Background(), image, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func LookupRepoTag(name string, id string) (string, error) {
+	var tag string
+	inspect, _, err := swarmClient.ImageInspectWithRaw(context.Background(), id)
+	if err != nil {
+		return "", err
+	}
+
+	for _, i := range inspect.RepoTags {
+		if strings.Contains(i, name) {
+			tag = i
+			break
+		}
+	}
+	return tag, nil
 }
 
 func cloneRepository(url string, param string) (string, error) {
@@ -88,61 +158,19 @@ func extractShasum(r io.ReadCloser) (string, error) {
 	return shasum, nil
 }
 
-func PushImage(image string) error {
-	if _, err := swarmClient.ImagePush(context.Background(), image, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam}); err != nil {
+func writeDockerfile(path string, buf *bytes.Buffer) error {
+	dockerfilePath := filepath.Join(path, "Dockerfile")
+	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
+	defer Dockerfile.Close()
+	if err != nil {
 		return err
 	}
+
+	_, err = Dockerfile.Write(buf.Bytes())
+	if err != nil {
+		return err
+	}
+
 	return nil
-}
 
-func LookupRepoTag(name string, id string) (string, error) {
-	var tag string
-	inspect, _, err := swarmClient.ImageInspectWithRaw(context.Background(), id)
-	if err != nil {
-		return "", err
-	}
-
-	for _, i := range inspect.RepoTags {
-		if strings.Contains(i, name) {
-			tag = i
-			break
-		}
-	}
-	return tag, nil
-}
-
-//BuildImage will build a docker image accroding to the repo's url and depth and Dockerfiles
-func BuildImage(opts types.ImageBuildOptions, url string, param string) (string, error) {
-	if opts.Dockerfile == "" {
-		opts.Dockerfile = "Dockerfile"
-	}
-	opts.NoCache = false
-	opts.Remove = true
-	opts.SuppressOutput = true
-	opts.Isolation = ""
-
-	dirPath, err := cloneRepository(url, param)
-	if err != nil {
-		return "", err
-	}
-
-	buildCtx, err := buildContext(dirPath)
-	if err != nil {
-		return "", err
-	}
-	defer buildCtx.Close()
-	defer os.RemoveAll(dirPath)
-
-	response, err := swarmClient.ImageBuild(context.Background(), buildCtx, opts)
-	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-
-	id, err := extractShasum(response.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return id, nil
 }

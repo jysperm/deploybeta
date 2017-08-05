@@ -28,7 +28,7 @@ export default class ConsoleView extends Component {
       <Row>
         <Tabs defaultActiveKey={1} id='pages'>
           <Tab eventKey={1} title='Applications'>
-            <ApplicationsTab apps={this.state.apps} onAppEdited={::this.onAppEdited} />
+            <ApplicationsTab apps={this.state.apps} onAppEdited={::this.onAppEdited} onAppDeleted={::this.onAppDeleted} />
           </Tab>
         </Tabs>
       </Row>
@@ -39,6 +39,14 @@ export default class ConsoleView extends Component {
     if (app) {
       this.setState({
         apps: [app].concat(_.reject(this.state.apps, {name: app.name}))
+      });
+    }
+  }
+
+  onAppDeleted(app) {
+    if (app) {
+      this.setState({
+        apps: _.reject(this.state.apps, {name: app.name})
       });
     }
   }

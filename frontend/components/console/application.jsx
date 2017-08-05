@@ -47,7 +47,7 @@ export default class ApplicationsTab extends Component {
               <td>
                 <ButtonGroup>
                   <Button onClick={this.onEditApp.bind(this, app.name)}>Edit</Button>
-                  <Button bsStyle='danger'>Delete</Button>
+                  <Button bsStyle='danger' onClick={this.onDeleteApp.bind(this, app.name)}>Delete</Button>
                 </ButtonGroup>
               </td>
             </tr>;
@@ -76,6 +76,16 @@ export default class ApplicationsTab extends Component {
   onBuildVersion(name) {
     this.setState({
       buildingVersionApp: _.find(this.props.apps, {name})
+    });
+  }
+
+  onDeleteApp(name) {
+    return requestJson(`/apps/${name}`, {
+      method: 'DELETE'
+    }).then( () => {
+      this.props.onAppDeleted({name});
+    }).catch( err => {
+      alert(err.message);
     });
   }
 

@@ -3,6 +3,7 @@ import {Button, Table, ButtonGroup, Modal, FormGroup, ControlLabel, FormControl,
 import {Label, DropdownButton, MenuItem, Checkbox} from 'react-bootstrap';
 import React, {Component} from 'react';
 
+import {FormComponent} from '../../lib/components';
 import {requestJson} from '../../lib/request';
 
 export default class ApplicationsTab extends Component {
@@ -11,7 +12,7 @@ export default class ApplicationsTab extends Component {
 
     this.state = {
       editingApp: false,
-      buildingVersion: false
+      buildingVersionApp: false
     }
   }
 
@@ -36,7 +37,7 @@ export default class ApplicationsTab extends Component {
               <td>
                 <Label bsStyle='primary'>{app.version}</Label>
                 <ButtonGroup>
-                  <Button onClick={this.onBuildingVersion.bind(this, app.name)}>Build</Button>
+                  <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
                   <DropdownButton title='Deploy...' id='deploy-dropdown'>
                     <MenuItem eventKey={1}>20170219-205301</MenuItem>
                   </DropdownButton>
@@ -55,7 +56,7 @@ export default class ApplicationsTab extends Component {
       </Table>
 
       {this.state.editingApp && <EditAppModal {...this.state.editingApp} onClose={::this.onAppEdited} />}
-      {this.state.buildingVersion && <BuildVersionModal />}
+      {this.state.buildingVersionApp && <BuildVersionModal {...this.state.buildingVersionApp} onClose={::this.onAppEdited} />}
 
     </div>;
   }
@@ -72,21 +73,23 @@ export default class ApplicationsTab extends Component {
     });
   }
 
+  onBuildVersion(name) {
+    this.setState({
+      buildingVersionApp: _.find(this.props.apps, {name})
+    });
+  }
+
   onAppEdited(app) {
-    this.setState({editingApp: false});
+    this.setState({
+      editingApp: false,
+      buildingVersionApp: false
+    });
+
     this.props.onAppEdited(app);
-  }
-
-  onBuildingVersion(appName) {
-    this.setState({buildingVersion: appName});
-  }
-
-  onBuildVersionModalClosed() {
-    this.setState({buildingVersion: false});
   }
 }
 
-class EditAppModal extends Component {
+class EditAppModal extends FormComponent {
   constructor(props) {
     super(props)
 
@@ -119,15 +122,6 @@ class EditAppModal extends Component {
     </Modal>;
   }
 
-  linkField(field) {
-    return {
-      value: this.state[field] || this.props[field],
-      onChange: ({target: {value}}) => {
-        this.setState({[field]: value});
-      }
-    };
-  }
-
   onCreateApp() {
     return requestJson('/apps', {
       method: 'POST',
@@ -151,7 +145,7 @@ class EditAppModal extends Component {
   }
 }
 
-class BuildVersionModal extends Component {
+class BuildVersionModal extends FormComponent {
   constructor(props) {
     super(props)
 
@@ -159,21 +153,19 @@ class BuildVersionModal extends Component {
   }
 
   render() {
-    return <Modal show={this.state.buildingVersion} onHide={::this.onBuildVersionModalClose}>
+    return <Modal show={true} onHide={::this.props.onClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Build new version</Modal.Title>
+        <Modal.Title>Build version for {this.props.name}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <FormGroup controlId='git-tag'>
-          <ControlLabel>App</ControlLabel>
-          <FormControl type='text' disabled={true} value={this.state.buildingVersion}  />
-        </FormGroup>
-        <FormGroup controlId='git-tag'>
           <ControlLabel>Git tag</ControlLabel>
-          <FormControl type='text' onChange={::this.onBuildingVersionTagEdited} value={this.state.buildingVersionTag}  />
+          <FormControl type='text' {...this.linkField('gitTag')} />
           <HelpBlock>Git branch, tag or commit hash</HelpBlock>
         </FormGroup>
-        <Checkbox onChange={::this.onBuildVersionDeployEdited} value={this.state.buildingVersionDeploy}>Deploy to app after build finished</Checkbox>
+        <Checkbox {...this.linkField('buildAndDeploy', 'checked')}>
+          Deploy to app after build finished
+        </Checkbox>
       </Modal.Body>
       <Modal.Footer>
         <Button bsStyle='success' onClick={::this.onBuildVersion}>Build</Button>
@@ -182,17 +174,13 @@ class BuildVersionModal extends Component {
   }
 
   onBuildVersion() {
-    const {buildingVersion, buildingVersionDeploy} = this.state;
-
-    return requestJson(`/apps/${buildingVersion}/${buildingVersionDeploy ? 'version' : 'versions'}`, {
+    return requestJson(`/apps/${this.props.name}/${this.state.buildAndDeploy ? 'version' : 'versions'}`, {
       method: 'POST',
       body: {
-        gitTag: this.state.buildingVersionTag
+        gitTag: this.state.gitTag
       }
-    }).then( app => {
-      this.setState({
-        buildingVersion: false
-      });
+    }).then( () => {
+      this.props.onClose();
     }).catch( err => {
       alert(err.message);
     });

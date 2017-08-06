@@ -32,6 +32,8 @@ export default class ApplicationsTab extends Component {
         </thead>
         <tbody>
           {this.props.apps.map( app => {
+            let versionTags = _.map(app.versions, 'tag');
+
             return <tr key={app.name}>
               <td>{app.name}</td>
               <td>
@@ -39,7 +41,9 @@ export default class ApplicationsTab extends Component {
                 <ButtonGroup>
                   <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
                   <DropdownButton title='Deploy...' id='deploy-dropdown'>
-                    <MenuItem eventKey={1}>20170219-205301</MenuItem>
+                    {_.map(app.versions, 'tag').map( versionTag => {
+                      return <MenuItem eventKey={versionTag}>{versionTag}</MenuItem>
+                    })}
                   </DropdownButton>
                 </ButtonGroup>
               </td>

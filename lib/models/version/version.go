@@ -98,13 +98,11 @@ func ListAll(app appModel.Application) (*[]Version, error) {
 	var versionArray []Version
 	for _, ev := range resp.Kvs {
 		temp := Version{}
-		fmt.Println(string(ev.Value))
 		_ = json.Unmarshal(ev.Value, &temp)
 		fmt.Println(temp)
 		versionArray = append(versionArray, temp)
 	}
 
-	fmt.Println(versionArray)
 	return &versionArray, nil
 }
 

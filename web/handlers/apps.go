@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -75,7 +74,6 @@ func UpdateApp(ctx echo.Context) error {
 	}
 
 	if valueType != jsonparser.Null {
-		fmt.Println(string(gitRepository))
 		update.GitRepository = string(gitRepository)
 	}
 

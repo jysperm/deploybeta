@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -103,6 +104,7 @@ func cloneRepository(url string, param string) (string, error) {
 		param = "master"
 	}
 	path, err := utils.Clone(url, param)
+	fmt.Println(url + param)
 	if err != nil {
 		return "", err
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"golang.org/x/net/context"
 
 	"github.com/jysperm/deploying/lib/builder"
@@ -36,6 +37,7 @@ func CreateVersion(app *appModel.Application, registry string, gitTag string) (V
 	buildOpts := types.ImageBuildOptions{
 		Tags: []string{nameVersion},
 	}
+	fmt.Println(app)
 	shasum, err := builder.BuildImage(buildOpts, app.GitRepository, gitTag)
 	if err != nil {
 		return Version{}, err
@@ -84,6 +86,26 @@ func FindByTag(app appModel.Application, tag string) (*Version, error) {
 	}
 
 	return &v, nil
+}
+
+func ListAll(app appModel.Application) (*[]Version, error) {
+	versionPrefix := fmt.Sprintf("/apps/%s/versions/", app.Name)
+	resp, err := etcd.Client.Get(context.Background(), versionPrefix, etcdv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	var versionArray []Version
+	for _, ev := range resp.Kvs {
+		temp := Version{}
+		fmt.Println(string(ev.Value))
+		_ = json.Unmarshal(ev.Value, &temp)
+		fmt.Println(temp)
+		versionArray = append(versionArray, temp)
+	}
+
+	fmt.Println(versionArray)
+	return &versionArray, nil
 }
 
 func generateTag() string {

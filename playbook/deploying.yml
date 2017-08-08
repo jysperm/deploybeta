@@ -15,3 +15,10 @@
   roles:
     - letsencrypt
     - registry
+
+- hosts: dcloud2
+  vars:
+    elasticsearch:
+      name: es2
+  roles:
+    - elasticsearch

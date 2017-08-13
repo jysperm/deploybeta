@@ -51,7 +51,7 @@ func NewAppResponse(app *appModel.Application) AppResponse {
 
 	versions, err := versionModel.ListAll(*app)
 	if err != nil {
-		panic(err)
+		return AppResponse{}
 	}
 	appRes.Versions = *versions
 

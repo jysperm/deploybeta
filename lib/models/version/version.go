@@ -37,7 +37,7 @@ func CreateVersion(app *appModel.Application, registry string, gitTag string) (V
 	buildOpts := types.ImageBuildOptions{
 		Tags: []string{nameVersion},
 	}
-	fmt.Println(app)
+
 	shasum, err := builder.BuildImage(buildOpts, app.GitRepository, gitTag)
 	if err != nil {
 		return Version{}, err
@@ -99,8 +99,11 @@ func ListAll(app appModel.Application) (*[]Version, error) {
 	for _, ev := range resp.Kvs {
 		temp := Version{}
 		_ = json.Unmarshal(ev.Value, &temp)
-		fmt.Println(temp)
 		versionArray = append(versionArray, temp)
+	}
+
+	if len(versionArray) == 0 {
+		return &[]Version{}, nil
 	}
 
 	return &versionArray, nil

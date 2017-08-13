@@ -20,5 +20,10 @@
   vars:
     elasticsearch:
       name: es2
+      url: 'http://es2.dcloud.run:9200'
+    kibana:
+      name: 'kibana'
+      domain: 'kibana.dcloud.run'
   roles:
     - elasticsearch
+    - kibana

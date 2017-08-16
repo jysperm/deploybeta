@@ -16,6 +16,14 @@ type AccountResponse struct {
 	Email    string `json:"email"`
 }
 
+type AppResponse struct {
+	Name          string                 `json:"name"`
+	Owner         string                 `json:"owner"`
+	GitRepository string                 `json:"gitRepository"`
+	Instances     int                    `json:"instances"`
+	Versions      []versionModel.Version `json:"versions"`
+}
+
 func NewErrorResponse(err error) ErrorResponse {
 	return ErrorResponse{
 		Error: err.Error(),
@@ -33,8 +41,40 @@ func NewSessionResponse(session *sessionModel.Session) sessionModel.Session {
 	return *session
 }
 
-func NewAppResponse(app *appModel.Application) appModel.Application {
-	return *app
+func NewAppResponse(app *appModel.Application) AppResponse {
+	appRes := AppResponse{
+		Name:          app.Name,
+		Owner:         app.Owner,
+		GitRepository: app.GitRepository,
+		Instances:     app.Instances,
+	}
+
+	versions, err := versionModel.ListAll(*app)
+	if err != nil {
+		return AppResponse{}
+	}
+	appRes.Versions = *versions
+
+	return appRes
+}
+
+func NewAppsResponse(apps []appModel.Application) []AppResponse {
+	var appsRes []AppResponse
+	var app AppResponse
+	for _, v := range apps {
+		app.GitRepository = v.GitRepository
+		app.Owner = v.Owner
+		app.Name = v.Name
+		app.Instances = v.Instances
+		versions, err := versionModel.ListAll(v)
+		if err != nil {
+			panic(err)
+		}
+		app.Versions = *versions
+		appsRes = append(appsRes, app)
+	}
+
+	return appsRes
 }
 
 func NewVersionResponse(version *versionModel.Version) versionModel.Version {

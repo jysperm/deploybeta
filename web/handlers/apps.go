@@ -21,7 +21,7 @@ func GetMyApps(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, apps)
+	return ctx.JSON(http.StatusOK, NewAppsResponse(apps))
 }
 
 func CreateApp(ctx echo.Context) error {
@@ -35,9 +35,9 @@ func CreateApp(ctx echo.Context) error {
 	app := &appModel.Application{
 		Name:          params["name"],
 		Owner:         GetSessionAccount(ctx).Username,
-		GitRepository: "",
+		GitRepository: params["gitRepository"],
 		Instances:     1,
-		Version:       "",
+		Version:       params["version"],
 	}
 
 	err = appModel.CreateApp(app)
@@ -82,10 +82,10 @@ func UpdateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if valueType != jsonparser.Null {
+	if valueType != jsonparser.NotExist {
 		realValue, err := strconv.Atoi(string(instances))
 		if err != nil {
-			return err
+			return NewHTTPError(http.StatusInternalServerError, err)
 		}
 		update.Instances = realValue
 	}
@@ -94,9 +94,10 @@ func UpdateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusConflict, err)
 	}
 
-	if app.Instances != update.Instances {
+	if app.Instances != update.Instances && app.Version != "" {
 		err := swarm.UpdateService(app)
 		if err != nil {
+			panic(err)
 			return NewHTTPError(http.StatusInternalServerError, err)
 		}
 	}

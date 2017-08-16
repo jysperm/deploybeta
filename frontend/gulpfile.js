@@ -23,7 +23,7 @@ gulp.task('frontend-libs', () => {
 });
 
 gulp.task('frontend-components', () => {
-  return gulp.src('components/*.jsx')
+  return gulp.src('components/**/*.jsx')
     .pipe(babel({
       presets: ['es2015', 'stage-0'],
       plugins: ['transform-react-jsx']
@@ -42,7 +42,7 @@ gulp.task('frontend-scripts', ['frontend-libs', 'frontend-components'], () => {
 });
 
 gulp.task('watch', ['default'], () => {
-  gulp.watch(['components/*.jsx', 'lib/**/*.js'], ['frontend-scripts']);
+  gulp.watch(['components/**/*.jsx', 'lib/**/*.js'], ['frontend-scripts']);
   gulp.watch(['styles/*.less'], ['frontend-styles']);
 });
 

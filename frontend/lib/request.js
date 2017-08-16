@@ -16,19 +16,23 @@ export function requestJson(url, options = {}) {
   }
 
   return fetch(url, options).then( res => {
-    if (res.ok) {
-      return res.json();
-    } else {
-      return res.text().then( body => {
-        var error;
+    return res.text().then( body => {
+      var error;
 
+      if (res.ok) {
+        try {
+          return JSON.parse(body);
+        } catch (err) {
+          return body;
+        }
+      } else {
         try {
           error = JSON.parse(body).error;
         } finally {
           const err = new Error(`${res.status}: ${error || res.statusText}`)
           throw _.extend(err, {res, body});
         }
-      });
-    }
+      }
+    });
   });
 }

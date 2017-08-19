@@ -2,8 +2,10 @@
 - hosts: all
   vars:
     domain: dcloud.run
+    elasticsearch: 'es2.dcloud.run:9200'
   roles:
     - deploying
+    - filebeat
 
 - hosts: dcloud1
   vars:

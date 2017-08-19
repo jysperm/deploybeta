@@ -58,8 +58,24 @@ func UpdateService(app app.Application) error {
 
 	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
-	containerSpec := swarm.ContainerSpec{Image: repoTag}
-	taskSpec := swarm.TaskSpec{ContainerSpec: containerSpec}
+
+	containerSpec := swarm.ContainerSpec{
+		Image: repoTag,
+		Labels: map[string]string{
+			"deploying.name": app.Name,
+		},
+	}
+
+	taskSpec := swarm.TaskSpec{
+		ContainerSpec: containerSpec,
+		LogDriver: &swarm.Driver{
+			Name: "json-file",
+			Options: map[string]string{
+				"labels": "deploying.name",
+			},
+		},
+	}
+
 	replicatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
 	serviceMode := swarm.ServiceMode{Replicated: &replicatedService}
 	portConfig := swarm.PortConfig{

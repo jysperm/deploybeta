@@ -1,0 +1,31 @@
+---
+- name: tweak sysctl
+  sysctl:
+    name: 'vm.max_map_count'
+    value: '262144'
+
+- name: create directory
+  file:
+    path: '/var/lib/{{elasticsearch.name}}'
+    state: 'directory'
+    owner: '1000'
+    group: '1000'
+    mode: '0700'
+
+- name: inspect elasticsearch service
+  command: 'docker service inspect {{elasticsearch.name}}'
+  register: elasticsearch_service
+  ignore_errors: yes
+
+- name: run elasticsearch service
+  command: >
+    docker service create
+      --name {{elasticsearch.name}}
+      --publish 9200:9200
+      --constraint 'node.hostname == {{ansible_hostname}}'
+      --env cluster.name={{elasticsearch.name}}
+      --env xpack.security.enabled=false
+      --env 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      --mount type=bind,source=/var/lib/{{elasticsearch.name}},destination=/usr/share/elasticsearch/data
+        docker.elastic.co/elasticsearch/elasticsearch:5.5.1
+  when: elasticsearch_service.stderr.find('no such service') != -1

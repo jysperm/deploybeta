@@ -1,0 +1,15 @@
+---
+- name: inspect kibana service
+  command: 'docker service inspect {{kibana.name}}'
+  register: kibana_service
+  ignore_errors: yes
+
+- name: run kibana service
+  command: >
+    docker service create
+      --name {{kibana.name}}
+      --publish 5601:5601
+      --env SERVER_NAME={{kibana.domain}}
+      --env ELASTICSEARCH_URL={{elasticsearch.url}}
+        docker.elastic.co/kibana/kibana:5.5.1
+  when: kibana_service.stderr.find('no such service') != -1

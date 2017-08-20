@@ -2,8 +2,10 @@
 - hosts: all
   vars:
     domain: dcloud.run
+    elasticsearch: 'es2.dcloud.run:9200'
   roles:
     - deploying
+    - filebeat
 
 - hosts: dcloud1
   vars:
@@ -15,3 +17,15 @@
   roles:
     - letsencrypt
     - registry
+
+- hosts: dcloud2
+  vars:
+    elasticsearch:
+      name: es2
+      url: 'http://es2.dcloud.run:9200'
+    kibana:
+      name: 'kibana'
+      domain: 'kibana.dcloud.run'
+  roles:
+    - elasticsearch
+    - kibana

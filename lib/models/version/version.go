@@ -10,12 +10,11 @@ import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"golang.org/x/net/context"
 
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/builder"
 	"github.com/jysperm/deploying/lib/etcd"
 	appModel "github.com/jysperm/deploying/lib/models/app"
 )
-
-const DefaultRegistry = "localhost:5000"
 
 type Version struct {
 	Shasum   string `json:"shasum"`
@@ -29,7 +28,7 @@ func CreateVersion(app *appModel.Application, registry string, gitTag string) (V
 	var nameVersion string
 	var newVersion Version
 	if registry == "" {
-		registry = DefaultRegistry
+		registry = config.DefaultRegistry
 	}
 	nameVersion = fmt.Sprintf("%s/%s:%s", registry, app.Name, version)
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)

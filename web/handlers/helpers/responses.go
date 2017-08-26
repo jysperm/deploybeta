@@ -61,7 +61,7 @@ func NewAppResponse(app *appModel.Application) AppResponse {
 }
 
 func NewAppsResponse(apps []appModel.Application) []AppResponse {
-	var appsRes []AppResponse
+	appsRes := make([]AppResponse, 0)
 	var app AppResponse
 	for _, v := range apps {
 		app.GitRepository = v.GitRepository

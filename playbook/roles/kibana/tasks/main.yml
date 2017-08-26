@@ -3,6 +3,7 @@
   command: 'docker service inspect {{kibana.name}}'
   register: kibana_service
   ignore_errors: yes
+  changed_when: False
 
 - name: run kibana service
   command: >

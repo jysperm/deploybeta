@@ -1,0 +1,4 @@
+---
+root_domain: dcloud.run
+elasticsearch_host: 'es1.dcloud.run:9200'
+registry_hostname: 'registry1.dcloud.run'

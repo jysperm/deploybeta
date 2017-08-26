@@ -9,6 +9,7 @@
   command: 'docker service inspect {{registry.name}}'
   register: registry_service
   ignore_errors: yes
+  changed_when: False
 
 - name: run registry service
   command: >

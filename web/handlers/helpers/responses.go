@@ -21,6 +21,7 @@ type AppResponse struct {
 	Owner         string                 `json:"owner"`
 	GitRepository string                 `json:"gitRepository"`
 	Instances     int                    `json:"instances"`
+	Version       string                 `json:"version"`
 	Versions      []versionModel.Version `json:"versions"`
 }
 
@@ -45,6 +46,7 @@ func NewAppResponse(app *appModel.Application) AppResponse {
 	appRes := AppResponse{
 		Name:          app.Name,
 		Owner:         app.Owner,
+		Version:       app.Version,
 		GitRepository: app.GitRepository,
 		Instances:     app.Instances,
 	}
@@ -65,6 +67,7 @@ func NewAppsResponse(apps []appModel.Application) []AppResponse {
 		app.GitRepository = v.GitRepository
 		app.Owner = v.Owner
 		app.Name = v.Name
+		app.Version = v.Version
 		app.Instances = v.Instances
 		versions, err := versionModel.ListAll(v)
 		if err != nil {

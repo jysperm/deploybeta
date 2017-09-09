@@ -42,7 +42,7 @@ export default class ApplicationsTab extends Component {
                   <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
                   <DropdownButton title='Deploy...' id='deploy-dropdown'>
                     {_.map(app.versions, 'tag').map( versionTag => {
-                      return <MenuItem eventKey={versionTag}>{versionTag}</MenuItem>
+                      return <MenuItem eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>
                     })}
                   </DropdownButton>
                 </ButtonGroup>
@@ -80,6 +80,17 @@ export default class ApplicationsTab extends Component {
   onBuildVersion(name) {
     this.setState({
       buildingVersionApp: _.find(this.props.apps, {name})
+    });
+  }
+
+  onDeployVersion(name, versionTag) {
+    return requestJson(`/apps/${name}/version`, {
+      method: 'PUT',
+      body: {
+        tag: versionTag
+      }
+    }).catch( err => {
+      alert(err.message);
     });
   }
 

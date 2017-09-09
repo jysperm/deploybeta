@@ -16,6 +16,7 @@
   command: 'docker service inspect {{elasticsearch.name}}'
   register: elasticsearch_service
   ignore_errors: yes
+  changed_when: False
 
 - name: run elasticsearch service
   command: >

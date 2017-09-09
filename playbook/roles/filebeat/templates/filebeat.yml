@@ -7,5 +7,5 @@ filebeat.prospectors:
   json.message_key: log
 
 output.elasticsearch:
-  hosts: ["{{elasticsearch}}"]
+  hosts: ["{{ elasticsearch_host }}"]
   protocol: "http"

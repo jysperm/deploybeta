@@ -4,7 +4,9 @@
 
 - name: issue certificates
   command: letsencrypt certonly --webroot -w /var/www/html -d {{item}} --email {{letsencrypt_email}} --agree-tos --noninteractive
+  register: result
   with_items: '{{letsencrypt}}'
+  changed_when: result.stdout.find('Congratulations') >= 0
 
 - name: setup cronjob
   cron: name=letsencrypt special_time=daily job='letsencrypt renew'

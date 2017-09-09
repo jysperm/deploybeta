@@ -6,14 +6,13 @@ import (
 )
 
 func GetAssetFilePath(relatedPath string) (string, error) {
-	if os.Getenv("WORKDIR") == "" {
-		execPath, err := os.Executable()
-		if err != nil {
-			return "", err
-		}
-		currentPath, _ := filepath.Split(execPath)
-		return filepath.Join(currentPath, relatedPath), nil
+	if dir := os.Getenv("WORKDIR"); dir != "" {
+		return filepath.Join(dir, relatedPath), nil
 	}
 
-	return filepath.Join(os.Getenv("WORKDIR"), relatedPath), nil
+	workDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(workDir, relatedPath), nil
 }

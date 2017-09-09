@@ -5,21 +5,20 @@ import (
 
 	"github.com/labstack/echo"
 
-	appModel "github.com/jysperm/deploying/lib/models/app"
-	versionModel "github.com/jysperm/deploying/lib/models/version"
+	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
 func CreateVersion(ctx echo.Context) error {
-	app := ctx.Get("app").(appModel.Application)
+	app := ctx.Get("app").(models.Application)
 
 	params := map[string]string{}
 	if err := ctx.Bind(&params); err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := versionModel.CreateVersion(&app, "", params["gitTag"])
+	version, err := models.CreateVersion(&app, "", params["gitTag"])
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -28,14 +27,14 @@ func CreateVersion(ctx echo.Context) error {
 }
 
 func DeployVersion(ctx echo.Context) error {
-	app := ctx.Get("app").(appModel.Application)
+	app := ctx.Get("app").(models.Application)
 
 	params := map[string]string{}
 	if err := ctx.Bind(&params); err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := versionModel.FindByTag(app, params["tag"])
+	version, err := models.FindVersionByTag(app, params["tag"])
 	if err != nil || version == nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
@@ -52,14 +51,14 @@ func DeployVersion(ctx echo.Context) error {
 }
 
 func CreateAndDeploy(ctx echo.Context) error {
-	app := ctx.Get("app").(appModel.Application)
+	app := ctx.Get("app").(models.Application)
 
 	params := map[string]string{}
 	if err := ctx.Bind(&params); err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := versionModel.CreateVersion(&app, "", params["gitTag"])
+	version, err := models.CreateVersion(&app, "", params["gitTag"])
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

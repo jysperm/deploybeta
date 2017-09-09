@@ -1,4 +1,4 @@
-package session
+package models
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/jysperm/deploying/lib/etcd"
-	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -19,7 +18,7 @@ type Session struct {
 	Username string `json:"username"`
 }
 
-func CreateToken(account *accountModel.Account) (*Session, error) {
+func CreateSession(account *Account) (*Session, error) {
 	sessionToken := utils.RandomString(32)
 	sessionKey := fmt.Sprint("/sessions/", sessionToken)
 
@@ -45,7 +44,7 @@ func CreateToken(account *accountModel.Account) (*Session, error) {
 	return session, err
 }
 
-func FindByToken(token string) (*Session, error) {
+func FindSessionByToken(token string) (*Session, error) {
 	sessionKey := fmt.Sprint("/sessions/", token)
 
 	resp, err := etcd.Client.Get(context.Background(), sessionKey)
@@ -69,7 +68,7 @@ func FindByToken(token string) (*Session, error) {
 	return session, nil
 }
 
-func DeleteByToken(token string) error {
+func DeleteSessionByToken(token string) error {
 	sessionKey := fmt.Sprint("/sessions/", token)
 
 	_, err := etcd.Client.Delete(context.Background(), sessionKey)

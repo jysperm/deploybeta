@@ -1,11 +1,6 @@
 package helpers
 
-import (
-	accountModel "github.com/jysperm/deploying/lib/models/account"
-	appModel "github.com/jysperm/deploying/lib/models/app"
-	sessionModel "github.com/jysperm/deploying/lib/models/session"
-	versionModel "github.com/jysperm/deploying/lib/models/version"
-)
+import "github.com/jysperm/deploying/lib/models"
 
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -17,12 +12,12 @@ type AccountResponse struct {
 }
 
 type AppResponse struct {
-	Name          string                 `json:"name"`
-	Owner         string                 `json:"owner"`
-	GitRepository string                 `json:"gitRepository"`
-	Instances     int                    `json:"instances"`
-	Version       string                 `json:"version"`
-	Versions      []versionModel.Version `json:"versions"`
+	Name          string           `json:"name"`
+	Owner         string           `json:"owner"`
+	GitRepository string           `json:"gitRepository"`
+	Instances     int              `json:"instances"`
+	Version       string           `json:"version"`
+	Versions      []models.Version `json:"versions"`
 }
 
 func NewErrorResponse(err error) ErrorResponse {
@@ -31,18 +26,18 @@ func NewErrorResponse(err error) ErrorResponse {
 	}
 }
 
-func NewAccountResponse(account *accountModel.Account) AccountResponse {
+func NewAccountResponse(account *models.Account) AccountResponse {
 	return AccountResponse{
 		Username: account.Username,
 		Email:    account.Email,
 	}
 }
 
-func NewSessionResponse(session *sessionModel.Session) sessionModel.Session {
+func NewSessionResponse(session *models.Session) models.Session {
 	return *session
 }
 
-func NewAppResponse(app *appModel.Application) AppResponse {
+func NewAppResponse(app *models.Application) AppResponse {
 	appRes := AppResponse{
 		Name:          app.Name,
 		Owner:         app.Owner,
@@ -51,7 +46,7 @@ func NewAppResponse(app *appModel.Application) AppResponse {
 		Instances:     app.Instances,
 	}
 
-	versions, err := versionModel.ListAll(*app)
+	versions, err := models.ListAllVersions(*app)
 	if err != nil {
 		return AppResponse{}
 	}
@@ -60,7 +55,7 @@ func NewAppResponse(app *appModel.Application) AppResponse {
 	return appRes
 }
 
-func NewAppsResponse(apps []appModel.Application) []AppResponse {
+func NewAppsResponse(apps []models.Application) []AppResponse {
 	appsRes := make([]AppResponse, 0)
 	var app AppResponse
 	for _, v := range apps {
@@ -69,7 +64,7 @@ func NewAppsResponse(apps []appModel.Application) []AppResponse {
 		app.Name = v.Name
 		app.Version = v.Version
 		app.Instances = v.Instances
-		versions, err := versionModel.ListAll(v)
+		versions, err := models.ListAllVersions(v)
 		if err != nil {
 			panic(err)
 		}
@@ -80,6 +75,6 @@ func NewAppsResponse(apps []appModel.Application) []AppResponse {
 	return appsRes
 }
 
-func NewVersionResponse(version *versionModel.Version) versionModel.Version {
+func NewVersionResponse(version *models.Version) models.Version {
 	return *version
 }

@@ -6,20 +6,18 @@ import (
 
 	"github.com/labstack/echo"
 
-	accountModel "github.com/jysperm/deploying/lib/models/account"
-	appModel "github.com/jysperm/deploying/lib/models/app"
-	sessionModel "github.com/jysperm/deploying/lib/models/session"
+	"github.com/jysperm/deploying/lib/models"
 )
 
 func AuthenticateMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
-		session, err := sessionModel.FindByToken(ctx.Request().Header.Get("Authorization"))
+		session, err := models.FindSessionByToken(ctx.Request().Header.Get("Authorization"))
 
 		if err != nil {
 			return NewHTTPError(http.StatusUnauthorized, err)
 		}
 
-		account, err := accountModel.FindByName(session.Username)
+		account, err := models.FindAccountByName(session.Username)
 
 		if err != nil {
 			return NewHTTPError(http.StatusUnauthorized, err)
@@ -35,7 +33,7 @@ func AppOwnerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		account := GetSessionAccount(ctx)
 		appName := ctx.Param("name")
-		apps, err := appModel.GetAppsOfAccount(account)
+		apps, err := models.GetAppsOfAccount(account)
 
 		if err != nil {
 			return NewHTTPError(http.StatusInternalServerError, err)
@@ -55,6 +53,6 @@ func AppOwnerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return NewHTTPError(http.StatusBadRequest, errors.New("Not found application"))
 	}
 }
-func GetSessionAccount(ctx echo.Context) *accountModel.Account {
-	return ctx.Get("account").(*accountModel.Account)
+func GetSessionAccount(ctx echo.Context) *models.Account {
+	return ctx.Get("account").(*models.Account)
 }

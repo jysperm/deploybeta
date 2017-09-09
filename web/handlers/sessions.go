@@ -5,8 +5,7 @@ import (
 
 	"github.com/labstack/echo"
 
-	accountModel "github.com/jysperm/deploying/lib/models/account"
-	sessionModel "github.com/jysperm/deploying/lib/models/session"
+	"github.com/jysperm/deploying/lib/models"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
@@ -18,9 +17,9 @@ func CreateSession(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	account, err := accountModel.FindByName(params["username"])
+	account, err := models.FindAccountByName(params["username"])
 
-	if err != nil && err == accountModel.ErrAccountNotFound {
+	if err != nil && err == models.ErrAccountNotFound {
 		return NewHTTPError(http.StatusUnauthorized, err)
 	} else if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
@@ -32,7 +31,7 @@ func CreateSession(ctx echo.Context) error {
 		return NewHTTPError(http.StatusUnauthorized, err)
 	}
 
-	session, err := sessionModel.CreateToken(account)
+	session, err := models.CreateSession(account)
 
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)

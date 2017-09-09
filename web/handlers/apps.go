@@ -8,14 +8,14 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 
-	appModel "github.com/jysperm/deploying/lib/models/app"
+	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
 func GetMyApps(ctx echo.Context) error {
 	account := GetSessionAccount(ctx)
-	apps, err := appModel.GetAppsOfAccount(account)
+	apps, err := models.GetAppsOfAccount(account)
 
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
@@ -32,7 +32,7 @@ func CreateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	app := &appModel.Application{
+	app := &models.Application{
 		Name:          params["name"],
 		Owner:         GetSessionAccount(ctx).Username,
 		GitRepository: params["gitRepository"],
@@ -40,11 +40,11 @@ func CreateApp(ctx echo.Context) error {
 		Version:       params["version"],
 	}
 
-	err = appModel.CreateApp(app)
+	err = models.CreateApp(app)
 
-	if err != nil && err == appModel.ErrUpdateConflict {
+	if err != nil && err == models.ErrUpdateConflict {
 		return NewHTTPError(http.StatusConflict, err)
-	} else if err != nil && err == appModel.ErrInvalidName {
+	} else if err != nil && err == models.ErrInvalidName {
 		return NewHTTPError(http.StatusBadRequest, err)
 	} else if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
@@ -54,11 +54,11 @@ func CreateApp(ctx echo.Context) error {
 }
 
 func UpdateApp(ctx echo.Context) error {
-	app := ctx.Get("app").(appModel.Application)
+	app := ctx.Get("app").(models.Application)
 
 	jsonBuf := make([]byte, 1024)
 
-	update := appModel.Application{
+	update := models.Application{
 		Name:          app.Name,
 		Owner:         app.Owner,
 		GitRepository: "",
@@ -107,7 +107,7 @@ func UpdateApp(ctx echo.Context) error {
 
 func DeleteApp(ctx echo.Context) error {
 	appName := ctx.Param("name")
-	if err := appModel.DeleteByName(appName); err != nil {
+	if err := models.DeleteAppByName(appName); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

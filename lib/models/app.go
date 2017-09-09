@@ -1,4 +1,4 @@
-package app
+package models
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 	"regexp"
 
 	"github.com/jysperm/deploying/lib/etcd"
-	accountModel "github.com/jysperm/deploying/lib/models/account"
 	"golang.org/x/net/context"
 )
 
@@ -56,7 +55,7 @@ func CreateApp(app *Application) error {
 }
 
 // TODO: Delete app name from `/account/:name/apps`
-func DeleteByName(name string) error {
+func DeleteAppByName(name string) error {
 	appKey := fmt.Sprint("/apps/", name)
 
 	_, err := etcd.Client.Delete(context.Background(), appKey)
@@ -64,7 +63,7 @@ func DeleteByName(name string) error {
 	return err
 }
 
-func GetAppsOfAccount(account *accountModel.Account) (result []Application, err error) {
+func GetAppsOfAccount(account *Account) (result []Application, err error) {
 	accountAppsKey := fmt.Sprintf("/account/%s/apps", account.Username)
 	resp, err := etcd.Client.Get(context.Background(), accountAppsKey)
 
@@ -183,7 +182,7 @@ func (app *Application) UpdateVersion(version string) error {
 	return nil
 }
 
-func FindByName(name string) (*Application, error) {
+func FindAppByName(name string) (*Application, error) {
 	appKey := fmt.Sprintf("/apps/%s", name)
 	resp, err := etcd.Client.Get(context.Background(), appKey)
 	if err != nil {

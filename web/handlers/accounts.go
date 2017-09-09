@@ -5,7 +5,7 @@ import (
 
 	"github.com/labstack/echo"
 
-	accountModel "github.com/jysperm/deploying/lib/models/account"
+	"github.com/jysperm/deploying/lib/models"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
@@ -17,16 +17,16 @@ func RegisterAccount(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	account := &accountModel.Account{
+	account := &models.Account{
 		Username: params["username"],
 		Email:    params["email"],
 	}
 
-	err = accountModel.Register(account, params["password"])
+	err = models.RegisterAccount(account, params["password"])
 
-	if err != nil && err == accountModel.ErrUsernameConflict {
+	if err != nil && err == models.ErrUsernameConflict {
 		return NewHTTPError(http.StatusConflict, err)
-	} else if err != nil && err == accountModel.ErrInvalidUsername {
+	} else if err != nil && err == models.ErrInvalidUsername {
 		return NewHTTPError(http.StatusBadRequest, err)
 	} else if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)

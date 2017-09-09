@@ -12,8 +12,7 @@ import (
 
 	"github.com/jysperm/deploying/lib/builder"
 	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/models/app"
-	"github.com/jysperm/deploying/lib/models/version"
+	"github.com/jysperm/deploying/lib/models"
 	"golang.org/x/net/context"
 )
 
@@ -33,7 +32,7 @@ func init() {
 }
 
 //UpdateService will update or create a app
-func UpdateService(app app.Application) error {
+func UpdateService(app models.Application) error {
 	var create bool
 	var err error
 	serviceID, err := extractServiceID(app.Name)
@@ -46,7 +45,7 @@ func UpdateService(app app.Application) error {
 		return err
 	}
 
-	currentVersion, err := version.FindByTag(app, app.Version)
+	currentVersion, err := models.FindVersionByTag(app, app.Version)
 	if err != nil {
 		return err
 	}
@@ -130,7 +129,7 @@ func UpdateService(app app.Application) error {
 }
 
 //RemoveService will remove the given service
-func RemoveService(app app.Application) error {
+func RemoveService(app models.Application) error {
 	serviceID, err := extractServiceID(app.Name)
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package account
+package models
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ type Account struct {
 
 var validUsername = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
-func Register(account *Account, password string) error {
+func RegisterAccount(account *Account, password string) error {
 	if !validUsername.MatchString(account.Username) {
 		return ErrInvalidUsername
 	}
@@ -56,7 +56,7 @@ func Register(account *Account, password string) error {
 	return nil
 }
 
-func FindByName(username string) (*Account, error) {
+func FindAccountByName(username string) (*Account, error) {
 	accountKey := fmt.Sprint("/accounts/", username)
 
 	resp, err := etcd.Client.Get(context.Background(), accountKey)
@@ -80,7 +80,7 @@ func FindByName(username string) (*Account, error) {
 	return account, nil
 }
 
-func DeleteByName(username string) error {
+func DeleteAccountByName(username string) error {
 	accountKey := fmt.Sprint("/accounts/", username)
 
 	_, err := etcd.Client.Delete(context.Background(), accountKey)

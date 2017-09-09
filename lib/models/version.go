@@ -1,4 +1,4 @@
-package version
+package models
 
 import (
 	"encoding/json"
@@ -13,7 +13,6 @@ import (
 	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/builder"
 	"github.com/jysperm/deploying/lib/etcd"
-	appModel "github.com/jysperm/deploying/lib/models/app"
 )
 
 type Version struct {
@@ -22,7 +21,7 @@ type Version struct {
 	Registry string `json:"registry"`
 }
 
-func CreateVersion(app *appModel.Application, registry string, gitTag string) (Version, error) {
+func CreateVersion(app *Application, registry string, gitTag string) (Version, error) {
 	version := generateTag()
 
 	var nameVersion string
@@ -61,8 +60,8 @@ func CreateVersion(app *appModel.Application, registry string, gitTag string) (V
 	return newVersion, nil
 }
 
-func DeleteVersion(app appModel.Application, version string) error {
-	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, version)
+func DeleteVersionByTag(app Application, tag string) error {
+	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
 
 	if _, err := etcd.Client.Delete(context.Background(), versionKey); err != nil {
 		return err
@@ -71,7 +70,7 @@ func DeleteVersion(app appModel.Application, version string) error {
 	return nil
 }
 
-func FindByTag(app appModel.Application, tag string) (*Version, error) {
+func FindVersionByTag(app Application, tag string) (*Version, error) {
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
 
 	resp, err := etcd.Client.Get(context.Background(), versionKey)
@@ -87,7 +86,7 @@ func FindByTag(app appModel.Application, tag string) (*Version, error) {
 	return &v, nil
 }
 
-func ListAll(app appModel.Application) (*[]Version, error) {
+func ListAllVersions(app Application) (*[]Version, error) {
 	versionPrefix := fmt.Sprintf("/apps/%s/versions/", app.Name)
 	resp, err := etcd.Client.Get(context.Background(), versionPrefix, etcdv3.WithPrefix())
 	if err != nil {

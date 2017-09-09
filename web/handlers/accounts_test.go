@@ -8,8 +8,7 @@ import (
 
 	"github.com/labstack/echo"
 
-	accountModel "github.com/jysperm/deploying/lib/models/account"
-	sessionModel "github.com/jysperm/deploying/lib/models/session"
+	"github.com/jysperm/deploying/lib/models"
 	. "github.com/jysperm/deploying/lib/testing"
 	"github.com/jysperm/deploying/lib/utils"
 	"github.com/jysperm/deploying/web/handlers/helpers"
@@ -42,7 +41,7 @@ func TestRegisterAccount(t *testing.T) {
 		t.Errorf("err.Code %v", err.(*echo.HTTPError).Code)
 	}
 
-	accountModel.DeleteByName(username)
+	models.DeleteAccountByName(username)
 }
 
 func TestCurrentAccount(t *testing.T) {
@@ -83,6 +82,6 @@ func TestCurrentAccount(t *testing.T) {
 		t.Errorf("response.username %v", response["username"])
 	}
 
-	accountModel.DeleteByName(account.Username)
-	sessionModel.DeleteByToken(session.Token)
+	models.DeleteAccountByName(account.Username)
+	models.DeleteSessionByToken(session.Token)
 }

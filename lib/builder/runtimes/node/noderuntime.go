@@ -41,7 +41,7 @@ func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	}
 	config.NodeVersion = node
 
-	templatePath, err := utils.GetAssetFilePath("assets/templates/node/Dockerfile.template")
+	templatePath, err := utils.GetAssetFilePath("assets/runtime-node/Dockerfile.template")
 	if err != nil {
 		return nil, err
 	}

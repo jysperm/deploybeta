@@ -20,7 +20,7 @@ pack-tar: binaries resources
 	cd $(OUTPUT) && tar --exclude *.tar.gz -zcvf deploying-linux-amd64.tar.gz *
 
 test:
-	go test -v $(REPO)/lib/builder/runtimes
+	go test -v $(REPO)/lib/runtimes
 	go test -v $(REPO)/lib/builder
 	go test -v $(REPO)/lib/models/app
 	go test -v $(REPO)/lib/swarm

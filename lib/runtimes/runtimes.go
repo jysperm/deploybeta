@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/jysperm/deploying/lib/builder/runtimes/golang"
-	"github.com/jysperm/deploying/lib/builder/runtimes/node"
+	"github.com/jysperm/deploying/lib/runtimes/golang"
+	"github.com/jysperm/deploying/lib/runtimes/node"
 )
 
 var ErrUnknowType = errors.New("unknown type of project")

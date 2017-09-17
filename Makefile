@@ -10,17 +10,16 @@ binaries:
 
 resources:
 	cd frontend && gulp
-	mkdir -p $(OUTPUT)/frontend $(OUTPUT)/lib/builder/runtimes/{golang,node}
 	cp -r frontend/public $(OUTPUT)/frontend
 	rm -r $(OUTPUT)/frontend/public/scripts
-	cp lib/builder/runtimes/golang/Dockerfile.template $(OUTPUT)/lib/builder/runtimes/golang
-	cp lib/builder/runtimes/node/Dockerfile.template $(OUTPUT)/lib/builder/runtimes/node
+	cp -r assets $(OUTPUT)
+
 
 pack-tar: binaries resources
 	cd $(OUTPUT) && tar --exclude *.tar.gz -zcvf deploying-linux-amd64.tar.gz *
 
 test:
-	go test -v $(REPO)/lib/builder/runtimes
+	go test -v $(REPO)/lib/runtimes
 	go test -v $(REPO)/lib/builder
 	go test -v $(REPO)/lib/models/app
 	go test -v $(REPO)/lib/swarm

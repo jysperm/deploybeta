@@ -15,7 +15,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
 
-	"github.com/jysperm/deploying/lib/builder/runtimes"
+	"github.com/jysperm/deploying/lib/runtimes"
 	"github.com/jysperm/deploying/lib/utils"
 )
 

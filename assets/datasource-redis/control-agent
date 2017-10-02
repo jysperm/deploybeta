@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+DEPLOYING_URL="${DEPLOYING_URL:-http://localhost:7000}"
+DATASOURCE_NAME="${DATASOURCE_NAME}"
+
+NODE_ADDRESS=$(hostname -I | cut -f1 | xargs)
+NODE_HOST="${NODE_ADDRESS}:6380"
+
+cmd_usage() {
+  cat <<EOF
+Deploying Control Agent for Redis
+
+Usage:
+  control-agent startup
+      Load configure from deploying, generate configuration and start redis-server.
+
+  control-agent command-loop
+      Long polling from deploying, receive commands and change configuration.
+EOF
+}
+
+cmd_startup() {
+  local status="{\"host\": \"${NODE_HOST}\"}"
+  local response=$(curl -s -X POST "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes" -d "${status}")
+  local role=$(echo ${response} | jq -r .role)
+
+  if [ $role = "master" ]; then
+    local masterHost=$NODE_HOST
+  else
+    local masterHost=$(echo ${response} | jq -r .masterHost)
+  fi
+
+  ROLE=${role} MASTER_HOST=${masterHost} redis.conf.sh > /etc/redis/redis.conf
+  BACKEND_HOST=${masterHost} nginx.conf.sh > /etc/nginx/nginx.conf
+
+  log "startup: ${role} of ${masterHost}"
+
+  supervisorctl start nginx-proxy
+  exec redis-server /etc/redis/redis.conf
+}
+
+cmd_command_loop() {
+  log "command-loop: started"
+
+  while true; do
+    local response=$(curl -s -X GET "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}/commands")
+    local command=$(echo ${response} | jq -r .command)
+
+    case $command in
+      change-role)
+        local role=$(echo ${response} | jq -r .role)
+
+        if [ $role = "master" ]; then
+          local masterHost=$NODE_HOST
+          redis_cmd SLAVEOF NO ONE
+        else
+          local masterHost=$(echo ${response} | jq -r .masterHost)
+          redis_cmd SLAVEOF ${masterHost//:/ }
+        fi
+
+        log "change-role: ${role} of ${masterHost}"
+
+        reload_proxy $masterHost
+        report_status
+      ;;
+
+      report-status) report_status ;;
+      *) log "command-loop: unknown command ${command}" ;;
+    esac
+  done
+}
+
+reload_proxy() {
+  BACKEND_HOST=${1} nginx.conf.sh > /etc/nginx/nginx.conf
+  supervisorctl signal HUP nginx-proxy
+}
+
+report_status() {
+  local redisRole=$(redis_cmd --raw ROLE)
+  local roleResult=(${redisRole//\n/ })
+  local role=${roleResult[0]}
+
+  if [ $role = "master" ]; then
+    local masterHost=$NODE_HOST
+  else
+    local masterHost="${roleResult[1]}:${roleResult[2]}"
+  fi
+
+  local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
+  curl -s -X PUT "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}" -d "${status}" > /dev/null
+  log "report-status: ${status}"
+}
+
+redis_cmd() {
+  redis-cli -p 6380 "$@"
+}
+
+log() {
+  echo "[control-agent] ${1}"
+}
+
+case $1 in
+  startup) cmd_startup ;;
+  command-loop) cmd_command_loop ;;
+  *) cmd_usage ;;
+esac

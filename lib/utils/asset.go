@@ -5,14 +5,18 @@ import (
 	"path/filepath"
 )
 
-func GetAssetFilePath(relatedPath string) (string, error) {
-	if dir := os.Getenv("WORKDIR"); dir != "" {
-		return filepath.Join(dir, relatedPath), nil
+func GetAssetFilePath(relatedPath string) string {
+	var err error
+
+	workDir, useDirFromEnv := os.LookupEnv("WORKDIR")
+
+	if !useDirFromEnv {
+		workDir, err = os.Getwd()
+
+		if err != nil {
+			panic("os.Getwd failed: " + err.Error())
+		}
 	}
 
-	workDir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(workDir, relatedPath), nil
+	return filepath.Join(workDir, "assets", relatedPath)
 }

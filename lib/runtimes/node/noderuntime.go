@@ -41,10 +41,7 @@ func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	}
 	config.NodeVersion = node
 
-	templatePath, err := utils.GetAssetFilePath("assets/runtime-node/Dockerfile.template")
-	if err != nil {
-		return nil, err
-	}
+	templatePath := utils.GetAssetFilePath("runtime-node/Dockerfile.template")
 
 	if checkYarn(root) {
 		config.HasYarn = true

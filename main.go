@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	web.CreateWebServer().Start(config.Port)
+	web.CreateWebServer().Start(config.Listen)
 }

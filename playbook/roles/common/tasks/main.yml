@@ -3,8 +3,28 @@
   hostname:
     name: '{{ inventory_hostname }}'
 
+- name: setup iptables allow ports
+  iptables:
+    table: filter
+    chain: INPUT
+    protocol: tcp
+    destination: '{{ansible_host}}'
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+  with_items:
+    - 22
+    - 80
+    - 443
+
+- name: setup iptables policy
+  iptables:
+    table: filter
+    chain: INPUT
+    policy: DROP
+
 - name: install apt packages
-  apt: name={{item}}
+  apt:
+    name: '{{ item }}'
   with_items:
     - apt-transport-https
     - ca-certificates

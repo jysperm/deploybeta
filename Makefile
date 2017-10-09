@@ -14,7 +14,6 @@ resources:
 	rm -r $(OUTPUT)/frontend/public/scripts
 	cp -r assets $(OUTPUT)
 
-
 pack-tar: binaries resources
 	cd $(OUTPUT) && tar --exclude *.tar.gz -zcvf deploying-linux-amd64.tar.gz *
 

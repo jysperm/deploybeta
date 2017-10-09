@@ -37,10 +37,7 @@ func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 		DepManager:  "",
 	}
 
-	templatePath, err := utils.GetAssetFilePath("assets/runtime-go/Dockerfile.template")
-	if err != nil {
-		return nil, err
-	}
+	templatePath := utils.GetAssetFilePath("runtime-go/Dockerfile.template")
 
 	if checkDep(root) {
 		config.DepManager = "dep ensure"

@@ -46,7 +46,7 @@ func NewAppResponse(app *models.Application) AppResponse {
 		Instances:     app.Instances,
 	}
 
-	versions, err := models.ListAllVersions(*app)
+	versions, err := models.ListVersions(app)
 	if err != nil {
 		return AppResponse{}
 	}
@@ -64,7 +64,7 @@ func NewAppsResponse(apps []models.Application) []AppResponse {
 		app.Name = v.Name
 		app.Version = v.Version
 		app.Instances = v.Instances
-		versions, err := models.ListAllVersions(v)
+		versions, err := models.ListVersions(&v)
 		if err != nil {
 			panic(err)
 		}

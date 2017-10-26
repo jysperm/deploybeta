@@ -5,22 +5,22 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploying/lib/etcd"
+	"github.com/jysperm/deploying/lib/models"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
-
-	"github.com/jysperm/deploying/lib/builder"
-	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/models"
 	"golang.org/x/net/context"
 )
 
-//UpstreamConfig define the structure of upstream config
 type UpstreamConfig struct {
 	Port uint32 `json:"port"`
 }
 
+var ErrNotFoundService = errors.New("Not found service")
 var swarmClient *client.Client
 
 func init() {
@@ -31,17 +31,17 @@ func init() {
 	}
 }
 
-//UpdateService will update or create a app
-func UpdateService(app models.Application) error {
+func UpdateService(app *models.Application) error {
 	var create bool
 	var err error
 	serviceID, err := extractServiceID(app.Name)
-	if err != nil && err.Error() == "Not found service" {
+	if err == ErrNotFoundService {
 		create = true
 	} else {
 		create = false
 	}
-	if err != nil && err.Error() != "Not found service" {
+
+	if err != nil && err != ErrNotFoundService {
 		return err
 	}
 
@@ -49,17 +49,13 @@ func UpdateService(app models.Application) error {
 	if err != nil {
 		return err
 	}
-
-	repoTag, err := builder.LookupRepoTag(app.Name, currentVersion.Shasum)
-	if err != nil {
-		return err
-	}
+	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
 
 	var upstreamConfig UpstreamConfig
 	uint64Instances := uint64(app.Instances)
 
 	containerSpec := swarm.ContainerSpec{
-		Image: repoTag,
+		Image: nameVersion,
 		Labels: map[string]string{
 			"deploying.name": app.Name,
 		},
@@ -94,11 +90,11 @@ func UpdateService(app models.Application) error {
 	}
 
 	if create {
-		serviceResponse, err := swarmClient.ServiceCreate(context.Background(), serviceSpec, types.ServiceCreateOptions{})
+		serviceRes, err := swarmClient.ServiceCreate(context.Background(), serviceSpec, types.ServiceCreateOptions{})
 		if err != nil {
 			return err
 		}
-		serviceID = serviceResponse.ID
+		serviceID = serviceRes.ID
 	} else {
 		internalVersion, err := extractInternalVersion(serviceID)
 		if err != nil {
@@ -108,7 +104,6 @@ func UpdateService(app models.Application) error {
 		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, internalVersion, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
 			return err
 		}
-
 	}
 
 	upstreamConfig.Port, err = extractPort(serviceID)
@@ -125,21 +120,41 @@ func UpdateService(app models.Application) error {
 		return err
 	}
 
+	if err := app.Update(app); err != nil {
+		return err
+	}
+
+	if err := app.UpdateVersion(currentVersion.Tag); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-//RemoveService will remove the given service
-func RemoveService(app models.Application) error {
+func RemoveService(app *models.Application) error {
 	serviceID, err := extractServiceID(app.Name)
+	if err == ErrNotFoundService {
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}
+
 	if err := swarmClient.ServiceRemove(context.Background(), serviceID); err != nil {
 		return err
 	}
 
-	upstreamKey := fmt.Sprintf("/upstream/%s", app.Name)
+	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
 	if _, err := etcd.Client.Delete(context.Background(), upstreamKey); err != nil {
+		return err
+	}
+
+	if err := models.DeleteAppByName(app.Name); err != nil {
+		return err
+	}
+
+	if err := models.DeleteAllVersion(app); err != nil {
 		return err
 	}
 
@@ -164,7 +179,7 @@ func extractServiceID(name string) (string, error) {
 		}
 	}
 	if serviceID == "" {
-		return "", errors.New("Not found service")
+		return "", ErrNotFoundService
 	}
 	return serviceID, nil
 }

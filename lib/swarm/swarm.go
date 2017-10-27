@@ -20,6 +20,12 @@ type UpstreamConfig struct {
 	Port uint32 `json:"port"`
 }
 
+type Container struct {
+	State      string `json:"state"`
+	VersionTag string `json:"versionTag"`
+	CreatedAt  string `json:"createdAt:`
+}
+
 var ErrNotFoundService = errors.New("Not found service")
 var swarmClient *client.Client
 
@@ -159,6 +165,34 @@ func RemoveService(app *models.Application) error {
 	}
 
 	return nil
+}
+
+func ListContainers(app *models.Application) (*[]Container, error) {
+	filter := filters.NewArgs()
+	filter.Add("service", app.Name)
+	listOpts := types.TaskListOptions{
+		Filters: filter,
+	}
+
+	tasks, err := swarmClient.TaskList(context.Background(), listOpts)
+	if err != nil {
+		return nil, err
+	}
+	if len(tasks) == 0 {
+		return nil, nil
+	}
+
+	var containers []Container
+	for _, v := range tasks {
+		c := Container{
+			State:      string(v.Status.State),
+			VersionTag: app.Version,
+			CreatedAt:  v.Status.Timestamp.String(),
+		}
+		containers = append(containers, c)
+	}
+
+	return &containers, nil
 }
 
 func extractServiceID(name string) (string, error) {

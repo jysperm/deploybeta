@@ -14,7 +14,7 @@ import (
 )
 
 func Request(method string, url string) *gorequest.SuperAgent {
-	return gorequest.New().CustomMethod(method, fmt.Sprintf("http://127.0.0.1%s%s", config.Port, url))
+	return gorequest.New().CustomMethod(method, fmt.Sprintf("http://127.0.0.1%s%s", config.Listen, url))
 }
 
 func RequestJSON(handler echo.HandlerFunc, method string, url string, body interface{}) (*httptest.ResponseRecorder, map[string]string, error) {

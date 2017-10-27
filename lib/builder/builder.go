@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jysperm/deploying/lib/etcd"
+
 	"github.com/jysperm/deploying/config"
 
 	"github.com/docker/docker/api/types"
@@ -45,7 +47,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 		Dockerfile:     "Dockerfile",
 		NoCache:        false,
 		Remove:         true,
-		SuppressOutput: true,
+		SuppressOutput: false,
 	}
 
 	dirPath, err := cloneRepository(app.GitRepository, gitTag)
@@ -74,25 +76,62 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
 
-	id, err := extractShasum(res.Body)
+	v, err := models.CreateVersion(app, gitTag, versionTag)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := pushVersion(nameVersion); err != nil {
-		return nil, err
-	}
-
-	v, err := models.CreateVersion(app, gitTag, versionTag, id)
-	if err != nil {
-		return nil, err
-	}
+	go wrtieProgress(app, versionTag, res.Body)
 
 	return v, nil
 }
 
+func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
+	defer r.Close()
+
+	reader := bufio.NewReader(r)
+	v, err := models.FindVersionByTag(app, tag)
+	if err != nil {
+		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+		etcd.Client.Put(context.Background(), errorKey, err.Error())
+	}
+
+	for {
+		eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+		line, err := reader.ReadBytes('\n')
+		if err == io.EOF {
+			break
+		}
+		_, err = etcd.Client.Put(context.Background(), eventKey, string(line))
+		if err != nil {
+			errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+			etcd.Client.Put(context.Background(), errorKey, err.Error())
+		}
+		if strings.Contains(string(line), "errorDetail") {
+			v.UpdateStatus(app, "fail")
+			eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+			etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished.")
+			return
+		}
+	}
+
+	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, tag)
+
+	if err := pushVersion(nameVersion); err != nil {
+		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+		etcd.Client.Put(context.Background(), errorKey, err.Error())
+		v.UpdateStatus(app, "fail")
+	}
+
+	v.UpdateStatus(app, "success")
+
+	eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+	if _, err := etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished."); err != nil {
+		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+		etcd.Client.Put(context.Background(), errorKey, err.Error())
+	}
+}
 func pushVersion(name string) error {
 	res, err := swarmClient.ImagePush(context.Background(), name, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam})
 	if err != nil {

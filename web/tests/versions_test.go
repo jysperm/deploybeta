@@ -1,45 +1,49 @@
 package tests
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
-	accountModel "github.com/jysperm/deploying/lib/models/account"
-	appModel "github.com/jysperm/deploying/lib/models/app"
-	sessionModel "github.com/jysperm/deploying/lib/models/session"
-	versionModel "github.com/jysperm/deploying/lib/models/version"
+	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/lib/testing"
+	"github.com/jysperm/deploying/web"
 )
 
-var globalAccount accountModel.Account
-var globalSession sessionModel.Session
-var globalApp appModel.Application
+func init() {
+	go web.CreateWebServer().Start(config.Listen)
+}
+
+var globalAccount models.Account
+var globalSession models.Session
+var globalApp models.Application
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	globalAccount, _ = SeedAccount()
 	globalSession = SeedSession(&globalAccount)
 	globalApp = SeedApp("https://github.com/jysperm/deploying-samples.git", globalAccount.Username)
-
 	exitVal := m.Run()
 
-	sessionModel.DeleteByToken(globalSession.Token)
-	accountModel.DeleteByName(globalAccount.Username)
-	swarm.RemoveService(globalApp)
+	models.DeleteSessionByToken(globalSession.Token)
+	models.DeleteAccountByName(globalAccount.Username)
+	swarm.RemoveService(&globalApp)
 	os.Exit(exitVal)
 }
 
 func TestCreateVersion(t *testing.T) {
-	var version versionModel.Version
+	var version models.Version
 	requestPath := fmt.Sprintf("/apps/%s/versions", globalApp.Name)
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "npm",
+			"gitTag": "dep",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
@@ -47,17 +51,45 @@ func TestCreateVersion(t *testing.T) {
 	if err := json.Unmarshal(body, &version); err != nil {
 		t.Error(err)
 	}
-	t.Log("Created version: ", version)
+
+	progressPath := fmt.Sprintf("http://127.0.0.1:7000/apps/%s/versions/%s/progress", globalApp.Name, version.Tag)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", progressPath, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", globalSession.Token)
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	reader := bufio.NewReader(resp.Body)
+	for {
+		line, _ := reader.ReadBytes('\n')
+		strLine := string(line)
+		if strLine == "data: Deploying: Building finished.\n" {
+			break
+		}
+		fmt.Print(string(line))
+	}
+
+	v, err := models.FindVersionByTag(&globalApp, version.Tag)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log("Created version: ", v)
 }
 
 func TestDeployVersion(t *testing.T) {
-	var version versionModel.Version
+	var version models.Version
 
 	requestPath := fmt.Sprintf("/apps/%s/versions", globalApp.Name)
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "npm",
+			"gitTag": "yarn",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
@@ -65,6 +97,29 @@ func TestDeployVersion(t *testing.T) {
 
 	if err := json.Unmarshal(body, &version); err != nil {
 		t.Error(err)
+	}
+
+	progressPath := fmt.Sprintf("http://127.0.0.1:7000/apps/%s/versions/%s/progress", globalApp.Name, version.Tag)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", progressPath, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", globalSession.Token)
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	reader := bufio.NewReader(resp.Body)
+	for {
+		line, _ := reader.ReadBytes('\n')
+		strLine := string(line)
+		if strLine == "data: Deploying: Building finished.\n" {
+			break
+		}
+		fmt.Print(string(line))
 	}
 
 	deployPath := fmt.Sprintf("/apps/%s/version", globalApp.Name)
@@ -74,27 +129,47 @@ func TestDeployVersion(t *testing.T) {
 			"tag": version.Tag,
 		}).EndBytes()
 	if res.StatusCode != 200 || len(errs) != 0 {
-		t.Error(errs)
+		t.Fatal(errs)
 	}
 
-	t.Log("Deployed version: ", version)
 }
 
-func TestCreateAndDeploy(t *testing.T) {
-	var version versionModel.Version
-	requestPath := fmt.Sprintf("/apps/%s/version", globalApp.Name)
+func TestPushProgress(t *testing.T) {
+	var version models.Version
+	requestPath := fmt.Sprintf("/apps/%s/versions", globalApp.Name)
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
 			"gitTag": "npm",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
-		t.Error(errs)
+		t.Fatal(errs)
 	}
-
 	if err := json.Unmarshal(body, &version); err != nil {
 		t.Error(err)
 	}
 
-	t.Log("Created and Deployed version: ", version)
+	progressPath := fmt.Sprintf("http://127.0.0.1:7000/apps/%s/versions/%s/progress", globalApp.Name, version.Tag)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", progressPath, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", globalSession.Token)
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	reader := bufio.NewReader(resp.Body)
+	for {
+		line, _ := reader.ReadBytes('\n')
+		strLine := string(line)
+		if strLine == "data: Deploying: Building finished.\n" {
+			break
+		}
+		fmt.Print(string(line))
+	}
+
 }

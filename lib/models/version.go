@@ -12,19 +12,19 @@ import (
 )
 
 type Version struct {
-	Shasum   string `json:"shasum"`
 	Tag      string `json:"tag"`
 	Registry string `json:"registry"`
+	Status   string `json:"status"`
 }
 
-func CreateVersion(app *Application, gitTag string, tag string, shasum string) (*Version, error) {
+func CreateVersion(app *Application, gitTag string, tag string) (*Version, error) {
 
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
 
 	newVersion := new(Version)
 	newVersion.Registry = config.DefaultRegistry
-	newVersion.Shasum = shasum
 	newVersion.Tag = tag
+	newVersion.Status = "building"
 
 	jsonVersion, err := json.Marshal(newVersion)
 	if err != nil {
@@ -56,12 +56,16 @@ func FindVersionByTag(app *Application, tag string) (*Version, error) {
 		return nil, err
 	}
 
-	version := new(Version)
-	if err := json.Unmarshal(res.Kvs[0].Value, version); err != nil {
+	if len(res.Kvs[0].Value) == 0 {
+		return nil, nil
+	}
+
+	var version Version
+	if err := json.Unmarshal(res.Kvs[0].Value, &version); err != nil {
 		return nil, err
 	}
 
-	return version, nil
+	return &version, nil
 
 }
 
@@ -95,6 +99,36 @@ func DeleteAllVersion(app *Application) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (v *Version) UpdateStatus(app *Application, status string) error {
+	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, v.Tag)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(versionKey, &Version{})
+
+	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
+		version := *watchedKeys[versionKey].(*Version)
+
+		version.Status = status
+
+		tran.PutJSONOnSuccess(versionKey, version)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	v.Status = status
 
 	return nil
 }

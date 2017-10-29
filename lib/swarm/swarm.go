@@ -23,7 +23,7 @@ type UpstreamConfig struct {
 type Container struct {
 	State      string `json:"state"`
 	VersionTag string `json:"versionTag"`
-	CreatedAt  string `json:"createdAt:`
+	CreatedAt  string `json:"createdAt“`
 }
 
 var ErrNotFoundService = errors.New("Not found service")

@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"fmt"
+
 	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
 )
@@ -65,9 +67,15 @@ func NewAppsResponse(apps []models.Application) []AppResponse {
 		app.Name = v.Name
 		app.Version = v.Version
 		app.Instances = v.Instances
-		versions, _ := models.ListVersions(&v)
+		versions, err := models.ListVersions(&v)
+		if err != nil {
+			fmt.Println(err)
+		}
 		app.Versions = *versions
-		nodes, _ := swarm.ListContainers(&v)
+		nodes, err := swarm.ListContainers(&v)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 		if nodes == nil {
 			app.Nodes = []swarm.Container{}
 		} else {

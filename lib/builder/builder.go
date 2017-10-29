@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/etcd"
 
-	"github.com/jysperm/deploying/config"
-
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
@@ -29,6 +29,7 @@ import (
 const RegistryAuthParam = "deploying"
 
 var swarmClient *client.Client
+var defaultTTL int64 = 60 * 10
 
 func init() {
 	var err error
@@ -90,20 +91,30 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 	defer r.Close()
 
-	reader := bufio.NewReader(r)
-	v, err := models.FindVersionByTag(app, tag)
+	ttl, err := etcd.Client.Lease.Grant(context.Background(), defaultTTL)
 	if err != nil {
 		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
 		etcd.Client.Put(context.Background(), errorKey, err.Error())
 	}
+	reader := bufio.NewReader(r)
+	v, err := models.FindVersionByTag(app, tag)
+	if err != nil {
+		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+		etcd.Client.Put(context.Background(), errorKey, err.Error(), etcdv3.WithLease(ttl.ID))
+	}
 
 	for {
+		if _, err := etcd.Client.KeepAlive(context.Background(), ttl.ID); err != nil {
+			errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
+			etcd.Client.Put(context.Background(), errorKey, err.Error())
+		}
+
 		eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
 		line, err := reader.ReadBytes('\n')
 		if err == io.EOF {
 			break
 		}
-		_, err = etcd.Client.Put(context.Background(), eventKey, string(line))
+		_, err = etcd.Client.Put(context.Background(), eventKey, string(line), etcdv3.WithLease(ttl.ID))
 		if err != nil {
 			errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
 			etcd.Client.Put(context.Background(), errorKey, err.Error())
@@ -111,7 +122,7 @@ func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 		if strings.Contains(string(line), "errorDetail") {
 			v.UpdateStatus(app, "fail")
 			eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-			etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished.")
+			etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished.", etcdv3.WithLease(ttl.ID))
 			return
 		}
 	}
@@ -120,16 +131,16 @@ func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 
 	if err := pushVersion(nameVersion); err != nil {
 		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-		etcd.Client.Put(context.Background(), errorKey, err.Error())
+		etcd.Client.Put(context.Background(), errorKey, err.Error(), etcdv3.WithLease(ttl.ID))
 		v.UpdateStatus(app, "fail")
 	}
 
 	v.UpdateStatus(app, "success")
 
 	eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-	if _, err := etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished."); err != nil {
+	if _, err := etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished.", etcdv3.WithLease(ttl.ID)); err != nil {
 		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-		etcd.Client.Put(context.Background(), errorKey, err.Error())
+		etcd.Client.Put(context.Background(), errorKey, err.Error(), etcdv3.WithLease(ttl.ID))
 	}
 }
 func pushVersion(name string) error {

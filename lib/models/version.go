@@ -17,7 +17,7 @@ type Version struct {
 	Status   string `json:"status"`
 }
 
-func CreateVersion(app *Application, gitTag string, tag string) (*Version, error) {
+func CreateVersion(app *Application, tag string) (*Version, error) {
 
 	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
 

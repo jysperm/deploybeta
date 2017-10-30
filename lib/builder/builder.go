@@ -3,8 +3,6 @@ package builder
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -78,7 +76,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 		return nil, err
 	}
 
-	v, err := models.CreateVersion(app, gitTag, versionTag)
+	v, err := models.CreateVersion(app, versionTag)
 	if err != nil {
 		return nil, err
 	}
@@ -88,41 +86,48 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 	return v, nil
 }
 
+func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag string, event string) error {
+	eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%s", app.Name, tag, time.Now().UnixNano())
+	if _, err := etcd.Client.Put(context.Background(), eventKey, event, etcdv3.WithLease(lease.ID)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 	defer r.Close()
 
 	ttl, err := etcd.Client.Lease.Grant(context.Background(), defaultTTL)
 	if err != nil {
-		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-		etcd.Client.Put(context.Background(), errorKey, err.Error())
+		fmt.Fprintln(os.Stderr, err)
 	}
 	reader := bufio.NewReader(r)
 	v, err := models.FindVersionByTag(app, tag)
 	if err != nil {
-		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-		etcd.Client.Put(context.Background(), errorKey, err.Error(), etcdv3.WithLease(ttl.ID))
+		fmt.Fprintln(os.Stderr, err)
 	}
 
 	for {
 		if _, err := etcd.Client.KeepAlive(context.Background(), ttl.ID); err != nil {
-			errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-			etcd.Client.Put(context.Background(), errorKey, err.Error())
+			fmt.Fprintln(os.Stderr, err)
 		}
 
-		eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
 		line, err := reader.ReadBytes('\n')
 		if err == io.EOF {
 			break
 		}
-		_, err = etcd.Client.Put(context.Background(), eventKey, string(line), etcdv3.WithLease(ttl.ID))
-		if err != nil {
-			errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-			etcd.Client.Put(context.Background(), errorKey, err.Error())
+		if err != nil && err != io.EOF {
+			fmt.Fprintln(os.Stderr, err)
+		}
+
+		if err := wrtieEvent(app, ttl, tag, string(line)); err != nil {
+			fmt.Fprintln(os.Stderr, err)
 		}
 		if strings.Contains(string(line), "errorDetail") {
 			v.UpdateStatus(app, "fail")
-			eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-			etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished.", etcdv3.WithLease(ttl.ID))
+			if err := wrtieEvent(app, ttl, tag, "Deploying: Building finished."); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
 			return
 		}
 	}
@@ -130,17 +135,18 @@ func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, tag)
 
 	if err := pushVersion(nameVersion); err != nil {
-		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-		etcd.Client.Put(context.Background(), errorKey, err.Error(), etcdv3.WithLease(ttl.ID))
-		v.UpdateStatus(app, "fail")
+		fmt.Fprintln(os.Stderr, err)
+		if err := v.UpdateStatus(app, "fail"); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
 	}
 
-	v.UpdateStatus(app, "success")
+	if err := v.UpdateStatus(app, "success"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
 
-	eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-	if _, err := etcd.Client.Put(context.Background(), eventKey, "Deploying: Building finished.", etcdv3.WithLease(ttl.ID)); err != nil {
-		errorKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%d", app.Name, tag, time.Now().UnixNano())
-		etcd.Client.Put(context.Background(), errorKey, err.Error(), etcdv3.WithLease(ttl.ID))
+	if err := wrtieEvent(app, ttl, tag, "Deploying: Building finished."); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 	}
 }
 func pushVersion(name string) error {
@@ -179,46 +185,6 @@ func cloneRepository(url string, gitTag string) (string, error) {
 	}
 
 	return path, nil
-}
-
-func extractShasum(r io.ReadCloser) (string, error) {
-	var shasum string
-	var buildErr error
-	reader := bufio.NewReader(r)
-	for {
-		line, err := reader.ReadBytes('\n')
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-
-		shasum, buildErr = func(s []byte) (string, error) {
-			var f interface{}
-			if err := json.Unmarshal(s, &f); err != nil {
-				return "", err
-			}
-			m := f.(map[string]interface{})
-			for k, v := range m {
-				switch vv := v.(type) {
-				case string:
-					if k == "stream" && strings.HasPrefix(vv, "sha256") {
-						return vv[len("sha256:") : len(vv)-1], nil
-					}
-					if k == "error" {
-						return "", errors.New(vv)
-					}
-				}
-
-			}
-			return "", nil
-		}(line)
-		if buildErr != nil {
-			return "", buildErr
-		}
-	}
-	return shasum, nil
 }
 
 func buildContext(path string) (io.ReadCloser, error) {

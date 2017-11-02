@@ -2,6 +2,7 @@ import _ from 'lodash';
 import {Button, Table, ButtonGroup, Modal, FormGroup, ControlLabel, FormControl, HelpBlock} from 'react-bootstrap';
 import {Label, DropdownButton, MenuItem, Checkbox} from 'react-bootstrap';
 import React, {Component} from 'react';
+import 'event-source-polyfill';
 
 import {FormComponent} from '../../lib/components';
 import {requestJson} from '../../lib/request';
@@ -11,8 +12,9 @@ export default class ApplicationsTab extends Component {
     super(props)
 
     this.state = {
-      editingApp: false,
-      buildingVersionApp: false
+      editingApp: null,
+      buildingVersionApp: null,
+      buildingProgressVersion: null
     }
   }
 
@@ -60,7 +62,8 @@ export default class ApplicationsTab extends Component {
       </Table>
 
       {this.state.editingApp && <EditAppModal {...this.state.editingApp} onClose={::this.onAppEdited} />}
-      {this.state.buildingVersionApp && <BuildVersionModal {...this.state.buildingVersionApp} onClose={::this.onAppEdited} />}
+      {this.state.buildingVersionApp && <BuildVersionModal {...this.state.buildingVersionApp} onClose={::this.onBuildStarted} />}
+      {this.state.buildingProgressVersion && <BuildProgressModal {...this.state.buildingProgressVersion} onClose={::this.onBuildFinished} />}
 
     </div>;
   }
@@ -106,11 +109,25 @@ export default class ApplicationsTab extends Component {
 
   onAppEdited(app) {
     this.setState({
-      editingApp: false,
-      buildingVersionApp: false
+      editingApp: null
     });
 
     this.props.onAppEdited(app);
+  }
+
+  onBuildStarted(version) {
+    this.setState({
+      buildingVersionApp: null,
+      buildingProgressVersion: _.extend(version, {
+        appName: this.state.buildingVersionApp.name
+      })
+    });
+  }
+
+  onBuildFinished() {
+    this.setState({
+      buildingProgressVersion: null
+    });
   }
 }
 
@@ -124,7 +141,7 @@ class EditAppModal extends FormComponent {
   render() {
     const title = this.props.name ? `Edit ${this.props.name}` : 'Create new app';
 
-    return <Modal show={true} onHide={::this.props.onClose}>
+    return <Modal show={true} onHide={this.props.onClose.bind(this, null)}>
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
@@ -178,7 +195,7 @@ class BuildVersionModal extends FormComponent {
   }
 
   render() {
-    return <Modal show={true} onHide={::this.props.onClose}>
+    return <Modal show={true} onHide={this.props.onClose.bind(this, null)}>
       <Modal.Header closeButton>
         <Modal.Title>Build version for {this.props.name}</Modal.Title>
       </Modal.Header>
@@ -204,10 +221,49 @@ class BuildVersionModal extends FormComponent {
       body: {
         gitTag: this.state.gitTag
       }
-    }).then( () => {
-      this.props.onClose();
+    }).then( version => {
+      this.props.onClose(version);
     }).catch( err => {
       alert(err.message);
     });
+  }
+}
+
+class BuildProgressModal extends Component {
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      events: []
+    };
+  }
+
+  componentDidMount() {
+    const {appName, tag} = this.props;
+
+    const events = new EventSourcePolyfill(`/apps/${appName}/versions/${tag}/progress`, {
+      headers: {
+        Authorization: localStorage.getItem('sessionToken')
+      }
+    });
+
+    events.addEventListener('message', ({data}) => {
+      this.setState({
+        events: this.state.events.concat(JSON.parse(data))
+      });
+    });
+  }
+
+  render() {
+    return <Modal show={true} onHide={::this.props.onClose}>
+      <Modal.Header closeButton>
+        <Modal.Title>Building {this.props.tag}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {this.state.events.map( ({stream}) => {
+          return <p key={stream}>{stream}</p>;
+        })}
+      </Modal.Body>
+    </Modal>;
   }
 }

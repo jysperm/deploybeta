@@ -63,7 +63,7 @@ func PushProgress(ctx echo.Context) error {
 	tag := ctx.Param("tag")
 	finishied := false
 
-	watchPrefix := fmt.Sprintf("/apps/%s/versions/%s/progress/", app.Name, tag)
+	watchPrefix := fmt.Sprintf("/apps/%s/version/%s/progress/", app.Name, tag)
 	watcher := etcd.Client.Watch(context.Background(), watchPrefix, clientv3.WithPrefix())
 
 	rw := ctx.Response().Writer

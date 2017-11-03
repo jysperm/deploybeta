@@ -87,7 +87,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 }
 
 func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag string, event string) error {
-	eventKey := fmt.Sprintf("/apps/%s/versions/%s/progress/%s", app.Name, tag, time.Now().UnixNano())
+	eventKey := fmt.Sprintf("/apps/%s/version/%s/progress/%s", app.Name, tag, time.Now().UnixNano())
 	if _, err := etcd.Client.Put(context.Background(), eventKey, event, etcdv3.WithLease(lease.ID)); err != nil {
 		return err
 	}

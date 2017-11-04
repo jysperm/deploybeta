@@ -27,8 +27,9 @@ export default class ApplicationsTab extends Component {
         <thead>
           <tr>
             <th>Domain</th>
-            <th>Version</th>
             <th>Instances</th>
+            <th>Version</th>
+            <th>State</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -38,8 +39,9 @@ export default class ApplicationsTab extends Component {
 
             return <tr key={app.name}>
               <td>{app.name}</td>
+              <td>{app.instances}</td>
               <td>
-                <Label bsStyle='primary'>{app.version}</Label>
+                <Label bsStyle='primary'>{app.version || 'N/A'}</Label>
                 <ButtonGroup>
                   <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
                   <DropdownButton title='Deploy...' id='deploy-dropdown'>
@@ -49,7 +51,15 @@ export default class ApplicationsTab extends Component {
                   </DropdownButton>
                 </ButtonGroup>
               </td>
-              <td>{app.instances}</td>
+              <td>
+                <ul>
+                  {app.nodes.map( ({CreatedAt, state, versionTag}) => {
+                    return <li key={CreatedAt}>
+                      <strong>{versionTag}</strong> {state}
+                    </li>
+                  })}
+                </ul>
+              </td>
               <td>
                 <ButtonGroup>
                   <Button onClick={this.onEditApp.bind(this, app.name)}>Edit</Button>

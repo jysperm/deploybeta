@@ -99,7 +99,7 @@ func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag s
 		ID:      id,
 		Payload: event,
 	}
-	eventKey := fmt.Sprintf("/apps/%s/version/%s/progress/%s", app.Name, tag, id)
+	eventKey := fmt.Sprintf("/progress/%s/%s/%s", app.Name, tag, id)
 	e, err := json.Marshal(newEvent)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

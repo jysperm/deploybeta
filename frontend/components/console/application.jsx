@@ -117,11 +117,16 @@ export default class ApplicationsTab extends Component {
 
   onBuildStarted(version) {
     this.setState({
-      buildingVersionApp: null,
-      buildingProgressVersion: _.extend(version, {
-        appName: this.state.buildingVersionApp.name
-      })
+      buildingVersionApp: null
     });
+
+    if (version) {
+      this.setState({
+        buildingProgressVersion: _.extend(version, {
+          appName: this.state.buildingVersionApp.name
+        })
+      });
+    }
   }
 
   onBuildFinished() {
@@ -205,9 +210,6 @@ class BuildVersionModal extends FormComponent {
           <FormControl type='text' {...this.linkField('gitTag')} />
           <HelpBlock>Git branch, tag or commit hash</HelpBlock>
         </FormGroup>
-        <Checkbox {...this.linkField('buildAndDeploy', 'checked')}>
-          Deploy to app after build finished
-        </Checkbox>
       </Modal.Body>
       <Modal.Footer>
         <Button bsStyle='success' onClick={::this.onBuildVersion}>Build</Button>
@@ -216,7 +218,7 @@ class BuildVersionModal extends FormComponent {
   }
 
   onBuildVersion() {
-    return requestJson(`/apps/${this.props.name}/${this.state.buildAndDeploy ? 'version' : 'versions'}`, {
+    return requestJson(`/apps/${this.props.name}/versions`, {
       method: 'POST',
       body: {
         gitTag: this.state.gitTag

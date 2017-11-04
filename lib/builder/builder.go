@@ -3,10 +3,12 @@ package builder
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +37,11 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+type buildEvent struct {
+	ID      string `json:"id"`
+	Payload string `json:"payload"`
 }
 
 func BuildVersion(app *models.Application, gitTag string) (*models.Version, error) {
@@ -87,8 +94,17 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 }
 
 func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag string, event string) error {
-	eventKey := fmt.Sprintf("/apps/%s/version/%s/progress/%s", app.Name, tag, time.Now().UnixNano())
-	if _, err := etcd.Client.Put(context.Background(), eventKey, event, etcdv3.WithLease(lease.ID)); err != nil {
+	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+	newEvent := buildEvent{
+		ID:      id,
+		Payload: event,
+	}
+	eventKey := fmt.Sprintf("/apps/%s/version/%s/progress/%s", app.Name, tag, id)
+	e, err := json.Marshal(newEvent)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	if _, err := etcd.Client.Put(context.Background(), eventKey, string(e), etcdv3.WithLease(lease.ID)); err != nil {
 		return err
 	}
 	return nil

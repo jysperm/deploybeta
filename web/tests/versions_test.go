@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/jysperm/deploying/config"
@@ -69,7 +70,7 @@ func TestCreateVersion(t *testing.T) {
 	for {
 		line, _ := reader.ReadBytes('\n')
 		strLine := string(line)
-		if strLine == "data: Deploying: Building finished.\n" {
+		if strings.Contains(strLine, "Deploying: Building finished.") {
 			break
 		}
 		fmt.Print(string(line))
@@ -116,7 +117,7 @@ func TestDeployVersion(t *testing.T) {
 	for {
 		line, _ := reader.ReadBytes('\n')
 		strLine := string(line)
-		if strLine == "data: Deploying: Building finished.\n" {
+		if strings.Contains(strLine, "Deploying: Building finished.") {
 			break
 		}
 		fmt.Print(string(line))
@@ -166,7 +167,7 @@ func TestPushProgress(t *testing.T) {
 	for {
 		line, _ := reader.ReadBytes('\n')
 		strLine := string(line)
-		if strLine == "data: Deploying: Building finished.\n" {
+		if strings.Contains(strLine, "Deploying: Building finished.") {
 			break
 		}
 		fmt.Print(string(line))

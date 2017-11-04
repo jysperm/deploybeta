@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/labstack/echo"
@@ -85,7 +86,7 @@ func PushProgress(ctx echo.Context) error {
 	for _, ev := range resp.Kvs {
 		fmt.Fprintf(rw, "data: %s\n", string(ev.Value))
 		flusher.Flush()
-		if string(ev.Value) == "Deploying: Building ended." {
+		if strings.Contains(string(ev.Value), "Deploying: Building finished.") {
 			conn, _, _ := ctx.Response().Hijack()
 			err := conn.Close()
 			fmt.Println(err)
@@ -98,7 +99,7 @@ func PushProgress(ctx echo.Context) error {
 			for _, ev := range w.Events {
 				fmt.Fprintf(rw, "data: %s\n", string(ev.Kv.Value))
 				flusher.Flush()
-				if string(ev.Kv.Value) == "data: Deploying: Building ended." {
+				if strings.Contains(string(ev.Kv.Value), "Deploying: Building finished.") {
 					conn, _, _ := ctx.Response().Hijack()
 					err := conn.Close()
 					fmt.Println(err)

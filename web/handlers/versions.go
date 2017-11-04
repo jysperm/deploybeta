@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo"
 
+	"github.com/jysperm/deploying/lib/builder"
 	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
@@ -18,12 +19,12 @@ func CreateVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := models.CreateVersion(&app, "", params["gitTag"])
+	version, err := builder.BuildVersion(&app, params["gitTag"])
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusCreated, NewVersionResponse(&version))
+	return ctx.JSON(http.StatusCreated, NewVersionResponse(version))
 }
 
 func DeployVersion(ctx echo.Context) error {
@@ -34,16 +35,14 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := models.FindVersionByTag(app, params["tag"])
+	version, err := models.FindVersionByTag(&app, params["tag"])
 	if err != nil || version == nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := app.UpdateVersion(version.Tag); err != nil {
-		return NewHTTPError(http.StatusInternalServerError, err)
-	}
+	app.Version = version.Tag
 
-	if err := swarm.UpdateService(app); err != nil {
+	if err := swarm.UpdateService(&app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -58,20 +57,18 @@ func CreateAndDeploy(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	version, err := models.CreateVersion(&app, "", params["gitTag"])
+	version, err := builder.BuildVersion(&app, params["gitTag"])
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := app.UpdateVersion(version.Tag); err != nil {
+	app.Version = version.Tag
+
+	if err := swarm.UpdateService(&app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := swarm.UpdateService(app); err != nil {
-		return NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	return ctx.JSON(http.StatusCreated, NewVersionResponse(&version))
+	return ctx.JSON(http.StatusCreated, NewVersionResponse(version))
 }
 
 // TODO:

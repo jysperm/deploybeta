@@ -90,16 +90,8 @@ func UpdateApp(ctx echo.Context) error {
 		update.Instances = realValue
 	}
 
-	if err := app.Update(&update); err != nil {
-		return NewHTTPError(http.StatusConflict, err)
-	}
-
-	if app.Instances != update.Instances && app.Version != "" {
-		err := swarm.UpdateService(app)
-		if err != nil {
-			panic(err)
-			return NewHTTPError(http.StatusInternalServerError, err)
-		}
+	if err := swarm.UpdateService(&update); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	return ctx.JSON(http.StatusOK, NewAppResponse(&app))
@@ -107,7 +99,11 @@ func UpdateApp(ctx echo.Context) error {
 
 func DeleteApp(ctx echo.Context) error {
 	appName := ctx.Param("name")
-	if err := models.DeleteAppByName(appName); err != nil {
+	app, err := models.FindAppByName(appName)
+	if err != nil {
+		return NewHTTPError(http.StatusBadRequest, err)
+	}
+	if err := swarm.RemoveService(app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

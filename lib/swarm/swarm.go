@@ -163,6 +163,14 @@ func RemoveService(app *models.Application) error {
 		return err
 	}
 
+	if err := models.DeleteAppByName(app.Name); err != nil {
+		return err
+	}
+
+	if err := models.DeleteAllVersion(app); err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -1,5 +1,8 @@
 FROM buildpack-deps:xenial-scm
 
+ENV http_proxy {{.HTTPProxy}}
+ENV https_proxy {{.HTTPSProxy}}
+
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN apt-get update \

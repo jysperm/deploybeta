@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 
+	env "github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -18,6 +19,8 @@ type Dockerfile struct {
 	PackagePath string
 	DepManager  string
 	PackageName string
+	HTTPProxy   string
+	HTTPSProxy  string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -35,6 +38,8 @@ func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 		PackagePath: path,
 		PackageName: name,
 		DepManager:  "",
+		HTTPProxy:   env.HttpProxy,
+		HTTPSProxy:  env.HttpsProxy,
 	}
 
 	templatePath := utils.GetAssetFilePath("runtime-go/Dockerfile.template")

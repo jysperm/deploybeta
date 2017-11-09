@@ -1,5 +1,8 @@
 FROM buildpack-deps:xenial-scm
 
+ENV http_proxy {{.HTTPProxy}}
+ENV https_proxy {{.HTTPSProxy}}
+
 # gcc for cgo
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		g++ \

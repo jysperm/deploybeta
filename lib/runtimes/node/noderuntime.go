@@ -13,12 +13,15 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/parnurzeal/gorequest"
 
+	env "github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
 type Dockerfile struct {
 	NodeVersion string
 	HasYarn     bool
+	HTTPProxy   string
+	HTTPSProxy  string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -32,7 +35,9 @@ func Check(root string) error {
 
 func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	config := Dockerfile{
-		HasYarn: false,
+		HasYarn:    false,
+		HTTPProxy:  env.HttpProxy,
+		HTTPSProxy: env.HttpsProxy,
 	}
 
 	node, err := extraVersion(root)

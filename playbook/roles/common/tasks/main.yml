@@ -8,13 +8,27 @@
     table: filter
     chain: INPUT
     protocol: tcp
-    destination: '{{ansible_host}}'
     destination_port: '{{ item }}'
     jump: ACCEPT
   with_items:
     - 22
     - 80
     - 443
+
+- name: setup iptables allow icmp
+  iptables:
+    table: filter
+    chain: INPUT
+    protocol: icmp
+    jump: ACCEPT
+
+- name: setup iptables allow loopback
+  iptables:
+    table: filter
+    chain: INPUT
+    protocol: all
+    in_interface: lo
+    jump: ACCEPT
 
 - name: setup iptables policy
   iptables:

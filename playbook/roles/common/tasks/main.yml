@@ -3,6 +3,14 @@
   hostname:
     name: '{{ inventory_hostname }}'
 
+- name: setup iptables allow established
+  iptables:
+    table: filter
+    chain: INPUT
+    protocol: all
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+
 - name: setup iptables allow ports
   iptables:
     table: filter

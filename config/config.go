@@ -35,7 +35,5 @@ func init() {
 	HttpProxy = os.Getenv("PROXY_HTTP")
 	HttpsProxy = os.Getenv("PROXY_HTTPS")
 
-	fmt.Println(HttpProxy)
-	fmt.Println(HttpsProxy)
 	fmt.Println(Listen, EtcdEndpoints, DefaultRegistry)
 }

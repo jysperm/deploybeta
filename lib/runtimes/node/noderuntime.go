@@ -13,7 +13,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/parnurzeal/gorequest"
 
-	env "github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -34,22 +34,22 @@ func Check(root string) error {
 }
 
 func GenerateDockerfile(root string) (*bytes.Buffer, error) {
-	config := Dockerfile{
+	cfg := Dockerfile{
 		HasYarn:    false,
-		HTTPProxy:  env.HttpProxy,
-		HTTPSProxy: env.HttpsProxy,
+		HTTPProxy:  config.HttpProxy,
+		HTTPSProxy: config.HttpsProxy,
 	}
 
 	node, err := extraVersion(root)
 	if err != nil {
 		return nil, err
 	}
-	config.NodeVersion = node
+	cfg.NodeVersion = node
 
 	templatePath := utils.GetAssetFilePath("runtime-node/Dockerfile.template")
 
 	if checkYarn(root) {
-		config.HasYarn = true
+		cfg.HasYarn = true
 	}
 
 	dockerfileTemplate, err := template.ParseFiles(templatePath)
@@ -60,7 +60,7 @@ func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	fileBuffer := new(bytes.Buffer)
 	fileWriter := bufio.NewWriter(fileBuffer)
 
-	if err := dockerfileTemplate.Execute(fileWriter, config); err != nil {
+	if err := dockerfileTemplate.Execute(fileWriter, cfg); err != nil {
 		return nil, err
 	}
 

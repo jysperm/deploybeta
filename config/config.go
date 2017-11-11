@@ -29,16 +29,11 @@ func init() {
 		panic("Load defaults.env failed: " + err.Error())
 	}
 
-	err = godotenv.Load(utils.GetAssetFilePath("proxy.env"))
-	if err != nil {
-		panic("Load proxy.env failed: " + err.Error())
-	}
-
 	Listen = os.Getenv("LISTEN")
 	EtcdEndpoints = strings.Split(os.Getenv("ETCD_ENDPOINTS"), ",")
 	DefaultRegistry = os.Getenv("DEFAULT_REGISTRY")
-	HttpProxy = os.Getenv("HTTP_PROXY")
-	HttpsProxy = os.Getenv("HTTPS_PROXY")
+	HttpProxy = os.Getenv("PROXY_HTTP")
+	HttpsProxy = os.Getenv("PROXY_HTTPS")
 
 	fmt.Println(HttpProxy)
 	fmt.Println(HttpsProxy)

@@ -21,6 +21,7 @@ type Dockerfile struct {
 	PackageName string
 	HTTPProxy   string
 	HTTPSProxy  string
+	AptCnMirror string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -40,6 +41,7 @@ func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 		DepManager:  "",
 		HTTPProxy:   config.HttpProxy,
 		HTTPSProxy:  config.HttpsProxy,
+		AptCnMirror: config.AptCnMirror,
 	}
 
 	templatePath := utils.GetAssetFilePath("runtime-go/Dockerfile.template")

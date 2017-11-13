@@ -15,6 +15,8 @@ var EtcdEndpoints []string
 var DefaultRegistry string
 var HttpProxy string
 var HttpsProxy string
+var AptCnMirror string
+var NpmCnMirror string
 
 func init() {
 	err := godotenv.Load()
@@ -34,6 +36,8 @@ func init() {
 	DefaultRegistry = os.Getenv("DEFAULT_REGISTRY")
 	HttpProxy = os.Getenv("PROXY_HTTP")
 	HttpsProxy = os.Getenv("PROXY_HTTPS")
+	AptCnMirror = os.Getenv("APT_CN_MIRROR")
+	NpmCnMirror = os.Getenv("NPM_CN_MIRROR")
 
 	fmt.Println(Listen, EtcdEndpoints, DefaultRegistry)
 }

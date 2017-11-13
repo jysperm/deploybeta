@@ -2,6 +2,10 @@ FROM buildpack-deps:xenial-scm
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
+{{if .AptCnMirror}}
+RUN sed -i 's/archive.ubuntu.com/{{.AptCnMirror}}/g' /etc/apt/sources.list
+{{end}}
+
 RUN apt-get update \
   && apt-get install -y curl \
   && apt-get -y autoclean
@@ -10,7 +14,7 @@ ENV NVM_DIR /usr/local/nvm
 
 ENV NODE_VERSION {{.NodeVersion}}
 
-RUN export http_proxy={{.HTTPProxy}};export https_proxy={{.HTTPSProxy}};curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 
 RUN source $NVM_DIR/nvm.sh \
   && echo $NODE_VERSION > .nvmrc \
@@ -32,8 +36,8 @@ RUN set -ex \
     gpg --keyserver keyserver.pgp.com --recv-keys "$key" || \
     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key" ; \
   done \
-  && export http_proxy={{.HTTPProxy}};export https_proxy={{.HTTPSProxy}};curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
-  && export http_proxy={{.HTTPProxy}};export https_proxy={{.HTTPSProxy}};curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
+  && http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}};curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
+  && http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}};curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz \
   && mkdir -p /opt/yarn \
   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/yarn --strip-components=1 \
@@ -45,6 +49,9 @@ RUN mkdir -p "/home/deploying/app"
 WORKDIR "/home/deploying/app"
 ADD . "/home/deploying/app"
 
+{{if .NpmCnMirror}}
+npm config set registry {{.NpmCnMirror}}
+{{end}}
 {{if .HasYarn}}
 RUN yarn install
 {{- else}}

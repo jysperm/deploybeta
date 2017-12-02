@@ -84,12 +84,9 @@ func PushProgress(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 	for _, ev := range resp.Kvs {
-		fmt.Fprintf(rw, "data: %s\n", string(ev.Value))
+		fmt.Fprintf(rw, "data: %s\n\n", string(ev.Value))
 		flusher.Flush()
 		if strings.Contains(string(ev.Value), "Deploying: Building finished.") {
-			conn, _, _ := ctx.Response().Hijack()
-			err := conn.Close()
-			fmt.Println(err)
 			finishied = true
 			break
 		}
@@ -97,18 +94,17 @@ func PushProgress(ctx echo.Context) error {
 	if !finishied {
 		for w := range watcher {
 			for _, ev := range w.Events {
-				fmt.Fprintf(rw, "data: %s\n", string(ev.Kv.Value))
+				fmt.Fprintf(rw, "data: %s\n\n", string(ev.Kv.Value))
 				flusher.Flush()
 				if strings.Contains(string(ev.Kv.Value), "Deploying: Building finished.") {
-					conn, _, _ := ctx.Response().Hijack()
-					err := conn.Close()
-					fmt.Println(err)
 					break
 				}
+				break
 			}
+			break
 		}
 	}
-	return nil
+	return ctx.String(http.StatusOK, "0\r\n")
 }
 
 // TODO:

@@ -4,6 +4,7 @@ import {Label, DropdownButton, MenuItem, Checkbox} from 'react-bootstrap';
 import React, {Component} from 'react';
 import 'event-source-polyfill';
 
+import {alertError} from '../../lib/error';
 import {FormComponent} from '../../lib/components';
 import {requestJson} from '../../lib/request';
 
@@ -46,7 +47,7 @@ export default class ApplicationsTab extends Component {
                   <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
                   <DropdownButton title='Deploy...' id='deploy-dropdown'>
                     {_.map(app.versions, 'tag').map( versionTag => {
-                      return <MenuItem eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>
+                      return <MenuItem key={versionTag} eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>
                     })}
                   </DropdownButton>
                 </ButtonGroup>
@@ -102,9 +103,7 @@ export default class ApplicationsTab extends Component {
       body: {
         tag: versionTag
       }
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 
   onDeleteApp(name) {
@@ -112,9 +111,7 @@ export default class ApplicationsTab extends Component {
       method: 'DELETE'
     }).then( () => {
       this.props.onAppDeleted({name});
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 
   onAppEdited(app) {
@@ -126,10 +123,6 @@ export default class ApplicationsTab extends Component {
   }
 
   onBuildStarted(version) {
-    this.setState({
-      buildingVersionApp: null
-    });
-
     if (version) {
       this.setState({
         buildingProgressVersion: _.extend(version, {
@@ -137,6 +130,10 @@ export default class ApplicationsTab extends Component {
         })
       });
     }
+
+    this.setState({
+      buildingVersionApp: null
+    });
   }
 
   onBuildFinished() {
@@ -185,9 +182,7 @@ class EditAppModal extends FormComponent {
       body: this.state
     }).then( app => {
       this.props.onClose(app);
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 
   onEditApp() {
@@ -196,9 +191,7 @@ class EditAppModal extends FormComponent {
       body: this.state
     }).then( app => {
       this.props.onClose(app);
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 }
 
@@ -235,9 +228,7 @@ class BuildVersionModal extends FormComponent {
       }
     }).then( version => {
       this.props.onClose(version);
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 }
 
@@ -267,7 +258,7 @@ class BuildProgressModal extends Component {
   }
 
   render() {
-    return <Modal show={true} onHide={::this.props.onClose}>
+    return <Modal show={true} onHide={this.props.onClose}>
       <Modal.Header closeButton>
         <Modal.Title>Building {this.props.tag}</Modal.Title>
       </Modal.Header>

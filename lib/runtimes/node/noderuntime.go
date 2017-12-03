@@ -13,12 +13,17 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/parnurzeal/gorequest"
 
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
 type Dockerfile struct {
 	NodeVersion string
 	HasYarn     bool
+	HTTPProxy   string
+	HTTPSProxy  string
+	AptCnMirror string
+	NpmCnMirror string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -31,20 +36,24 @@ func Check(root string) error {
 }
 
 func GenerateDockerfile(root string) (*bytes.Buffer, error) {
-	config := Dockerfile{
-		HasYarn: false,
+	cfg := Dockerfile{
+		HasYarn:     false,
+		HTTPProxy:   config.HttpProxy,
+		HTTPSProxy:  config.HttpsProxy,
+		AptCnMirror: config.AptCnMirror,
+		NpmCnMirror: config.NpmCnMirror,
 	}
 
 	node, err := extraVersion(root)
 	if err != nil {
 		return nil, err
 	}
-	config.NodeVersion = node
+	cfg.NodeVersion = node
 
 	templatePath := utils.GetAssetFilePath("runtime-node/Dockerfile.template")
 
 	if checkYarn(root) {
-		config.HasYarn = true
+		cfg.HasYarn = true
 	}
 
 	dockerfileTemplate, err := template.ParseFiles(templatePath)
@@ -55,7 +64,7 @@ func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	fileBuffer := new(bytes.Buffer)
 	fileWriter := bufio.NewWriter(fileBuffer)
 
-	if err := dockerfileTemplate.Execute(fileWriter, config); err != nil {
+	if err := dockerfileTemplate.Execute(fileWriter, cfg); err != nil {
 		return nil, err
 	}
 

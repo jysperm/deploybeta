@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -18,6 +19,9 @@ type Dockerfile struct {
 	PackagePath string
 	DepManager  string
 	PackageName string
+	HTTPProxy   string
+	HTTPSProxy  string
+	AptCnMirror string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -31,20 +35,23 @@ func Check(root string) error {
 
 func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 	name, path := extractInfo(remoteURL)
-	config := Dockerfile{
+	cfg := Dockerfile{
 		PackagePath: path,
 		PackageName: name,
 		DepManager:  "",
+		HTTPProxy:   config.HttpProxy,
+		HTTPSProxy:  config.HttpsProxy,
+		AptCnMirror: config.AptCnMirror,
 	}
 
 	templatePath := utils.GetAssetFilePath("runtime-go/Dockerfile.template")
 
 	if checkDep(root) {
-		config.DepManager = "dep ensure"
+		cfg.DepManager = "dep ensure"
 	}
 
 	if checkGlide(root) {
-		config.DepManager = "glide install"
+		cfg.DepManager = "glide install"
 	}
 
 	dockerfileTemplate, err := template.ParseFiles(templatePath)
@@ -55,7 +62,7 @@ func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 	fileBuffer := new(bytes.Buffer)
 	fileWriter := bufio.NewWriter(fileBuffer)
 
-	if err := dockerfileTemplate.Execute(fileWriter, config); err != nil {
+	if err := dockerfileTemplate.Execute(fileWriter, cfg); err != nil {
 		return nil, err
 	}
 

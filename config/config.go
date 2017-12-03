@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -13,6 +12,10 @@ import (
 var Listen string
 var EtcdEndpoints []string
 var DefaultRegistry string
+var HttpProxy string
+var HttpsProxy string
+var AptCnMirror string
+var NpmCnMirror string
 
 func init() {
 	err := godotenv.Load()
@@ -30,6 +33,8 @@ func init() {
 	Listen = os.Getenv("LISTEN")
 	EtcdEndpoints = strings.Split(os.Getenv("ETCD_ENDPOINTS"), ",")
 	DefaultRegistry = os.Getenv("DEFAULT_REGISTRY")
-
-	fmt.Println(Listen, EtcdEndpoints, DefaultRegistry)
+	HttpProxy = os.Getenv("PROXY_HTTP")
+	HttpsProxy = os.Getenv("PROXY_HTTPS")
+	AptCnMirror = os.Getenv("APT_CN_MIRROR")
+	NpmCnMirror = os.Getenv("NPM_CN_MIRROR")
 }

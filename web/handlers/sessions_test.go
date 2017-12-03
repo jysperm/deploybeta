@@ -3,8 +3,7 @@ package handlers
 import (
 	"testing"
 
-	accountModel "github.com/jysperm/deploying/lib/models/account"
-	sessionModel "github.com/jysperm/deploying/lib/models/session"
+	"github.com/jysperm/deploying/lib/models"
 	. "github.com/jysperm/deploying/lib/testing"
 	"github.com/labstack/echo"
 )
@@ -25,6 +24,6 @@ func TestCreateSession(t *testing.T) {
 		t.Errorf("res.Code %v", res.Code)
 	}
 
-	accountModel.DeleteByName(account.Username)
-	sessionModel.DeleteByToken(body["token"])
+	models.DeleteAccountByName(account.Username)
+	models.DeleteSessionByToken(body["token"])
 }

@@ -74,9 +74,6 @@ func PushProgress(ctx echo.Context) error {
 	}
 
 	ctx.Response().Header().Set("Content-Type", "text/event-stream")
-	ctx.Response().Header().Set("Cache-Control", "no-cache")
-	ctx.Response().Header().Set("Connection", "keep-alive")
-
 	ctx.Response().WriteHeader(http.StatusOK)
 
 	resp, err := etcd.Client.Get(context.Background(), watchPrefix, clientv3.WithPrefix())
@@ -101,10 +98,9 @@ func PushProgress(ctx echo.Context) error {
 				}
 				break
 			}
-			break
 		}
 	}
-	return ctx.String(http.StatusOK, "0\r\n")
+	return ctx.NoContent(http.StatusOK)
 }
 
 // TODO:

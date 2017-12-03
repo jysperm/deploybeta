@@ -251,8 +251,15 @@ class BuildProgressModal extends Component {
     });
 
     events.addEventListener('message', ({data}) => {
+      const log = JSON.parse(data);
+
+      if (log.payload === 'Deploying: Building finished.') {
+        events.close();
+        return;
+      }
+
       this.setState({
-        events: this.state.events.concat(JSON.parse(data))
+        events: _.uniqBy(this.state.events.concat(log), 'id')
       });
     });
   }
@@ -263,8 +270,8 @@ class BuildProgressModal extends Component {
         <Modal.Title>Building {this.props.tag}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {this.state.events.map( ({stream}) => {
-          return <p key={stream}>{stream}</p>;
+        {this.state.events.map( ({id, payload}) => {
+          return <p key={id}>{JSON.parse(payload).stream}</p>;
         })}
       </Modal.Body>
     </Modal>;

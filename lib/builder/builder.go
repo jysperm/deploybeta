@@ -4,16 +4,18 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploying/lib/etcd"
 
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
@@ -27,6 +29,7 @@ import (
 const RegistryAuthParam = "deploying"
 
 var swarmClient *client.Client
+var defaultTTL int64 = 60 * 10
 
 func init() {
 	var err error
@@ -34,6 +37,11 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+type buildEvent struct {
+	ID      string `json:"id"`
+	Payload string `json:"payload"`
 }
 
 func BuildVersion(app *models.Application, gitTag string) (*models.Version, error) {
@@ -45,7 +53,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 		Dockerfile:     "Dockerfile",
 		NoCache:        false,
 		Remove:         true,
-		SuppressOutput: true,
+		SuppressOutput: false,
 	}
 
 	dirPath, err := cloneRepository(app.GitRepository, gitTag)
@@ -74,25 +82,89 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
 
-	id, err := extractShasum(res.Body)
+	v, err := models.CreateVersion(app, versionTag)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := pushVersion(nameVersion); err != nil {
-		return nil, err
-	}
-
-	v, err := models.CreateVersion(app, gitTag, versionTag, id)
-	if err != nil {
-		return nil, err
-	}
+	go wrtieProgress(app, versionTag, res.Body)
 
 	return v, nil
 }
 
+func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag string, event string) error {
+	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+	newEvent := buildEvent{
+		ID:      id,
+		Payload: event,
+	}
+	eventKey := fmt.Sprintf("/progress/%s/%s/%s", app.Name, tag, id)
+	e, err := json.Marshal(newEvent)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	if _, err := etcd.Client.Put(context.Background(), eventKey, string(e), etcdv3.WithLease(lease.ID)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
+	defer r.Close()
+
+	ttl, err := etcd.Client.Lease.Grant(context.Background(), defaultTTL)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	reader := bufio.NewReader(r)
+	v, err := models.FindVersionByTag(app, tag)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	for {
+		if _, err := etcd.Client.KeepAlive(context.Background(), ttl.ID); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+
+		line, err := reader.ReadBytes('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil && err != io.EOF {
+			fmt.Fprintln(os.Stderr, err)
+		}
+
+		if err := wrtieEvent(app, ttl, tag, string(line)); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		if strings.Contains(string(line), "errorDetail") {
+			v.UpdateStatus(app, "fail")
+			if err := wrtieEvent(app, ttl, tag, "Deploying: Building finished."); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			return
+		}
+	}
+
+	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, tag)
+
+	if err := pushVersion(nameVersion); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		if err := v.UpdateStatus(app, "fail"); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
+	}
+
+	if err := v.UpdateStatus(app, "success"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	if err := wrtieEvent(app, ttl, tag, "Deploying: Building finished."); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}
 func pushVersion(name string) error {
 	res, err := swarmClient.ImagePush(context.Background(), name, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam})
 	if err != nil {
@@ -129,46 +201,6 @@ func cloneRepository(url string, gitTag string) (string, error) {
 	}
 
 	return path, nil
-}
-
-func extractShasum(r io.ReadCloser) (string, error) {
-	var shasum string
-	var buildErr error
-	reader := bufio.NewReader(r)
-	for {
-		line, err := reader.ReadBytes('\n')
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-
-		shasum, buildErr = func(s []byte) (string, error) {
-			var f interface{}
-			if err := json.Unmarshal(s, &f); err != nil {
-				return "", err
-			}
-			m := f.(map[string]interface{})
-			for k, v := range m {
-				switch vv := v.(type) {
-				case string:
-					if k == "stream" && strings.HasPrefix(vv, "sha256") {
-						return vv[len("sha256:") : len(vv)-1], nil
-					}
-					if k == "error" {
-						return "", errors.New(vv)
-					}
-				}
-
-			}
-			return "", nil
-		}(line)
-		if buildErr != nil {
-			return "", buildErr
-		}
-	}
-	return shasum, nil
 }
 
 func buildContext(path string) (io.ReadCloser, error) {

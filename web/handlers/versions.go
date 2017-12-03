@@ -1,11 +1,17 @@
 package handlers
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploying/lib/builder"
+	"github.com/jysperm/deploying/lib/etcd"
 	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
 	. "github.com/jysperm/deploying/web/handlers/helpers"
@@ -40,6 +46,10 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
+	if version.Status != "success" {
+		return NewHTTPError(http.StatusBadRequest, errors.New("Version hadn't been built or had failed building"))
+	}
+
 	app.Version = version.Tag
 
 	if err := swarm.UpdateService(&app); err != nil {
@@ -49,26 +59,48 @@ func DeployVersion(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, NewVersionResponse(version))
 }
 
-func CreateAndDeploy(ctx echo.Context) error {
+func PushProgress(ctx echo.Context) error {
 	app := ctx.Get("app").(models.Application)
+	tag := ctx.Param("tag")
+	finishied := false
 
-	params := map[string]string{}
-	if err := ctx.Bind(&params); err != nil {
-		return NewHTTPError(http.StatusBadRequest, err)
+	watchPrefix := fmt.Sprintf("/progress/%s/%s/", app.Name, tag)
+	watcher := etcd.Client.Watch(context.Background(), watchPrefix, clientv3.WithPrefix())
+
+	rw := ctx.Response().Writer
+	flusher, ok := rw.(http.Flusher)
+	if !ok {
+		return NewHTTPError(http.StatusInternalServerError, errors.New("Streaming unsupported!"))
 	}
 
-	version, err := builder.BuildVersion(&app, params["gitTag"])
+	ctx.Response().Header().Set("Content-Type", "text/event-stream")
+	ctx.Response().WriteHeader(http.StatusOK)
+
+	resp, err := etcd.Client.Get(context.Background(), watchPrefix, clientv3.WithPrefix())
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
-
-	app.Version = version.Tag
-
-	if err := swarm.UpdateService(&app); err != nil {
-		return NewHTTPError(http.StatusInternalServerError, err)
+	for _, ev := range resp.Kvs {
+		fmt.Fprintf(rw, "data: %s\n\n", string(ev.Value))
+		flusher.Flush()
+		if strings.Contains(string(ev.Value), "Deploying: Building finished.") {
+			finishied = true
+			break
+		}
 	}
-
-	return ctx.JSON(http.StatusCreated, NewVersionResponse(version))
+	if !finishied {
+		for w := range watcher {
+			for _, ev := range w.Events {
+				fmt.Fprintf(rw, "data: %s\n\n", string(ev.Kv.Value))
+				flusher.Flush()
+				if strings.Contains(string(ev.Kv.Value), "Deploying: Building finished.") {
+					break
+				}
+				break
+			}
+		}
+	}
+	return ctx.NoContent(http.StatusOK)
 }
 
 // TODO:

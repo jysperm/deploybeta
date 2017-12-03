@@ -2,7 +2,9 @@ import _ from 'lodash';
 import {Button, Table, ButtonGroup, Modal, FormGroup, ControlLabel, FormControl, HelpBlock} from 'react-bootstrap';
 import {Label, DropdownButton, MenuItem, Checkbox} from 'react-bootstrap';
 import React, {Component} from 'react';
+import 'event-source-polyfill';
 
+import {alertError} from '../../lib/error';
 import {FormComponent} from '../../lib/components';
 import {requestJson} from '../../lib/request';
 
@@ -11,8 +13,9 @@ export default class ApplicationsTab extends Component {
     super(props)
 
     this.state = {
-      editingApp: false,
-      buildingVersionApp: false
+      editingApp: null,
+      buildingVersionApp: null,
+      buildingProgressVersion: null
     }
   }
 
@@ -25,8 +28,9 @@ export default class ApplicationsTab extends Component {
         <thead>
           <tr>
             <th>Domain</th>
-            <th>Version</th>
             <th>Instances</th>
+            <th>Version</th>
+            <th>State</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -36,18 +40,27 @@ export default class ApplicationsTab extends Component {
 
             return <tr key={app.name}>
               <td>{app.name}</td>
+              <td>{app.instances}</td>
               <td>
-                <Label bsStyle='primary'>{app.version}</Label>
+                <Label bsStyle='primary'>{app.version || 'N/A'}</Label>
                 <ButtonGroup>
                   <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
                   <DropdownButton title='Deploy...' id='deploy-dropdown'>
                     {_.map(app.versions, 'tag').map( versionTag => {
-                      return <MenuItem eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>
+                      return <MenuItem key={versionTag} eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>
                     })}
                   </DropdownButton>
                 </ButtonGroup>
               </td>
-              <td>{app.instances}</td>
+              <td>
+                <ul>
+                  {app.nodes.map( ({CreatedAt, state, versionTag}) => {
+                    return <li key={CreatedAt}>
+                      <strong>{versionTag}</strong> {state}
+                    </li>
+                  })}
+                </ul>
+              </td>
               <td>
                 <ButtonGroup>
                   <Button onClick={this.onEditApp.bind(this, app.name)}>Edit</Button>
@@ -60,7 +73,8 @@ export default class ApplicationsTab extends Component {
       </Table>
 
       {this.state.editingApp && <EditAppModal {...this.state.editingApp} onClose={::this.onAppEdited} />}
-      {this.state.buildingVersionApp && <BuildVersionModal {...this.state.buildingVersionApp} onClose={::this.onAppEdited} />}
+      {this.state.buildingVersionApp && <BuildVersionModal {...this.state.buildingVersionApp} onClose={::this.onBuildStarted} />}
+      {this.state.buildingProgressVersion && <BuildProgressModal {...this.state.buildingProgressVersion} onClose={::this.onBuildFinished} />}
 
     </div>;
   }
@@ -89,9 +103,7 @@ export default class ApplicationsTab extends Component {
       body: {
         tag: versionTag
       }
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 
   onDeleteApp(name) {
@@ -99,18 +111,35 @@ export default class ApplicationsTab extends Component {
       method: 'DELETE'
     }).then( () => {
       this.props.onAppDeleted({name});
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 
   onAppEdited(app) {
     this.setState({
-      editingApp: false,
-      buildingVersionApp: false
+      editingApp: null
     });
 
     this.props.onAppEdited(app);
+  }
+
+  onBuildStarted(version) {
+    if (version) {
+      this.setState({
+        buildingProgressVersion: _.extend(version, {
+          appName: this.state.buildingVersionApp.name
+        })
+      });
+    }
+
+    this.setState({
+      buildingVersionApp: null
+    });
+  }
+
+  onBuildFinished() {
+    this.setState({
+      buildingProgressVersion: null
+    });
   }
 }
 
@@ -124,7 +153,7 @@ class EditAppModal extends FormComponent {
   render() {
     const title = this.props.name ? `Edit ${this.props.name}` : 'Create new app';
 
-    return <Modal show={true} onHide={::this.props.onClose}>
+    return <Modal show={true} onHide={this.props.onClose.bind(this, null)}>
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
@@ -153,9 +182,7 @@ class EditAppModal extends FormComponent {
       body: this.state
     }).then( app => {
       this.props.onClose(app);
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 
   onEditApp() {
@@ -164,9 +191,7 @@ class EditAppModal extends FormComponent {
       body: this.state
     }).then( app => {
       this.props.onClose(app);
-    }).catch( err => {
-      alert(err.message);
-    });
+    }).catch(alertError);
   }
 }
 
@@ -178,7 +203,7 @@ class BuildVersionModal extends FormComponent {
   }
 
   render() {
-    return <Modal show={true} onHide={::this.props.onClose}>
+    return <Modal show={true} onHide={this.props.onClose.bind(this, null)}>
       <Modal.Header closeButton>
         <Modal.Title>Build version for {this.props.name}</Modal.Title>
       </Modal.Header>
@@ -188,9 +213,6 @@ class BuildVersionModal extends FormComponent {
           <FormControl type='text' {...this.linkField('gitTag')} />
           <HelpBlock>Git branch, tag or commit hash</HelpBlock>
         </FormGroup>
-        <Checkbox {...this.linkField('buildAndDeploy', 'checked')}>
-          Deploy to app after build finished
-        </Checkbox>
       </Modal.Body>
       <Modal.Footer>
         <Button bsStyle='success' onClick={::this.onBuildVersion}>Build</Button>
@@ -199,15 +221,59 @@ class BuildVersionModal extends FormComponent {
   }
 
   onBuildVersion() {
-    return requestJson(`/apps/${this.props.name}/${this.state.buildAndDeploy ? 'version' : 'versions'}`, {
+    return requestJson(`/apps/${this.props.name}/versions`, {
       method: 'POST',
       body: {
         gitTag: this.state.gitTag
       }
-    }).then( () => {
-      this.props.onClose();
-    }).catch( err => {
-      alert(err.message);
+    }).then( version => {
+      this.props.onClose(version);
+    }).catch(alertError);
+  }
+}
+
+class BuildProgressModal extends Component {
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      events: []
+    };
+  }
+
+  componentDidMount() {
+    const {appName, tag} = this.props;
+
+    const events = new EventSourcePolyfill(`/apps/${appName}/versions/${tag}/progress`, {
+      headers: {
+        Authorization: localStorage.getItem('sessionToken')
+      }
     });
+
+    events.addEventListener('message', ({data}) => {
+      const log = JSON.parse(data);
+
+      if (log.payload === 'Deploying: Building finished.') {
+        events.close();
+        return;
+      }
+
+      this.setState({
+        events: _.uniqBy(this.state.events.concat(log), 'id')
+      });
+    });
+  }
+
+  render() {
+    return <Modal show={true} onHide={this.props.onClose}>
+      <Modal.Header closeButton>
+        <Modal.Title>Building {this.props.tag}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {this.state.events.map( ({id, payload}) => {
+          return <p key={id}>{JSON.parse(payload).stream}</p>;
+        })}
+      </Modal.Body>
+    </Modal>;
   }
 }

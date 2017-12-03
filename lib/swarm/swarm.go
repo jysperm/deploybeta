@@ -140,6 +140,13 @@ func UpdateService(app *models.Application) error {
 func RemoveService(app *models.Application) error {
 	serviceID, err := extractServiceID(app.Name)
 	if err == ErrNotFoundService {
+		if err := models.DeleteAppByName(app.Name); err != nil {
+			return err
+		}
+
+		if err := models.DeleteAllVersion(app); err != nil {
+			return err
+		}
 		return nil
 	}
 

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -38,6 +37,4 @@ func init() {
 	HttpsProxy = os.Getenv("PROXY_HTTPS")
 	AptCnMirror = os.Getenv("APT_CN_MIRROR")
 	NpmCnMirror = os.Getenv("NPM_CN_MIRROR")
-
-	fmt.Println(Listen, EtcdEndpoints, DefaultRegistry)
 }

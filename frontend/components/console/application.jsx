@@ -54,7 +54,7 @@ export default class ApplicationsTab extends Component {
               </td>
               <td>
                 <ul>
-                  {app.nodes.map( ({CreatedAt, state, versionTag}) => {
+                  {app.nodes && app.nodes.map( ({CreatedAt, state, versionTag}) => {
                     return <li key={CreatedAt}>
                       <strong>{versionTag}</strong> {state}
                     </li>

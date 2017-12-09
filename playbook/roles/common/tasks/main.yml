@@ -30,6 +30,14 @@
     protocol: icmp
     jump: ACCEPT
 
+- name: setup iptables allow internal hosts
+  iptables:
+    table: filter
+    chain: INPUT
+    protocol: all
+    source: '192.168.128.0/17'
+    jump: ACCEPT
+
 - name: setup iptables allow loopback
   iptables:
     table: filter

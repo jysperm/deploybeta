@@ -25,6 +25,18 @@ types:
   applicationName: string
   versionTag: string
 
+  dataSourceName: string
+  dataSourceHost: string
+
+  dataSourceType:
+    enum: [ redis, mongodb ]
+
+  dataSourceRole:
+    enum: [ master, slave ]
+
+  dataSourceCommands:
+    enum: [ 'change-role', 'report-status' ]
+
   account:
     properties:
       username: username
@@ -66,6 +78,23 @@ types:
       time: datetime
       stream:
         enum: [ stdout, stderr ]
+
+  dataSource:
+    properties:
+      name: dataSourceName
+      type: dataSourceType
+      owner: username
+      instances: number
+
+  dataSourceExtra:
+    type: dataSource
+    properties:
+      linkedApps: applicationName[]
+
+  dataSourceNode:
+    properties:
+      host: dataSourceHost
+      role: dataSourceRole
 
 resourceTypes:
   Account:
@@ -168,6 +197,45 @@ resourceTypes:
           body:
             type: version
 
+  DataSource:
+    patch:
+      body:
+        properties:
+          instances?: number
+      responses:
+        200:
+          body:
+            type: application
+        409:
+
+    delete:
+      responses:
+        200:
+
+  DataSources:
+    get:
+      responses:
+        200:
+          body:
+            type: dataSourceExtra[]
+
+    post:
+      body:
+        properties:
+          name: dataSourceName
+          type: dataSourceType
+      responses:
+        201:
+          body:
+            type: dataSource
+        409:
+
+  DataSourceNodes:
+    get:
+      responses:
+        200:
+          body: dataSourceNode[]
+
 /accounts:
   type: Accounts
 
@@ -180,20 +248,83 @@ resourceTypes:
 /apps:
   type: Applications
 
-/apps/{name}:
-  uriParameters:
-    name: applicationName
-
-  type: Application
-
-  /version:
-    type: Version
-
-  /versions:
-    type: Versions
-
-  /versions/{tag}/progress:
+  /{name}:
     uriParameters:
-      tag: version
+      name: applicationName
 
-    type: VersionProgress
+    type: Application
+
+    /version:
+      type: Version
+
+    /versions:
+      type: Versions
+
+    /versions/{tag}/progress:
+      uriParameters:
+        tag: version
+
+      type: VersionProgress
+
+/data-sources:
+  type: DataSources
+
+  /{name}:
+    uriParameters:
+      name: dataSourceName
+
+    type: DataSource
+
+    /links/{appName}:
+      uriParameters:
+        appName: applicationName
+
+      post:
+      delete:
+
+    /nodes:
+      type: DataSourceNodes
+
+    /nodes/{nodeHost}/role:
+      uriParameters:
+        nodeHost: dataSourceHost
+
+      put:
+        body:
+          properties:
+            role: dataSourceRole
+
+/data-source/{name}/agents:
+  uriParameters:
+    name: dataSourceName
+
+  post:
+    body:
+      properties:
+        host: dataSourceHost
+    responses:
+      200:
+        body:
+          properties:
+            role: dataSourceRole
+            masterHost: dataSourceHost
+
+  /{nodeHost}:
+    uriParameters:
+      nodeHost: dataSourceHost
+
+    put:
+      body:
+        properties:
+          role: dataSourceRole
+          masterHost: dataSourceHost
+
+    /commands:
+      get:
+        responses:
+          200:
+            body:
+              properties:
+                command: dataSourceCommands
+                role?: dataSourceRole
+                masterHost: dataSourceHost

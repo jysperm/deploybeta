@@ -108,17 +108,17 @@ func (v *Version) UpdateStatus(app *Application, status string) error {
 
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(versionKey, &Version{})
-
-	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
-		version := *watchedKeys[versionKey].(*Version)
+	tran.WatchJSON(versionKey, &Version{}, func(watchedKey interface{}) error {
+		version := *watchedKey.(*Version)
 
 		version.Status = status
 
-		tran.PutJSONOnSuccess(versionKey, version)
+		tran.PutJSON(versionKey, version)
 
 		return nil
 	})
+
+	resp, err := tran.Execute()
 
 	if err != nil {
 		return err

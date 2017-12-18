@@ -28,21 +28,12 @@ func CreateApp(app *Application) error {
 		return ErrInvalidName
 	}
 
-	appKey := fmt.Sprint("/apps/", app.Name)
-	accountAppsKey := fmt.Sprintf("/account/%s/apps", app.Owner)
-
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(accountAppsKey, &[]string{})
-	tran.CreateJSON(appKey, app)
+	tran.AppendStringArray(fmt.Sprintf("/account/%s/apps", app.Owner), app.Name)
+	tran.CreateJSON(fmt.Sprint("/apps/", app.Name), app)
 
-	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
-		accountApps := *watchedKeys[accountAppsKey].(*[]string)
-
-		tran.PutJSONOnSuccess(accountAppsKey, append(accountApps, app.Name))
-
-		return nil
-	})
+	resp, err := tran.Execute()
 
 	if err != nil {
 		return err
@@ -51,6 +42,7 @@ func CreateApp(app *Application) error {
 	if resp.Succeeded == false {
 		return ErrUpdateConflict
 	}
+
 	return nil
 }
 
@@ -113,10 +105,8 @@ func (app *Application) Update(update *Application) error {
 
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(appKey, &Application{})
-
-	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
-		app := *watchedKeys[appKey].(*Application)
+	tran.WatchJSON(appKey, &Application{}, func(watchedKey interface{}) error {
+		app := *watchedKey.(*Application)
 
 		if update.GitRepository != "" {
 			app.GitRepository = update.GitRepository
@@ -128,10 +118,12 @@ func (app *Application) Update(update *Application) error {
 
 		update.Version = app.Version
 
-		tran.PutJSONOnSuccess(appKey, app)
+		tran.PutJSON(appKey, app)
 
 		return nil
 	})
+
+	resp, err := tran.Execute()
 
 	if err != nil {
 		return err
@@ -157,17 +149,17 @@ func (app *Application) UpdateVersion(version string) error {
 
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(appKey, &Application{})
-
-	resp, err := tran.Execute(func(watchedKeys map[string]interface{}) error {
-		app := *watchedKeys[appKey].(*Application)
+	tran.WatchJSON(appKey, &Application{}, func(watchedKey interface{}) error {
+		app := *watchedKey.(*Application)
 
 		app.Version = version
 
-		tran.PutJSONOnSuccess(appKey, app)
+		tran.PutJSON(appKey, app)
 
 		return nil
 	})
+
+	resp, err := tran.Execute()
 
 	if err != nil {
 		return err

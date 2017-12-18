@@ -26,6 +26,13 @@ type AppResponse struct {
 	Nodes         []swarm.Container `json:"nodes"`
 }
 
+type DataSourceResponse struct {
+	Name      string `json:"name"`
+	Owner     string `json:"owner"`
+	Type      string `json:"type"`
+	Instances int    `json:"instances"`
+}
+
 func NewErrorResponse(err error) ErrorResponse {
 	return ErrorResponse{
 		Error: err.Error(),
@@ -56,6 +63,15 @@ func NewAppResponse(app *models.Application) AppResponse {
 	appRes.Versions = *versions
 
 	return appRes
+}
+
+func NewDataSourceResponse(dataSource *models.DataSource) DataSourceResponse {
+	return DataSourceResponse{
+		Name:      dataSource.Name,
+		Owner:     dataSource.Owner,
+		Type:      dataSource.Type,
+		Instances: dataSource.Instances,
+	}
 }
 
 func NewAppsResponse(apps []models.Application) []AppResponse {

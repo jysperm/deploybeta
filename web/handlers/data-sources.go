@@ -9,6 +9,18 @@ import (
 	. "github.com/jysperm/deploying/web/handlers/helpers"
 )
 
+func ListDataSources(ctx echo.Context) error {
+	account := GetSessionAccount(ctx)
+
+	dataSources, err := models.GetDataSourcesOfAccount(account)
+
+	if err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, NewDataSourcesResponse(dataSources))
+}
+
 func CreateDataSource(ctx echo.Context) error {
 	params := map[string]string{}
 	err := ctx.Bind(&params)

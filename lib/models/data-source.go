@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/jysperm/deploying/lib/etcd"
@@ -35,6 +36,50 @@ func CreateDataSource(dataSource *DataSource) error {
 	}
 
 	return nil
+}
+
+func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err error) {
+	dataSources = make([]DataSource, 0)
+
+	resp, err := etcd.Client.Get(context.Background(), fmt.Sprintf("/accounts/%s/data-sources", account.Username))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Kvs) == 0 {
+		return dataSources, nil
+	}
+
+	accountDataSources := []string{}
+
+	err = json.Unmarshal([]byte(resp.Kvs[0].Value), &accountDataSources)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dataSourceName := range accountDataSources {
+		resp, err = etcd.Client.Get(context.Background(), fmt.Sprint("/data-sources/", dataSourceName))
+
+		if err != nil {
+			return nil, err
+		}
+
+		dataSource := DataSource{}
+
+		if len(resp.Kvs) != 0 {
+			err = json.Unmarshal([]byte(resp.Kvs[0].Value), &dataSource)
+
+			if err != nil {
+				return nil, err
+			}
+
+			dataSources = append(dataSources, dataSource)
+		}
+	}
+
+	return dataSources, nil
 }
 
 func DeleteDataSourceByName(name string) error {

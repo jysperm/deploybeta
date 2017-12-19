@@ -27,6 +27,7 @@ func CreateWebServer() *echo.Echo {
 	app.PATCH("/apps/:name", handlers.UpdateApp, helpers.AuthenticateMiddleware, helpers.AppOwnerMiddleware)
 	app.DELETE("/apps/:name", handlers.DeleteApp, helpers.AuthenticateMiddleware)
 
+	app.GET("/data-sources", handlers.ListDataSources, helpers.AuthenticateMiddleware)
 	app.POST("/data-sources", handlers.CreateDataSource, helpers.AuthenticateMiddleware)
 
 	return app

@@ -20,3 +20,13 @@ func TestCreateDataSource(t *testing.T) {
 		t.Error(errs)
 	}
 }
+
+func TestListDataSources(t *testing.T) {
+	res, _, errs := Request("GET", "/data-sources").
+		Set("Authorization", globalSession.Token).
+		EndBytes()
+
+	if res.StatusCode != 200 || len(errs) != 0 {
+		t.Error(errs)
+	}
+}

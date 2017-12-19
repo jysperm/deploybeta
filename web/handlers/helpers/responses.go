@@ -74,6 +74,16 @@ func NewDataSourceResponse(dataSource *models.DataSource) DataSourceResponse {
 	}
 }
 
+func NewDataSourcesResponse(dataSources []models.DataSource) []DataSourceResponse {
+	result := make([]DataSourceResponse, 0)
+
+	for _, dataSource := range dataSources {
+		result = append(result, NewDataSourceResponse(&dataSource))
+	}
+
+	return result
+}
+
 func NewAppsResponse(apps []models.Application) []AppResponse {
 	appsRes := make([]AppResponse, 0)
 	var app AppResponse

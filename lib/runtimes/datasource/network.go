@@ -45,7 +45,7 @@ func CreateOverlay(name string) (string, error) {
 }
 
 func RemoveOverlay(name string) error {
-	id, err := findByName(name)
+	id, err := FindByName(name)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func RemoveOverlay(name string) error {
 	return nil
 }
 
-func ListOverlay() ([]types.NetworkResource, error) {
+func ListOverlays() ([]types.NetworkResource, error) {
 	filter := filters.NewArgs()
 	filter.Add("driver", "overlay")
 	options := types.NetworkListOptions{
@@ -71,7 +71,7 @@ func ListOverlay() ([]types.NetworkResource, error) {
 	return list, nil
 }
 
-func findByName(name string) (string, error) {
+func FindByName(name string) (string, error) {
 	filter := filters.NewArgs()
 	filter.Add("driver", "overlay")
 	options := types.NetworkListOptions{

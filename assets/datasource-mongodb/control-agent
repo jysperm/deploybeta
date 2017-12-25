@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+DEPLOYING_URL="${DEPLOYING_URL:-http://localhost:7000}"
+DATASOURCE_NAME="${DATASOURCE_NAME}"
+
+NODE_ADDRESS=$(hostname -I | cut -f1 | xargs)
+NODE_HOST="${NODE_ADDRESS}:27018"
+
+cmd_usage() {
+  cat <<EOF
+Deploying Control Agent for MongoDB
+
+Usage:
+  control-agent startup
+      Load configure from deploying, start mongod and initiate replica set.
+
+  control-agent command-loop
+      Long polling from deploying, receive commands and change configuration.
+
+  control-agent watch-replica-set
+      Watch mongo replica set primary change, and report start to deploying.
+EOF
+}
+
+cmd_startup() {
+  local status="{\"host\": \"${NODE_HOST}\"}"
+  local response=$(curl -s -X POST "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes" -d "${status}")
+  local role=$(echo ${response} | jq -r .role)
+
+  if [ $role = "master" ]; then
+    local masterHost=$NODE_HOST
+    (wait_port 27018 mongo_cmd "rs.initiate({_id: '${DATASOURCE_NAME}', members:[{_id: 0, host: '${NODE_HOST}'}]})") &
+  else
+    local masterHost=$(echo ${response} | jq -r .masterHost)
+    (wait_port 27018 mongo_remote_cmd ${masterHost} "rs.add('${NODE_HOST}')") &
+  fi
+
+  BACKEND_HOST=${masterHost} nginx.conf.sh > /etc/nginx/nginx.conf
+
+  log "startup: ${role} of ${masterHost}"
+
+  supervisorctl start nginx-proxy watch-replica-set
+  exec mongod --bind_ip_all --port 27018 --replSet ${DATASOURCE_NAME} --dbpath /var/lib/mongodb
+}
+
+cmd_command_loop() {
+  log "command-loop: started"
+
+  while true; do
+    local response=$(curl -s -X GET "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}/commands")
+    local command=$(echo ${response} | jq -r .command)
+
+    case $command in
+      change-role)
+        local role=$(echo ${response} | jq -r .role)
+
+        if [ $role = "master" ]; then
+          mongo_remote_cmd $(mongo_cmd 'db.isMaster().primary') "
+            cfg = rs.conf()
+            cfg.members.forEach(function(member) {
+              if (member.host === '${NODE_HOST}') {
+                member.priority = 2
+              } else {
+                member.priority = 1
+              }
+            })
+            rs.reconfig(cfg)
+"
+          log "change-role: requested changed to master"
+        else
+          log "change-role: change to slave ignored"
+        fi
+      ;;
+
+      report-status) report_status ;;
+      *) log "command-loop: unknown command ${command}" ;;
+    esac
+  done
+}
+
+cmd_watch_replica_set() {
+  local lastismaster=$(mongo_cmd 'db.isMaster().ismaster')
+
+  while true; do
+    sleep 1
+
+    local ismaster=$(mongo_cmd 'db.isMaster().ismaster')
+
+    if [ "${lastismaster}" != "${ismaster}" ]; then
+      if [ "${ismaster}" == "true" ]; then
+        local role='master'
+      else
+        local role='slave'
+      fi
+
+      local masterHost=$(mongo_cmd 'db.isMaster().primary')
+      lastismaster="${ismaster}"
+
+      reload_proxy $masterHost
+
+      local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
+      curl -s -X PUT "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}" -d "${status}" > /dev/null
+      log "report-status: ${status}"
+    fi
+  done
+}
+
+reload_proxy() {
+  BACKEND_HOST=${1} nginx.conf.sh > /etc/nginx/nginx.conf
+  supervisorctl signal HUP nginx-proxy
+}
+
+report_status() {
+  if [ "$(mongo_cmd 'db.isMaster().ismaster')" == "true" ]; then
+    local role='master'
+    local masterHost=$NODE_HOST
+  else
+    local role='salve'
+    local masterHost=$(mongo_cmd 'db.isMaster().primary')
+  fi
+
+  local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
+  curl -s -X PUT "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}" -d "${status}" > /dev/null
+  log "report-status: ${status}"
+}
+
+wait_port() {
+  while ! timeout 1 bash -c "echo > /dev/tcp/localhost/${1}"; do sleep 1; done; shift;
+  "$@"
+}
+
+mongo_cmd() {
+  mongo --quiet --port 27018 --eval "$@"
+}
+
+mongo_remote_cmd() {
+  local host="${1}"; shift
+  mongo --quiet --host ${host} --eval "$@"
+}
+
+log() {
+  echo "[control-agent] ${1}"
+}
+
+case $1 in
+  startup) cmd_startup ;;
+  command-loop) cmd_command_loop ;;
+  watch-replica-set) cmd_watch_replica_set ;;
+  *) cmd_usage ;;
+esac

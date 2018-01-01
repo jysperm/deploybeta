@@ -1,33 +1,24 @@
 package swarm
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
-	"fmt"
 
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/models"
+	"github.com/docker/docker/api/types/filters"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
-	"golang.org/x/net/context"
 )
 
-type UpstreamConfig struct {
-	Port uint32 `json:"port"`
-}
+var ErrServiceNotFound = errors.New("Not found service")
+var swarmClient *client.Client
 
 type Container struct {
-	State      string `json:"state"`
-	VersionTag string `json:"versionTag"`
-	CreatedAt  string `json:"createdAt“`
+	State     string `json:"state"`
+	Image     string `json:"image"`
+	CreatedAt string `json:"createdAt`
 }
-
-var ErrNotFoundService = errors.New("Not found service")
-var swarmClient *client.Client
 
 func init() {
 	var err error
@@ -37,33 +28,25 @@ func init() {
 	}
 }
 
-func UpdateService(app *models.Application) error {
+func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string) error {
 	var create bool
 	var err error
-	serviceID, err := extractServiceID(app.Name)
-	if err == ErrNotFoundService {
+
+	serviceID, err := RetrieveServiceID(name)
+	if err == ErrServiceNotFound {
 		create = true
 	} else {
 		create = false
 	}
 
-	if err != nil && err != ErrNotFoundService {
+	if err != nil && err != ErrServiceNotFound {
 		return err
 	}
-
-	currentVersion, err := models.FindVersionByTag(app, app.Version)
-	if err != nil {
-		return err
-	}
-	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
-
-	var upstreamConfig UpstreamConfig
-	uint64Instances := uint64(app.Instances)
 
 	containerSpec := swarm.ContainerSpec{
-		Image: nameVersion,
+		Image: image,
 		Labels: map[string]string{
-			"deploying.name": app.Name,
+			"deploying.name": name,
 		},
 	}
 
@@ -75,24 +58,31 @@ func UpdateService(app *models.Application) error {
 				"labels": "deploying.name",
 			},
 		},
+		Networks: networkConfig,
 	}
 
-	replicatedService := swarm.ReplicatedService{Replicas: &uint64Instances}
+	replicatedService := swarm.ReplicatedService{Replicas: &instances}
 	serviceMode := swarm.ServiceMode{Replicated: &replicatedService}
-	portConfig := swarm.PortConfig{
-		Protocol:    swarm.PortConfigProtocolTCP,
-		TargetPort:  3000,
-		PublishMode: swarm.PortConfigPublishModeIngress,
+	var endpointSpec swarm.EndpointSpec
+	if len(portConfig) != 0 {
+		endpointSpec.Mode = "vip"
+		endpointSpec.Ports = portConfig
+	} else {
+		port := swarm.PortConfig{
+			Protocol:    swarm.PortConfigProtocolTCP,
+			TargetPort:  3000,
+			PublishMode: swarm.PortConfigPublishModeIngress,
+		}
+		endpointSpec.Mode = "vip"
+		endpointSpec.Ports = []swarm.PortConfig{port}
 	}
-	endpointSpec := swarm.EndpointSpec{
-		Mode:  "vip",
-		Ports: []swarm.PortConfig{portConfig},
-	}
+
 	serviceSpec := swarm.ServiceSpec{
-		Annotations:  swarm.Annotations{Name: app.Name},
+		Annotations:  swarm.Annotations{Name: name},
 		TaskTemplate: taskSpec,
 		Mode:         serviceMode,
 		EndpointSpec: &endpointSpec,
+		Networks:     networkConfig,
 	}
 
 	if create {
@@ -102,54 +92,21 @@ func UpdateService(app *models.Application) error {
 		}
 		serviceID = serviceRes.ID
 	} else {
-		internalVersion, err := extractInternalVersion(serviceID)
+		version, err := RetrieveServiceVersion(serviceID)
 		if err != nil {
 			return err
 		}
 
-		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, internalVersion, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
+		if _, err := swarmClient.ServiceUpdate(context.Background(), serviceID, *version, serviceSpec, types.ServiceUpdateOptions{}); err != nil {
 			return err
 		}
-	}
-
-	upstreamConfig.Port, err = extractPort(serviceID)
-	if err != nil {
-		return err
-	}
-
-	upstream, err := json.Marshal([]UpstreamConfig{upstreamConfig})
-	if err != nil {
-		return err
-	}
-	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
-	if _, err := etcd.Client.Put(context.Background(), upstreamKey, string(upstream)); err != nil {
-		return err
-	}
-
-	if err := app.Update(app); err != nil {
-		return err
-	}
-
-	if err := app.UpdateVersion(currentVersion.Tag); err != nil {
-		return err
 	}
 
 	return nil
 }
 
-func RemoveService(app *models.Application) error {
-	serviceID, err := extractServiceID(app.Name)
-	if err == ErrNotFoundService {
-		if err := models.DeleteAppByName(app.Name); err != nil {
-			return err
-		}
-
-		if err := models.DeleteAllVersion(app); err != nil {
-			return err
-		}
-		return nil
-	}
-
+func RemoveService(name string) error {
+	serviceID, err := RetrieveServiceID(name)
 	if err != nil {
 		return err
 	}
@@ -158,25 +115,12 @@ func RemoveService(app *models.Application) error {
 		return err
 	}
 
-	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
-	if _, err := etcd.Client.Delete(context.Background(), upstreamKey); err != nil {
-		return err
-	}
-
-	if err := models.DeleteAppByName(app.Name); err != nil {
-		return err
-	}
-
-	if err := models.DeleteAllVersion(app); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func ListContainers(app *models.Application) (*[]Container, error) {
+func ListContainers(name string) (*[]Container, error) {
 	filter := filters.NewArgs()
-	filter.Add("service", app.Name)
+	filter.Add("service", name)
 	listOpts := types.TaskListOptions{
 		Filters: filter,
 	}
@@ -192,60 +136,12 @@ func ListContainers(app *models.Application) (*[]Container, error) {
 	var containers []Container
 	for _, v := range tasks {
 		c := Container{
-			State:      string(v.Status.State),
-			VersionTag: app.Version,
-			CreatedAt:  v.Status.Timestamp.String(),
+			State:     string(v.Status.State),
+			Image:     v.Spec.ContainerSpec.Image,
+			CreatedAt: v.Status.Timestamp.String(),
 		}
 		containers = append(containers, c)
 	}
 
 	return &containers, nil
-}
-
-func extractServiceID(name string) (string, error) {
-	var serviceID string
-	query := filters.NewArgs()
-	query.Add("name", name)
-	listOpts := types.ServiceListOptions{
-		Filters: query,
-	}
-	services, err := swarmClient.ServiceList(context.Background(), listOpts)
-	if err != nil {
-		return "", err
-	}
-	for _, i := range services {
-		if i.Spec.Annotations.Name == name {
-			serviceID = i.ID
-			break
-		}
-	}
-	if serviceID == "" {
-		return "", ErrNotFoundService
-	}
-	return serviceID, nil
-}
-
-func extractPort(serviceID string) (uint32, error) {
-	var srv swarm.Service
-	var err error
-	var portConfig swarm.PortConfig
-	for {
-		srv, _, err = swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
-		if err != nil {
-			return 0, err
-		}
-		if len(srv.Endpoint.Ports) != 0 {
-			portConfig = srv.Endpoint.Ports[0]
-			break
-		}
-	}
-	return portConfig.PublishedPort, nil
-}
-
-func extractInternalVersion(serviceID string) (swarm.Version, error) {
-	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
-	if err != nil {
-		return swarm.Version{}, err
-	}
-	return service.Meta.Version, nil
 }

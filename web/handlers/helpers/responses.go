@@ -72,7 +72,7 @@ func NewAppsResponse(apps []models.Application) []AppResponse {
 			fmt.Println(err)
 		}
 		app.Versions = *versions
-		nodes, err := swarm.ListContainers(&v)
+		nodes, err := swarm.ListNodes(&v)
 		if err != nil {
 			fmt.Println(err.Error())
 		}

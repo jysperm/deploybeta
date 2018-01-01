@@ -55,3 +55,34 @@ func UpdateApp(app *models.Application) error {
 
 	return nil
 }
+
+func RemoveApp(app *models.Application) error {
+	if err := RemoveService(app.Name); err != nil {
+		return err
+	}
+
+	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
+	if _, err := etcd.Client.Delete(context.Background(), upstreamKey); err != nil {
+		return err
+	}
+
+	if err := models.DeleteAppByName(app.Name); err != nil {
+		return err
+	}
+
+	return models.DeleteAllVersion(app)
+}
+
+func ListNodes(app *models.Application) (*[]Container, error) {
+	containers, err := ListContainers(app.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(*containers); i++ {
+		(*containers)[i].Image = ""
+		(*containers)[i].VersionTag = app.Version
+	}
+
+	return containers, nil
+}

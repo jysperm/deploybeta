@@ -15,9 +15,10 @@ var ErrServiceNotFound = errors.New("Not found service")
 var swarmClient *client.Client
 
 type Container struct {
-	State     string `json:"state"`
-	Image     string `json:"image"`
-	CreatedAt string `json:"createdAt`
+	State      string `json:"state"`
+	Image      string `json:"image,omitempty"`
+	VersionTag string `json:"versionTag,omitempty`
+	CreatedAt  string `json:"createdAt"`
 }
 
 func init() {

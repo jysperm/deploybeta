@@ -52,7 +52,7 @@ func DeployVersion(ctx echo.Context) error {
 
 	app.Version = version.Tag
 
-	if err := swarm.UpdateService(&app); err != nil {
+	if err := swarm.UpdateApp(&app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

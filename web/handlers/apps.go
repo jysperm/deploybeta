@@ -90,7 +90,7 @@ func UpdateApp(ctx echo.Context) error {
 		update.Instances = realValue
 	}
 
-	if err := swarm.UpdateService(&update); err != nil {
+	if err := swarm.UpdateApp(&update); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -103,7 +103,7 @@ func DeleteApp(ctx echo.Context) error {
 	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
-	if err := swarm.RemoveService(app); err != nil {
+	if err := swarm.RemoveApp(app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

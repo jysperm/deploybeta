@@ -32,7 +32,7 @@ func CreateOverlay(name string) (string, error) {
 		Driver:         "overlay",
 		EnableIPv6:     false,
 		Internal:       false,
-		Attachable:     false,
+		Attachable:     true,
 		IPAM:           &net,
 	}
 
@@ -52,10 +52,7 @@ func RemoveOverlay(name string) error {
 	if err == nil && id == "" {
 		return errors.New("Not found overlay network")
 	}
-	if err := swarmClient.NetworkRemove(context.Background(), id); err != nil {
-		return err
-	}
-	return nil
+	return swarmClient.NetworkRemove(context.Background(), id)
 }
 
 func ListOverlays() ([]types.NetworkResource, error) {

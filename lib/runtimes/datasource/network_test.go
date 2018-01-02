@@ -28,13 +28,13 @@ func TestRemoveOverlay(t *testing.T) {
 	if err := RemoveOverlay("relay"); err != nil {
 		t.Error(err)
 	}
-	if id, err := findByName("relay"); id != "" || err != nil {
+	if id, err := FindByName("relay"); id != "" || err != nil {
 		t.Error(err)
 	}
 }
 
 func TestListOverlay(t *testing.T) {
-	list, err := ListOverlay()
+	list, err := ListOverlays()
 	if err != nil {
 		t.Error(err)
 	}

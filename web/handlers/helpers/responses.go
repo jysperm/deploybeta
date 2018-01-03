@@ -55,6 +55,12 @@ func NewAppResponse(app *models.Application) AppResponse {
 	versions, _ := models.ListVersions(app)
 	appRes.Versions = *versions
 
+	nodes, _ := swarm.ListNodes(app)
+	if len(nodes) == 0 {
+		appRes.Nodes = []swarm.Container{}
+	} else {
+		appRes.Nodes = nodes
+	}
 	return appRes
 }
 
@@ -76,10 +82,10 @@ func NewAppsResponse(apps []models.Application) []AppResponse {
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		if nodes == nil {
+		if len(nodes) == 0 {
 			app.Nodes = []swarm.Container{}
 		} else {
-			app.Nodes = *nodes
+			app.Nodes = nodes
 		}
 		appsRes = append(appsRes, app)
 	}

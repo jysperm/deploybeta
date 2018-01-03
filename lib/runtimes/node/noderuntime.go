@@ -24,6 +24,7 @@ type Dockerfile struct {
 	HTTPSProxy  string
 	AptCnMirror string
 	NpmCnMirror string
+	NvmCnMirror string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -42,6 +43,7 @@ func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 		HTTPSProxy:  config.HttpsProxy,
 		AptCnMirror: config.AptCnMirror,
 		NpmCnMirror: config.NpmCnMirror,
+		NvmCnMirror: config.NvmCnMirror,
 	}
 
 	node, err := extraVersion(root)

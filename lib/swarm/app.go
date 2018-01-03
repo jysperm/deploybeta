@@ -57,10 +57,6 @@ func UpdateApp(app *models.Application) error {
 }
 
 func RemoveApp(app *models.Application) error {
-	if err := RemoveService(app.Name); err != nil {
-		return err
-	}
-
 	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
 	if _, err := etcd.Client.Delete(context.Background(), upstreamKey); err != nil {
 		return err
@@ -70,18 +66,22 @@ func RemoveApp(app *models.Application) error {
 		return err
 	}
 
-	return models.DeleteAllVersion(app)
+	return RemoveService(app.Name)
 }
 
-func ListNodes(app *models.Application) (*[]Container, error) {
+func ListNodes(app *models.Application) ([]Container, error) {
 	containers, err := ListContainers(app.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := 0; i < len(*containers); i++ {
-		(*containers)[i].Image = ""
-		(*containers)[i].VersionTag = app.Version
+	if len(containers) == 0 {
+		return []Container{}, nil
+	}
+
+	for i := 0; i < len(containers); i++ {
+		containers[i].Image = ""
+		containers[i].VersionTag = app.Version
 	}
 
 	return containers, nil

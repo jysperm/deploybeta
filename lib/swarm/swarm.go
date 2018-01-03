@@ -17,7 +17,7 @@ var swarmClient *client.Client
 type Container struct {
 	State      string `json:"state"`
 	Image      string `json:"image,omitempty"`
-	VersionTag string `json:"versionTag,omitempty`
+	VersionTag string `json:"versionTag, omitempty"`
 	CreatedAt  string `json:"createdAt"`
 }
 
@@ -119,7 +119,7 @@ func RemoveService(name string) error {
 	return nil
 }
 
-func ListContainers(name string) (*[]Container, error) {
+func ListContainers(name string) ([]Container, error) {
 	filter := filters.NewArgs()
 	filter.Add("service", name)
 	listOpts := types.TaskListOptions{
@@ -131,7 +131,7 @@ func ListContainers(name string) (*[]Container, error) {
 		return nil, err
 	}
 	if len(tasks) == 0 {
-		return nil, nil
+		return []Container{}, nil
 	}
 
 	var containers []Container
@@ -144,5 +144,5 @@ func ListContainers(name string) (*[]Container, error) {
 		containers = append(containers, c)
 	}
 
-	return &containers, nil
+	return containers, nil
 }

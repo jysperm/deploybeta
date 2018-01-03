@@ -29,8 +29,12 @@ RUN mkdir -p $GOPATH/src $GOPATH/bin /home/deploying/app && chmod -R 777 $GOPATH
 WORKDIR /home/deploying/app
 
 # install manager of packages
-RUN go get -u github.com/golang/dep/cmd/dep
+RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} go get -u github.com/golang/dep/cmd/dep
+ENV http_proxy={{.HTTPProxy}}
+ENV https_proxy={{.HTTPSProxy}}
 RUN curl "https://glide.sh/get" | sh
+ENV http_proxy ""
+ENV https_proxy ""
 
 ADD . /go/src/{{.PackagePath}}
 

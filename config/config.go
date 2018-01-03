@@ -16,6 +16,7 @@ var HttpProxy string
 var HttpsProxy string
 var AptCnMirror string
 var NpmCnMirror string
+var NvmCnMirror string
 
 func init() {
 	err := godotenv.Load()
@@ -37,4 +38,5 @@ func init() {
 	HttpsProxy = os.Getenv("PROXY_HTTPS")
 	AptCnMirror = os.Getenv("APT_CN_MIRROR")
 	NpmCnMirror = os.Getenv("NPM_CN_MIRROR")
+	NvmCnMirror = os.Getenv("NVM_CN_MIRROR")
 }

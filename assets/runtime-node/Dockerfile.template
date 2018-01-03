@@ -14,11 +14,15 @@ ENV NVM_DIR /usr/local/nvm
 
 ENV NODE_VERSION {{.NodeVersion}}
 
-RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+ENV http_proxy {{.HTTPProxy}}
+ENV https_proxy {{.HTTPSProxy}}
+RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+ENV http_proxy ""
+ENV https_proxy ""
 
 RUN source $NVM_DIR/nvm.sh \
   && echo $NODE_VERSION > .nvmrc \
-  && nvm install $NODE_VERSION \
+  && NVM_NODEJS_ORG_MIRROR={{.NvmCnMirror}} nvm install $NODE_VERSION \
   && nvm alias default $NODE_VERSION \
   && nvm use default
 
@@ -50,7 +54,7 @@ WORKDIR "/home/deploying/app"
 ADD . "/home/deploying/app"
 
 {{if .NpmCnMirror}}
-npm config set registry {{.NpmCnMirror}}
+RUN npm config set registry {{.NpmCnMirror}}
 {{end}}
 {{if .HasYarn}}
 RUN yarn install

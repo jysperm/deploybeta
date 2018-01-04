@@ -33,6 +33,11 @@ type DataSourceResponse struct {
 	Instances int    `json:"instances"`
 }
 
+type DataSourceNodeResponse struct {
+	Host string `json:"host"`
+	Role string `json:"role"`
+}
+
 func NewErrorResponse(err error) ErrorResponse {
 	return ErrorResponse{
 		Error: err.Error(),
@@ -71,6 +76,13 @@ func NewDataSourceResponse(dataSource *models.DataSource) DataSourceResponse {
 		Owner:     dataSource.Owner,
 		Type:      dataSource.Type,
 		Instances: dataSource.Instances,
+	}
+}
+
+func NewDataSourceNodeResponse(dataSource *models.DataSourceNode) DataSourceNodeResponse {
+	return DataSourceNodeResponse{
+		Host: dataSource.Host,
+		Role: dataSource.Role,
 	}
 }
 

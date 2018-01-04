@@ -15,6 +15,11 @@ type DataSource struct {
 	Instances int    `json:"instances"`
 }
 
+type DataSourceNode struct {
+	Host string `json:"host"`
+	Role string `json:"role"`
+}
+
 func CreateDataSource(dataSource *DataSource) error {
 	if !validName.MatchString(dataSource.Name) {
 		return ErrInvalidName
@@ -82,8 +87,46 @@ func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err er
 	return dataSources, nil
 }
 
+func GetDataSourceOfAccount(dataSourceName string, account *Account) (*DataSource, error) {
+	resp, err := etcd.Client.Get(context.Background(), fmt.Sprint("/data-sources/", dataSourceName))
+
+	if err != nil {
+		return nil, err
+	}
+
+	dataSource := &DataSource{}
+
+	if len(resp.Kvs) != 0 {
+		err = json.Unmarshal([]byte(resp.Kvs[0].Value), &dataSource)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dataSource, nil
+}
+
 func DeleteDataSourceByName(name string) error {
 	_, err := etcd.Client.Delete(context.Background(), fmt.Sprint("/data-sources/", name))
 
 	return err
+}
+
+func CreateDataSourceNode(dataSource *DataSource, dataSourceNode *DataSourceNode) error {
+	tran := etcd.NewTransaction()
+
+	tran.CreateJSON(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, dataSourceNode.Host), dataSourceNode)
+
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	return nil
 }

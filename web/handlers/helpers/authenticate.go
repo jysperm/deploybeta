@@ -53,6 +53,32 @@ func AppOwnerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return NewHTTPError(http.StatusBadRequest, errors.New("Not found application"))
 	}
 }
+
+func DataSourceMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		account := GetSessionAccount(ctx)
+		dataSourceName := ctx.Param("name")
+
+		dataSource, err := models.GetDataSourceOfAccount(dataSourceName, account)
+
+		if err != nil {
+			return NewHTTPError(http.StatusInternalServerError, err)
+		}
+
+		if dataSource == nil {
+			return NewHTTPError(http.StatusUnauthorized, errors.New("Not found datasource"))
+		}
+
+		ctx.Set("dataSource", dataSource)
+
+		return next(ctx)
+	}
+}
+
 func GetSessionAccount(ctx echo.Context) *models.Account {
 	return ctx.Get("account").(*models.Account)
+}
+
+func GetDataSourceInfo(ctx echo.Context) *models.DataSource {
+	return ctx.Get("dataSource").(*models.DataSource)
 }

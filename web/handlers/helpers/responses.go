@@ -26,6 +26,18 @@ type AppResponse struct {
 	Nodes         []swarm.Container `json:"nodes"`
 }
 
+type DataSourceResponse struct {
+	Name      string `json:"name"`
+	Owner     string `json:"owner"`
+	Type      string `json:"type"`
+	Instances int    `json:"instances"`
+}
+
+type DataSourceNodeResponse struct {
+	Host string `json:"host"`
+	Role string `json:"role"`
+}
+
 func NewErrorResponse(err error) ErrorResponse {
 	return ErrorResponse{
 		Error: err.Error(),
@@ -62,6 +74,32 @@ func NewAppResponse(app *models.Application) AppResponse {
 		appRes.Nodes = nodes
 	}
 	return appRes
+}
+
+func NewDataSourceResponse(dataSource *models.DataSource) DataSourceResponse {
+	return DataSourceResponse{
+		Name:      dataSource.Name,
+		Owner:     dataSource.Owner,
+		Type:      dataSource.Type,
+		Instances: dataSource.Instances,
+	}
+}
+
+func NewDataSourceNodeResponse(dataSource *models.DataSourceNode) DataSourceNodeResponse {
+	return DataSourceNodeResponse{
+		Host: dataSource.Host,
+		Role: dataSource.Role,
+	}
+}
+
+func NewDataSourcesResponse(dataSources []models.DataSource) []DataSourceResponse {
+	result := make([]DataSourceResponse, 0)
+
+	for _, dataSource := range dataSources {
+		result = append(result, NewDataSourceResponse(&dataSource))
+	}
+
+	return result
 }
 
 func NewAppsResponse(apps []models.Application) []AppResponse {

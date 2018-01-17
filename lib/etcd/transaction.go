@@ -9,6 +9,7 @@ import (
 
 type Transaction struct {
 	watchedKeys map[string]interface{}
+	resolvers   [](func(map[string]interface{}) error)
 	compares    []etcdv3.Cmp
 	successOps  []etcdv3.Op
 	failedOps   []etcdv3.Op
@@ -21,8 +22,12 @@ func NewTransaction() *Transaction {
 	}
 }
 
-func (tran *Transaction) WatchJSON(key string, schema interface{}) {
+func (tran *Transaction) WatchJSON(key string, schema interface{}, resolver func(interface{}) error) {
 	tran.watchedKeys[key] = schema
+
+	tran.resolvers = append(tran.resolvers, func(watchedKeys map[string]interface{}) error {
+		return resolver(watchedKeys[key])
+	})
 }
 
 func (tran *Transaction) CreateJSON(key string, data interface{}) {
@@ -39,7 +44,7 @@ func (tran *Transaction) CreateJSON(key string, data interface{}) {
 	}
 }
 
-func (tran *Transaction) PutJSONOnSuccess(key string, data interface{}) {
+func (tran *Transaction) PutJSON(key string, data interface{}) {
 	dataBytes, err := json.Marshal(data)
 
 	if err != nil {
@@ -74,7 +79,7 @@ func (tran *Transaction) Execute(resolvers ...func(map[string]interface{}) error
 		}
 	}
 
-	for _, resolver := range resolvers {
+	for _, resolver := range append(tran.resolvers, resolvers...) {
 		err := resolver(tran.watchedKeys)
 
 		if err != nil {

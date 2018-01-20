@@ -3,6 +3,8 @@ package datasource
 import (
 	"errors"
 
+	"github.com/jysperm/deploying/lib/models"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
@@ -21,7 +23,7 @@ func init() {
 	}
 }
 
-func CreateOverlay(name string) (string, error) {
+func CreateOverlay(datasource *models.DataSource) (string, error) {
 	net := network.IPAM{
 		Driver:  "default",
 		Options: map[string]string{},
@@ -36,7 +38,7 @@ func CreateOverlay(name string) (string, error) {
 		IPAM:           &net,
 	}
 
-	res, err := swarmClient.NetworkCreate(context.Background(), name, options)
+	res, err := swarmClient.NetworkCreate(context.Background(), datasource.Name, options)
 	if err != nil {
 		return "", err
 	}
@@ -44,8 +46,8 @@ func CreateOverlay(name string) (string, error) {
 	return res.ID, nil
 }
 
-func RemoveOverlay(name string) error {
-	id, err := FindByName(name)
+func RemoveOverlay(datasource *models.DataSource) error {
+	id, err := FindByName(datasource.Name)
 	if err != nil {
 		return err
 	}

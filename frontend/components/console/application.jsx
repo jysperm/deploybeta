@@ -1,8 +1,8 @@
 import _ from 'lodash';
+import 'event-source-polyfill';
 import {Button, Table, ButtonGroup, Modal, FormGroup, ControlLabel, FormControl, HelpBlock} from 'react-bootstrap';
 import {Label, DropdownButton, MenuItem, Checkbox} from 'react-bootstrap';
 import React, {Component} from 'react';
-import 'event-source-polyfill';
 
 import {alertError} from '../../lib/error';
 import {FormComponent} from '../../lib/components';
@@ -54,8 +54,8 @@ export default class ApplicationsTab extends Component {
               </td>
               <td>
                 <ul>
-                  {app.nodes && app.nodes.map( ({CreatedAt, state, versionTag}) => {
-                    return <li key={CreatedAt}>
+                  {app.nodes && app.nodes.map( ({createdAt, state, versionTag}) => {
+                    return <li key={createdAt}>
                       <strong>{versionTag}</strong> {state}
                     </li>
                   })}

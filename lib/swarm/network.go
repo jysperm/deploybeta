@@ -8,20 +8,9 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
 
 	"golang.org/x/net/context"
 )
-
-var swarmClient *client.Client
-
-func init() {
-	var err error
-	swarmClient, err = client.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-}
 
 func CreateOverlay(datasource *models.DataSource) (string, error) {
 	net := network.IPAM{
@@ -47,7 +36,7 @@ func CreateOverlay(datasource *models.DataSource) (string, error) {
 }
 
 func RemoveOverlay(datasource *models.DataSource) error {
-	id, err := FindByName(datasource.Name)
+	id, err := FindNetworkByName(datasource.Name)
 	if err != nil {
 		return err
 	}
@@ -70,7 +59,7 @@ func ListOverlays() ([]types.NetworkResource, error) {
 	return list, nil
 }
 
-func FindByName(name string) (string, error) {
+func FindNetworkByName(name string) (string, error) {
 	filter := filters.NewArgs()
 	filter.Add("driver", "overlay")
 	options := types.NetworkListOptions{

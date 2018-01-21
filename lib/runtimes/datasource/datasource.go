@@ -16,6 +16,8 @@ import (
 
 var swarmClient *client.Client
 
+const RegistryAuthParam = "deploying"
+
 func init() {
 	var err error
 	swarmClient, err = client.NewEnvClient()
@@ -53,7 +55,7 @@ func MakeRedisImage() error {
 		return err
 	}
 
-	response, err := swarmClient.ImagePush(context.Background(), redisTag, types.ImagePushOptions{})
+	response, err := swarmClient.ImagePush(context.Background(), redisTag, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam})
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,7 @@ func MakeRedisImage() error {
 
 func MakeMognoImage() error {
 	mongoAssets := utils.GetAssetFilePath("datasource-mongodb/")
-	mongoTag := fmt.Sprintf("%s/mongo:latest", config.DefaultRegistry)
+	mongoTag := fmt.Sprintf("%s/mongodb:latest", config.DefaultRegistry)
 	buildOpts := types.ImageBuildOptions{
 		Tags:           []string{mongoTag},
 		Dockerfile:     "Dockerfile",
@@ -96,7 +98,7 @@ func MakeMognoImage() error {
 		return err
 	}
 
-	response, err := swarmClient.ImagePush(context.Background(), mongoTag, types.ImagePushOptions{})
+	response, err := swarmClient.ImagePush(context.Background(), mongoTag, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam})
 	if err != nil {
 		return err
 	}

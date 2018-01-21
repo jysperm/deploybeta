@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/jysperm/deploying/config"
@@ -15,6 +16,8 @@ import (
 type UpstreamConfig struct {
 	Port uint32 `json:"port"`
 }
+
+var ErrNetworkJoined = errors.New("Had joined the network")
 
 func UpdateApp(app *models.Application) error {
 	currentVersion, err := models.FindVersionByTag(app, app.Version)
@@ -67,6 +70,49 @@ func RemoveApp(app *models.Application) error {
 	}
 
 	return RemoveService(app.Name)
+}
+
+func JoinDataSource(app *models.Application, datasource *models.DataSource) error {
+	networkID, err := FindNetworkByName(datasource.Name)
+	if err != nil {
+		return err
+	}
+	if networkID == "" {
+		return ErrNetworkNotFound
+	}
+
+	serviceID, err := RetrieveServiceID(app.Name)
+	if err != nil {
+		return err
+	}
+	if serviceID == "" {
+		return ErrServiceNotFound
+	}
+
+	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range service.Spec.TaskTemplate.Networks {
+		if v.Target == networkID {
+			return ErrNetworkJoined
+		}
+	}
+
+	networkOpts := swarm.NetworkAttachmentConfig{
+		Target: networkID,
+	}
+	service.Spec.TaskTemplate.Networks = append(service.Spec.TaskTemplate.Networks, networkOpts)
+
+	currentVersion, err := models.FindVersionByTag(app, app.Version)
+	if err != nil {
+		return err
+	}
+	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
+
+	return UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, nameVersion)
+
 }
 
 func ListNodes(app *models.Application) ([]Container, error) {

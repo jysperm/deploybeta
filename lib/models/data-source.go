@@ -48,7 +48,7 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(datasourceKey, &DataSource{}, func(watchedKey interface{}) {
+	tran.WatchJSON(datasourceKey, &DataSource{}, func(watchedKey interface{}) error {
 		ds := *watchedKey.(*DataSource)
 
 		ds.Instances = instances

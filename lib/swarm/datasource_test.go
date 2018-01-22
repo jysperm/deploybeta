@@ -20,7 +20,7 @@ func TestCreateDataSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(1 * time.Nanosecond)
+	time.Sleep(2 * time.Second)
 	if err := cleanup(datasource); err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestUpdateDataSource(t *testing.T) {
 	if err := UpdateDataSource(&datasource, 1); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(1 * time.Nanosecond)
+	time.Sleep(2 * time.Second)
 
 	if err := cleanup(datasource); err != nil {
 		t.Fatal(err)
@@ -49,6 +49,23 @@ func TestUpdateDataSource(t *testing.T) {
 
 }
 
+func TestRemoveDataSource(t *testing.T) {
+	datasource := models.DataSource{
+		Name:      "test-redis-none",
+		Type:      "redis",
+		Instances: 2,
+		Owner:     "",
+	}
+
+	if err := UpdateDataSource(&datasource, 2); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(2 * time.Second)
+	if err := RemoveDataSource(&datasource); err != nil {
+		t.Fatal(err)
+	}
+}
 func cleanup(datasource models.DataSource) error {
 	serviceID, err := RetrieveServiceID(datasource.Name)
 	err = swarmClient.ServiceRemove(context.Background(), serviceID)

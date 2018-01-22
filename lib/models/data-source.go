@@ -43,7 +43,7 @@ func CreateDataSource(dataSource *DataSource) error {
 	return nil
 }
 
-func (datasource *DataSource) UpdateInstances(int instances) error {
+func (datasource *DataSource) UpdateInstances(instances int) error {
 	datasourceKey := fmt.Sprintf("/data-source/%s", datasource.Name)
 
 	tran := etcd.NewTransaction()

@@ -43,6 +43,35 @@ func CreateDataSource(dataSource *DataSource) error {
 	return nil
 }
 
+func (datasource *DataSource) UpdateInstances(int instances) error {
+	datasourceKey := fmt.Sprintf("/data-source/%s", datasource.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(datasourceKey, &DataSource{}, func(watchedKey interface{}) {
+		ds := *watchedKey.(*DataSource)
+
+		ds.Instances = instances
+
+		tran.PutJSON(datasourceKey, ds)
+
+		return nil
+	})
+
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	datasource.Instances = instances
+
+	return nil
+}
 func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err error) {
 	dataSources = make([]DataSource, 0)
 

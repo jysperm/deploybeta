@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/jysperm/deploying/lib/etcd"
@@ -18,6 +19,10 @@ type DataSource struct {
 type DataSourceNode struct {
 	Host string `json:"host"`
 	Role string `json:"role"`
+}
+
+type AppLinks struct {
+	AppName []string `json:"appName"`
 }
 
 func CreateDataSource(dataSource *DataSource) error {
@@ -72,6 +77,41 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 
 	return nil
 }
+
+func AttachDataSource(dataSource *DataSource, app *Application) error {
+	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(linksKey, &[]string{}, func(watchedKey interface{}) error {
+		apps := *watchedKey.(*[]string)
+
+		for _, v := range apps {
+			if v == app.Name {
+				return errors.New("DataSource has been attached")
+			}
+		}
+
+		apps = append(apps, app.Name)
+
+		tran.PutJSON(linksKey, apps)
+
+		return nil
+	})
+
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	return nil
+}
+
 func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err error) {
 	dataSources = make([]DataSource, 0)
 

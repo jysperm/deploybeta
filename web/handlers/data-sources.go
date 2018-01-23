@@ -1,11 +1,16 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
+	"strconv"
+
+	"github.com/buger/jsonparser"
 
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploying/lib/models"
+	"github.com/jysperm/deploying/lib/swarm"
 	"github.com/jysperm/deploying/web/handlers/helpers"
 )
 
@@ -46,15 +51,57 @@ func CreateDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	if err := swarm.UpdateDataSource(dataSource, uint64(dataSource.Instances)); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
 	return ctx.JSON(http.StatusCreated, helpers.NewDataSourceResponse(dataSource))
 }
 
 func UpdateDataSource(ctx echo.Context) error {
-	return nil
+	dataSource := ctx.Get("datasource").(models.DataSource)
+	jsonBuf := make([]byte, 1024)
+
+	if _, err := ctx.Request().Body.Read(jsonBuf); err != nil && err != io.EOF {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	instances, valueType, _, err := jsonparser.Get(jsonBuf, "instances")
+	if err != jsonparser.KeyPathNotFoundError && err != nil {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if valueType != jsonparser.NotExist {
+		realValue, err := strconv.Atoi(string(instances))
+		if err != nil {
+			return helpers.NewHTTPError(http.StatusBadRequest, err)
+		}
+		dataSource.Instances = realValue
+	}
+
+	if err := dataSource.UpdateInstances(dataSource.Instances); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := swarm.UpdateDataSource(&dataSource, uint64(dataSource.Instances)); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, helpers.NewDataSourceResponse(&dataSource))
 }
 
 func DeleteDataSource(ctx echo.Context) error {
-	return nil
+	dataSource := ctx.Get("datasource").(models.DataSource)
+
+	if err := swarm.RemoveDataSource(&dataSource); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := models.DeleteDataSourceByName(dataSource.Name); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.String(http.StatusOK, "")
 }
 
 func CreateDataSourceNode(ctx echo.Context) error {

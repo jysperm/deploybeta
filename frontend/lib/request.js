@@ -29,7 +29,7 @@ export function requestJson(url, options = {}) {
         try {
           error = JSON.parse(body).error;
         } finally {
-          const err = new Error(`${res.status}: ${error || res.statusText}`)
+          const err = new Error(`${res.status}: ${error || res.statusText}`);
           throw _.extend(err, {res, body});
         }
       }

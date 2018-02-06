@@ -11,15 +11,15 @@ import (
 
 var ErrNetworkNotFound = errors.New("Network not found")
 
-func UpdateDataSource(datasource *models.DataSource, instances uint64) error {
-	image := fmt.Sprintf("%s/%s:latest", config.DefaultRegistry, datasource.Type)
+func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
+	image := fmt.Sprintf("%s/%s:latest", config.DefaultRegistry, dataSource.Type)
 
-	networkID, err := FindNetworkByName(datasource.Name)
+	networkID, err := FindNetworkByName(dataSource.Name)
 	if err != nil {
 		return err
 	}
 	if networkID == "" {
-		networkID, err = CreateOverlay(datasource)
+		networkID, err = CreateOverlay(dataSource)
 		if err != nil {
 			return err
 		}
@@ -29,7 +29,16 @@ func UpdateDataSource(datasource *models.DataSource, instances uint64) error {
 		Target: networkID,
 	}
 
-	return UpdateService(datasource.Name, instances, []swarm.PortConfig{}, []swarm.NetworkAttachmentConfig{networkOpts}, image)
+	var portConfig swarm.PortConfig
+	if dataSource.Type == "redis" {
+		portConfig.Protocol = swarm.PortConfigProtocolTCP
+		portConfig.TargetPort = uint32(config.DefaultRedisPort)
+	} else if dataSource.Type == "mongodb" {
+		portConfig.Protocol = swarm.PortConfigProtocolTCP
+		portConfig.TargetPort = uint32(config.DefaultMongoDBPort)
+	}
+
+	return UpdateService(dataSource.Name, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, image, []string{})
 
 }
 

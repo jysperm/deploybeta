@@ -21,10 +21,6 @@ type DataSourceNode struct {
 	Role string `json:"role"`
 }
 
-type AppLinks struct {
-	AppName []string `json:"appName"`
-}
-
 func CreateDataSource(dataSource *DataSource) error {
 	if !validName.MatchString(dataSource.Name) {
 		return ErrInvalidName
@@ -78,7 +74,7 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 	return nil
 }
 
-func AttachDataSource(dataSource *DataSource, app *Application) error {
+func LinkDataSource(dataSource *DataSource, app *Application) error {
 	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
 
 	tran := etcd.NewTransaction()
@@ -95,6 +91,80 @@ func AttachDataSource(dataSource *DataSource, app *Application) error {
 		apps = append(apps, app.Name)
 
 		tran.PutJSON(linksKey, apps)
+
+		return nil
+	})
+
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	if err := UpdateDataSourceLinks(dataSource, app); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UnlinkDataSource(dataSource *DataSource, app *Application) error {
+	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(linksKey, &[]string{}, func(watchedKey interface{}) error {
+		links := *watchedKey.(*[]string)
+
+		for i := 0; i < len(links); i++ {
+			if links[i] == app.Name {
+				links = append(links[:i], links[i+1:]...)
+				tran.PutJSON(linksKey, links)
+				return nil
+			}
+		}
+
+		return errors.New("Not found link")
+	})
+
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrUpdateConflict
+	}
+
+	if err := UpdateDataSourceLinks(dataSource, app); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateDataSourceLinks(dataSource *DataSource, app *Application) error {
+	appLinksKey := fmt.Sprintf("/app/%s/data-sources", app.Name)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(appLinksKey, &[]string{}, func(watchedKey interface{}) error {
+		appLinks := *watchedKey.(*[]string)
+
+		for i := 0; i < len(appLinks); i++ {
+			if appLinks[i] == dataSource.Name {
+				appLinks = append(appLinks[:i], appLinks[i+1:]...)
+				tran.PutJSON(appLinksKey, appLinks)
+				return nil
+			}
+		}
+
+		appLinks = append(appLinks, dataSource.Name)
 
 		return nil
 	})

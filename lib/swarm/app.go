@@ -18,6 +18,7 @@ type UpstreamConfig struct {
 }
 
 var ErrNetworkJoined = errors.New("Had joined the network")
+var ErrNetworkNoUnlinkable = errors.New("No network could be unlinking")
 
 func UpdateApp(app *models.Application) error {
 	currentVersion, err := models.FindVersionByTag(app, app.Version)
@@ -28,7 +29,7 @@ func UpdateApp(app *models.Application) error {
 
 	var upstreamConfig UpstreamConfig
 
-	if err := UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, []swarm.NetworkAttachmentConfig{}, nameVersion); err != nil {
+	if err := UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, []swarm.NetworkAttachmentConfig{}, nameVersion, []string{}); err != nil {
 		return err
 	}
 
@@ -72,7 +73,7 @@ func RemoveApp(app *models.Application) error {
 	return RemoveService(app.Name)
 }
 
-func JoinDataSource(app *models.Application, datasource *models.DataSource) error {
+func LinkDataSource(app *models.Application, datasource *models.DataSource) error {
 	networkID, err := FindNetworkByName(datasource.Name)
 	if err != nil {
 		return err
@@ -105,14 +106,78 @@ func JoinDataSource(app *models.Application, datasource *models.DataSource) erro
 	}
 	service.Spec.TaskTemplate.Networks = append(service.Spec.TaskTemplate.Networks, networkOpts)
 
+	envs := service.Spec.TaskTemplate.ContainerSpec.Env
+
 	currentVersion, err := models.FindVersionByTag(app, app.Version)
 	if err != nil {
 		return err
 	}
 	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
 
-	return UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, nameVersion)
+	port, err := RetrievePort(serviceID)
+	if err != nil {
+		return err
+	}
+	dataSourceEnv := fmt.Sprintf("%s=%s:%d", datasource.Name, config.HostPrivateAddress, port)
+	envs = append(envs, dataSourceEnv)
 
+	return UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, nameVersion, envs)
+
+}
+
+func UnlinkDataSource(app *models.Application, dataSource *models.DataSource) error {
+	networkID, err := FindNetworkByName(dataSource.Name)
+	if err != nil {
+		return err
+	}
+
+	if networkID == "" {
+		return ErrNetworkNotFound
+	}
+
+	serviceID, err := RetrieveServiceID(app.Name)
+	if err != nil {
+		return err
+	}
+
+	if serviceID == "" {
+		return ErrServiceNotFound
+	}
+
+	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
+	if err != nil {
+		return err
+	}
+
+	if len(service.Spec.TaskTemplate.Networks) == 0 {
+		return ErrNetworkNoUnlinkable
+	}
+
+	port, err := RetrievePort(serviceID)
+	if err != nil {
+		return err
+	}
+
+	dataSourceEnv := fmt.Sprintf("%s=%s:%d", dataSource.Name, config.HostPrivateAddress, port)
+
+	for i := 0; i < len(service.Spec.TaskTemplate.Networks); i++ {
+		if service.Spec.TaskTemplate.Networks[i].Target == networkID {
+			service.Spec.TaskTemplate.Networks = append(service.Spec.TaskTemplate.Networks[:i], service.Spec.TaskTemplate.Networks[i+1:]...)
+			for j := 0; j < len(service.Spec.TaskTemplate.ContainerSpec.Env); j++ {
+				if service.Spec.TaskTemplate.ContainerSpec.Env[i] == dataSourceEnv {
+					service.Spec.TaskTemplate.ContainerSpec.Env = append(service.Spec.TaskTemplate.ContainerSpec.Env[:i], service.Spec.TaskTemplate.ContainerSpec.Env[i+1:]...)
+					currentVersion, err := models.FindVersionByTag(app, app.Version)
+					if err != nil {
+						return err
+					}
+					nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
+					return UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, nameVersion, service.Spec.TaskTemplate.ContainerSpec.Env)
+				}
+			}
+		}
+	}
+
+	return ErrNetworkNoUnlinkable
 }
 
 func ListNodes(app *models.Application) ([]Container, error) {

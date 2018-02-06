@@ -29,7 +29,7 @@ func init() {
 	}
 }
 
-func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string) error {
+func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string, envs []string) error {
 	var create bool
 	var err error
 
@@ -49,6 +49,9 @@ func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig,
 		Labels: map[string]string{
 			"deploying.name": name,
 		},
+	}
+	if len(envs) != 0 {
+		containerSpec.Env = envs
 	}
 
 	taskSpec := swarm.TaskSpec{

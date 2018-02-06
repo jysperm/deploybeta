@@ -90,6 +90,46 @@ func UpdateDataSource(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, helpers.NewDataSourceResponse(&dataSource))
 }
 
+func LinkDataSource(ctx echo.Context) error {
+	appName := ctx.Param("appName")
+	dataSource := ctx.Get("datasource").(models.DataSource)
+
+	app, err := models.FindAppByName(appName)
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if err := swarm.LinkDataSource(app, &dataSource); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := models.LinkDataSource(&dataSource, app); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.String(http.StatusOK, "")
+}
+
+func UnlinkDataSource(ctx echo.Context) error {
+	appName := ctx.Param("appName")
+	dataSource := ctx.Get("datasource").(models.DataSource)
+
+	app, err := models.FindAppByName(appName)
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if err := swarm.UnlinkDataSource(app, &dataSource); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := models.UnlinkDataSource(&dataSource, app); err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.String(http.StatusOK, "")
+}
+
 func DeleteDataSource(ctx echo.Context) error {
 	dataSource := ctx.Get("datasource").(models.DataSource)
 

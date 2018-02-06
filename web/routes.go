@@ -34,5 +34,8 @@ func CreateWebServer() *echo.Echo {
 
 	app.POST("/data-sources/:name/agents", handlers.CreateDataSourceNode, helpers.AuthenticateMiddleware, helpers.DataSourceMiddleware)
 
+	app.POST("/data-sources/:name/links/:appName", handlers.LinkDataSource, helpers.AuthenticateMiddleware, helpers.DataSourceMiddleware)
+	app.PUT("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, helpers.AuthenticateMiddleware, helpers.DataSourceMiddleware)
+
 	return app
 }

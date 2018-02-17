@@ -85,8 +85,7 @@ export default class DataSourcesTab extends Component {
 
   onDeleteDataSource(name) {
     return requestJson(`/data-sources/${name}`, {
-      method: 'DELETE',
-      body: this.state
+      method: 'DELETE'
     }).then( () => {
       this.props.onDataSourceDeleted({name});
     }).catch(alertError);
@@ -97,7 +96,9 @@ class EditDataSourceModal extends FormComponent {
   constructor(props) {
     super(props);
 
-    this.state = {};
+    this.state = {
+      type: 'mongodb'
+    };
   }
 
   render() {
@@ -113,9 +114,10 @@ class EditDataSourceModal extends FormComponent {
         </FormGroup>
         <FormGroup controlId='type'>
           <ControlLabel>Database Type</ControlLabel>
-          <FormControl componentClass="select">
+          <FormControl componentClass="select" {...this.linkField('type')}>
             <option value='mongodb'>MongoDB</option>
             <option value='redis'>Redis</option>
+            <option value='mysql'>MySQL</option>
           </FormControl>
           <HelpBlock>Can not be modified after creation</HelpBlock>
         </FormGroup>

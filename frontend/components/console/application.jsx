@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import 'event-source-polyfill';
 import {Button, Table, ButtonGroup, Modal, FormGroup, ControlLabel, FormControl, HelpBlock} from 'react-bootstrap';
-import {Label, DropdownButton, MenuItem, Checkbox} from 'react-bootstrap';
+import {Label, DropdownButton, MenuItem} from 'react-bootstrap';
 import React, {Component} from 'react';
 
 import {alertError} from '../../lib/error';
@@ -10,13 +10,13 @@ import {requestJson} from '../../lib/request';
 
 export default class ApplicationsTab extends Component {
   constructor(props) {
-    super(props)
+    super(props);
 
     this.state = {
       editingApp: null,
       buildingVersionApp: null,
       buildingProgressVersion: null
-    }
+    };
   }
 
   render() {
@@ -36,28 +36,31 @@ export default class ApplicationsTab extends Component {
         </thead>
         <tbody>
           {this.props.apps.map( app => {
-            let versionTags = _.map(app.versions, 'tag');
-
             return <tr key={app.name}>
               <td>{app.name}</td>
               <td>{app.instances}</td>
-              <td>
-                <Label bsStyle='primary'>{app.version || 'N/A'}</Label>
-                <ButtonGroup>
-                  <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
-                  <DropdownButton title='Deploy...' id='deploy-dropdown'>
-                    {_.map(app.versions, 'tag').map( versionTag => {
-                      return <MenuItem key={versionTag} eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>
-                    })}
-                  </DropdownButton>
-                </ButtonGroup>
+              <td className='application-version'>
+                <div>
+                  <Label bsStyle='primary'>{app.version || 'N/A'}</Label>
+                </div>
+                <div>
+                  <ButtonGroup>
+                    <Button onClick={this.onBuildVersion.bind(this, app.name)}>Build</Button>
+                    <DropdownButton title='Deploy...' id='deploy-dropdown'>
+                      {_.map(app.versions, 'tag').map( versionTag => {
+                        return <MenuItem key={versionTag} eventKey={versionTag} onClick={this.onDeployVersion.bind(this, app.name, versionTag)}>{versionTag}</MenuItem>;
+                      })}
+                    </DropdownButton>
+                  </ButtonGroup>
+                </div>
               </td>
               <td>
-                <ul>
+                <ul className='application-state'>
                   {app.nodes && app.nodes.map( ({createdAt, state, versionTag}) => {
                     return <li key={createdAt}>
-                      <strong>{versionTag}</strong> {state}
-                    </li>
+                      <Label bsStyle='primary'>{versionTag}</Label>
+                      <strong>{state}</strong>
+                    </li>;
                   })}
                 </ul>
               </td>
@@ -145,7 +148,7 @@ export default class ApplicationsTab extends Component {
 
 class EditAppModal extends FormComponent {
   constructor(props) {
-    super(props)
+    super(props);
 
     this.state = {};
   }
@@ -197,7 +200,7 @@ class EditAppModal extends FormComponent {
 
 class BuildVersionModal extends FormComponent {
   constructor(props) {
-    super(props)
+    super(props);
 
     this.state = {};
   }
@@ -234,7 +237,7 @@ class BuildVersionModal extends FormComponent {
 
 class BuildProgressModal extends Component {
   constructor(props) {
-    super(props)
+    super(props);
 
     this.state = {
       events: []

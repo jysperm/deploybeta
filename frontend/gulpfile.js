@@ -2,7 +2,6 @@ const gulp = require('gulp');
 const less = require('gulp-less');
 const babel = require('gulp-babel');
 const rename = require('gulp-rename');
-const uglify = require('gulp-uglify');
 const webpack = require('gulp-webpack');
 const cleanCss = require('gulp-clean-css');
 

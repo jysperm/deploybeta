@@ -1,20 +1,20 @@
+import {HashRouter as Router, Switch, Route} from 'react-router-dom';
+import {Row, Button} from 'react-bootstrap';
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
-import {hashHistory, Router, IndexRoute, Route} from 'react-router';
-import {Row, Button} from 'react-bootstrap';
 
-import LayoutView from './layout'
-import LoginView from './login'
-import ConsoleView from './console'
+import LayoutView from './layout';
+import LoginView from './login';
+import ConsoleView from './console';
 
 class RootView extends Component {
   render() {
-    return <Router history={hashHistory}>
-      <Router path='/'>
-        <IndexRoute component={IndexView} />
+    return <Router>
+      <Switch>
+        <Route exact path='/' component={IndexView} />
         <Route path='/login' component={LoginView} />
         <Route path='/console' component={ConsoleView} />
-      </Router>
+      </Switch>
     </Router>;
   }
 }

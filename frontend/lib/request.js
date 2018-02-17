@@ -17,7 +17,7 @@ export function requestJson(url, options = {}) {
 
   return fetch(url, options).then( res => {
     return res.text().then( body => {
-      var error;
+      var err;
 
       if (res.ok) {
         try {
@@ -27,11 +27,12 @@ export function requestJson(url, options = {}) {
         }
       } else {
         try {
-          error = JSON.parse(body).error;
-        } finally {
-          const err = new Error(`${res.status}: ${error || res.statusText}`);
-          throw _.extend(err, {res, body});
+          err = new Error(`${res.status}: ${JSON.parse(body).error}`);
+        } catch (e) {
+          err = new Error(`${res.status}: ${res.statusText}`);
         }
+
+        throw _.extend(err, {res, body});
       }
     });
   });

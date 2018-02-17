@@ -10,7 +10,7 @@ import DataSourcesTab from './console/data-source';
 
 export default class ConsoleView extends Component {
   constructor(props) {
-    super(props)
+    super(props);
 
     this.state = {
       apps: [],
@@ -31,18 +31,24 @@ export default class ConsoleView extends Component {
   }
 
   render() {
+    const activeKey = _.trimStart(_.trimStart(this.props.location.pathname, this.props.match.path), '/');
+
     return <LayoutView>
       <Row>
-        <Tabs defaultActiveKey={1} id='pages'>
-          <Tab eventKey={1} title='Applications'>
+        <Tabs animation={false} activeKey={activeKey ? activeKey : 'applications'} onSelect={::this.onTabSelected} id='console-tabs'>
+          <Tab eventKey='applications' title='Applications'>
             <ApplicationsTab apps={this.state.apps} onAppEdited={::this.onAppEdited} onAppDeleted={::this.onAppDeleted} />
           </Tab>
-          <Tab eventKey={2} title='Data Sources'>
+          <Tab eventKey='data-sources' title='Data Sources'>
             <DataSourcesTab apps={this.state.apps} dataSources={this.state.dataSources} onDataSourceEdited={::this.onDataSourceEdited} onDataSourceDeleted={::this.onDataSourceDeleted} />
           </Tab>
         </Tabs>
       </Row>
     </LayoutView>;
+  }
+
+  onTabSelected(tabKey) {
+    this.props.history.replace(`${this.props.match.path}/${tabKey}`);
   }
 
   onAppEdited(app) {

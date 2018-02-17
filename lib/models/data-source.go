@@ -7,7 +7,10 @@ import (
 	"fmt"
 
 	"github.com/jysperm/deploying/lib/etcd"
+	"github.com/jysperm/deploying/lib/utils"
 )
+
+var ErrInvalidDataSourceType = errors.New("invalid datasource type")
 
 type DataSource struct {
 	Name      string `json:"name"`
@@ -21,9 +24,15 @@ type DataSourceNode struct {
 	Role string `json:"role"`
 }
 
+var availableTypes = []string{"mongodb", "redis", "mysql"}
+
 func CreateDataSource(dataSource *DataSource) error {
 	if !validName.MatchString(dataSource.Name) {
 		return ErrInvalidName
+	}
+
+	if !utils.StringInSlice(dataSource.Type, availableTypes) {
+		return ErrInvalidDataSourceType
 	}
 
 	tran := etcd.NewTransaction()

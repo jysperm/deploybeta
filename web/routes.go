@@ -29,8 +29,8 @@ func CreateWebServer() *echo.Echo {
 
 	app.GET("/data-sources", handlers.ListDataSources, helpers.AuthenticateMiddleware)
 	app.POST("/data-sources", handlers.CreateDataSource, helpers.AuthenticateMiddleware)
-	app.PATCH("/data-sources/:name", handlers.UpdateDataSource, helpers.AuthenticateMiddleware)
-	app.DELETE("/data-sources/:name", handlers.DeleteDataSource, helpers.AuthenticateMiddleware)
+	app.PATCH("/data-sources/:name", handlers.UpdateDataSource, helpers.AuthenticateMiddleware, helpers.DataSourceMiddleware)
+	app.DELETE("/data-sources/:name", handlers.DeleteDataSource, helpers.AuthenticateMiddleware, helpers.DataSourceMiddleware)
 
 	app.POST("/data-sources/:name/agents", handlers.CreateDataSourceNode, helpers.AuthenticateMiddleware, helpers.DataSourceMiddleware)
 

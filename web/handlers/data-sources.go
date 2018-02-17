@@ -112,18 +112,18 @@ func LinkDataSource(ctx echo.Context) error {
 
 func UnlinkDataSource(ctx echo.Context) error {
 	appName := ctx.Param("appName")
-	dataSource := ctx.Get("datasource").(models.DataSource)
+	dataSource := helpers.GetDataSourceInfo(ctx)
 
 	app, err := models.FindAppByName(appName)
 	if err != nil {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.UnlinkDataSource(app, &dataSource); err != nil {
+	if err := swarm.UnlinkDataSource(app, dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.UnlinkDataSource(&dataSource, app); err != nil {
+	if err := models.UnlinkDataSource(dataSource, app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -131,9 +131,9 @@ func UnlinkDataSource(ctx echo.Context) error {
 }
 
 func DeleteDataSource(ctx echo.Context) error {
-	dataSource := ctx.Get("datasource").(models.DataSource)
+	dataSource := helpers.GetDataSourceInfo(ctx)
 
-	if err := swarm.RemoveDataSource(&dataSource); err != nil {
+	if err := swarm.RemoveDataSource(dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 

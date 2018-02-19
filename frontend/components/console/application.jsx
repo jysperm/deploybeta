@@ -202,7 +202,9 @@ class BuildVersionModal extends FormComponent {
   constructor(props) {
     super(props);
 
-    this.state = {};
+    this.state = {
+      building: false
+    };
   }
 
   render() {
@@ -218,12 +220,14 @@ class BuildVersionModal extends FormComponent {
         </FormGroup>
       </Modal.Body>
       <Modal.Footer>
-        <Button bsStyle='success' onClick={::this.onBuildVersion}>Build</Button>
+        <Button bsStyle='success' disabled={this.state.building} onClick={::this.onBuildVersion}>Build</Button>
       </Modal.Footer>
     </Modal>;
   }
 
   onBuildVersion() {
+    this.setState({building: true});
+
     return requestJson(`/apps/${this.props.name}/versions`, {
       method: 'POST',
       body: {
@@ -247,6 +251,7 @@ class BuildProgressModal extends Component {
   componentDidMount() {
     const {appName, tag} = this.props;
 
+    /* global EventSourcePolyfill */
     const events = new EventSourcePolyfill(`/apps/${appName}/versions/${tag}/progress`, {
       headers: {
         Authorization: localStorage.getItem('sessionToken')
@@ -268,7 +273,7 @@ class BuildProgressModal extends Component {
   }
 
   render() {
-    return <Modal show={true} onHide={this.props.onClose}>
+    return <Modal show={true} bsSize='large' onHide={this.props.onClose}>
       <Modal.Header closeButton>
         <Modal.Title>Building {this.props.tag}</Modal.Title>
       </Modal.Header>

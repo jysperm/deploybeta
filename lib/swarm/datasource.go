@@ -38,7 +38,12 @@ func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
 		portConfig.TargetPort = uint32(config.DefaultMongoDBPort)
 	}
 
-	return UpdateService(dataSource.Name, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, image, []string{})
+	environments := []string{
+		"DATASOURCE_NAME=" + dataSource.Name,
+		"DEPLOYING_URL=http://" + config.HostPrivateAddress + config.Listen,
+	}
+
+	return UpdateService(dataSource.Name, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, image, environments)
 
 }
 

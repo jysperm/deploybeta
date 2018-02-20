@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-DEPLOYING_URL="${DEPLOYING_URL:-http://localhost:7000}"
+AGENT_TOKEN="${AGENT_TOKEN}"
 DATASOURCE_NAME="${DATASOURCE_NAME}"
+DEPLOYING_URL="${DEPLOYING_URL:-http://localhost:7000}"
 
-NODE_ADDRESS=$(hostname -I | cut -f1 | xargs)
+NODE_ADDRESS="$(hostname -i)"
 NODE_HOST="${NODE_ADDRESS}:27018"
 
 cmd_usage() {
@@ -24,7 +25,7 @@ EOF
 
 cmd_startup() {
   local status="{\"host\": \"${NODE_HOST}\"}"
-  local response=$(curl -s -X POST "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes" -d "${status}")
+  local response=$(deploying_curl POST "/data-sources/${DATASOURCE_NAME}/nodes" -d "${status}")
   local role=$(echo ${response} | jq -r .role)
 
   if [ $role = "master" ]; then
@@ -47,7 +48,7 @@ cmd_command_loop() {
   log "command-loop: started"
 
   while true; do
-    local response=$(curl -s -X GET "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}/commands")
+    local response=$(deploying_curl GET "/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}/commands")
     local command=$(echo ${response} | jq -r .command)
 
     case $command in
@@ -75,6 +76,8 @@ cmd_command_loop() {
       report-status) report_status ;;
       *) log "command-loop: unknown command ${command}" ;;
     esac
+
+    sleep 1
   done
 }
 
@@ -120,7 +123,7 @@ report_status() {
   fi
 
   local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
-  curl -s -X PUT "${DEPLOYING_URL}/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}" -d "${status}" > /dev/null
+  deploying_curl PUT "/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}" -d "${status}" > /dev/null
   log "report-status: ${status}"
 }
 
@@ -136,6 +139,12 @@ mongo_cmd() {
 mongo_remote_cmd() {
   local host="${1}"; shift
   mongo --quiet --host ${host} --eval "$@"
+}
+
+deploying_curl() {
+  local method="${1}"; shift;
+  local url="${DEPLOYING_URL}${1}"; shift;
+  curl -s -H "Authorization: ${AGENT_TOKEN}" -X ${method} ${url} "$@"
 }
 
 log() {

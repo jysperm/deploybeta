@@ -42,7 +42,7 @@ func DeployVersion(ctx echo.Context) error {
 	}
 
 	version, err := models.FindVersionByTag(&app, params["tag"])
-	if err != nil || version == nil {
+	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
@@ -56,7 +56,7 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, NewVersionResponse(version))
+	return ctx.JSON(http.StatusOK, NewVersionResponse(&version))
 }
 
 func PushProgress(ctx echo.Context) error {

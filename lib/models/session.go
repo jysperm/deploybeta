@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -44,28 +43,16 @@ func CreateSession(account *Account) (*Session, error) {
 	return session, err
 }
 
-func FindSessionByToken(token string) (*Session, error) {
-	sessionKey := fmt.Sprint("/sessions/", token)
-
-	resp, err := etcd.Client.Get(context.Background(), sessionKey)
+func FindSessionByToken(token string) (session Session, err error) {
+	found, err := etcd.LoadKey(fmt.Sprintf("/sessions/%s", token), &session)
 
 	if err != nil {
-		return nil, err
+		return session, err
+	} else if !found {
+		return session, ErrTokenNotFound
+	} else {
+		return session, nil
 	}
-
-	if len(resp.Kvs) == 0 {
-		return nil, ErrTokenNotFound
-	}
-
-	session := &Session{}
-
-	err = json.Unmarshal([]byte(resp.Kvs[0].Value), session)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return session, nil
 }
 
 func DeleteSessionByToken(token string) error {

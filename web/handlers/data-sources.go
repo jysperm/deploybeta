@@ -99,11 +99,11 @@ func LinkDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.LinkDataSource(app, &dataSource); err != nil {
+	if err := swarm.LinkDataSource(&app, &dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.LinkDataSource(&dataSource, app); err != nil {
+	if err := models.LinkDataSource(&dataSource, &app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -119,11 +119,11 @@ func UnlinkDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.UnlinkDataSource(app, dataSource); err != nil {
+	if err := swarm.UnlinkDataSource(&app, dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.UnlinkDataSource(dataSource, app); err != nil {
+	if err := models.UnlinkDataSource(dataSource, &app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 

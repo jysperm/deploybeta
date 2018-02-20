@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/jysperm/deploying/config"
@@ -48,25 +49,16 @@ func DeleteVersionByTag(app *Application, tag string) error {
 	return nil
 }
 
-func FindVersionByTag(app *Application, tag string) (*Version, error) {
-	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
+func FindVersionByTag(app *Application, tag string) (version Version, err error) {
+	found, err := etcd.LoadKey(fmt.Sprintf("/accounts/%s", tag), &version)
 
-	res, err := etcd.Client.Get(context.Background(), versionKey)
 	if err != nil {
-		return nil, err
+		return version, err
+	} else if !found {
+		return version, errors.New("version not found")
+	} else {
+		return version, nil
 	}
-
-	if len(res.Kvs[0].Value) == 0 {
-		return nil, nil
-	}
-
-	var version Version
-	if err := json.Unmarshal(res.Kvs[0].Value, &version); err != nil {
-		return nil, err
-	}
-
-	return &version, nil
-
 }
 
 func ListVersions(app *Application) (*[]Version, error) {

@@ -103,7 +103,7 @@ func DeleteApp(ctx echo.Context) error {
 	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
-	if err := swarm.RemoveApp(app); err != nil {
+	if err := swarm.RemoveApp(&app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

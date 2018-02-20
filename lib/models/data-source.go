@@ -255,6 +255,18 @@ func GetDataSourceOfAccount(dataSourceName string, account *Account) (*DataSourc
 	return dataSource, nil
 }
 
+func FindDataSourceByName(name string) (dataSource DataSource, err error) {
+	found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s", name), &dataSource)
+
+	if err != nil {
+		return dataSource, err
+	} else if !found {
+		return dataSource, errors.New("dataSource not found")
+	} else {
+		return dataSource, nil
+	}
+}
+
 func DeleteDataSourceByName(name string) error {
 	_, err := etcd.Client.Delete(context.Background(), fmt.Sprint("/data-sources/", name))
 

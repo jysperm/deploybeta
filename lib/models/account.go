@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -56,28 +55,16 @@ func RegisterAccount(account *Account, password string) error {
 	return nil
 }
 
-func FindAccountByName(username string) (*Account, error) {
-	accountKey := fmt.Sprint("/accounts/", username)
-
-	resp, err := etcd.Client.Get(context.Background(), accountKey)
+func FindAccountByName(username string) (account Account, err error) {
+	found, err := etcd.LoadKey(fmt.Sprintf("/accounts/%s", username), &account)
 
 	if err != nil {
-		return nil, err
+		return account, err
+	} else if !found {
+		return account, ErrAccountNotFound
+	} else {
+		return account, nil
 	}
-
-	if len(resp.Kvs) == 0 {
-		return nil, ErrAccountNotFound
-	}
-
-	account := &Account{}
-
-	err = json.Unmarshal([]byte(resp.Kvs[0].Value), account)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return account, nil
 }
 
 func DeleteAccountByName(username string) error {

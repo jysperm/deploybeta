@@ -174,19 +174,14 @@ func (app *Application) UpdateVersion(version string) error {
 	return nil
 }
 
-func FindAppByName(name string) (*Application, error) {
-	appKey := fmt.Sprintf("/apps/%s", name)
-	resp, err := etcd.Client.Get(context.Background(), appKey)
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Kvs) == 0 {
-		return nil, nil
-	}
-	var appFound Application
-	if err := json.Unmarshal(resp.Kvs[0].Value, &appFound); err != nil {
-		return nil, err
-	}
+func FindAppByName(name string) (app Application, err error) {
+	found, err := etcd.LoadKey(fmt.Sprintf("/apps/%s", name), &app)
 
-	return &appFound, nil
+	if err != nil {
+		return app, err
+	} else if !found {
+		return app, errors.New("app not found")
+	} else {
+		return app, nil
+	}
 }

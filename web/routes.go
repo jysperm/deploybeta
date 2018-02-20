@@ -13,6 +13,7 @@ func CreateWebServer() *echo.Echo {
 	auth := helpers.AuthenticateMiddleware
 	appOwner := helpers.AppOwnerMiddleware
 	dataSource := helpers.DataSourceMiddleware
+	dataSourceAgent := helpers.DataSourceAgentMiddleware
 
 	app.File("/", "./frontend/public/index.html")
 	app.Static("/assets", "./frontend/public")
@@ -39,7 +40,9 @@ func CreateWebServer() *echo.Echo {
 	app.POST("/data-sources/:name/links/:appName", handlers.LinkDataSource, auth, dataSource)
 	app.PUT("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, auth, dataSource)
 
-	app.POST("/data-sources/:name/agents", handlers.CreateDataSourceNode)
+	app.POST("/data-sources/:name/agents", handlers.CreateDataSourceNode, dataSourceAgent)
+	app.PUT("/data-sources/:name/agents/:host", handlers.UpdateDataSourceNode, dataSourceAgent)
+	app.GET("/data-sources/:name/agents/:host/commands", handlers.PollDataSourceNodeCommands, dataSourceAgent)
 
 	return app
 }

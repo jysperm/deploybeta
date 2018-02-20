@@ -6,25 +6,38 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/errwrap"
+
 	"github.com/jysperm/deploying/lib/etcd"
 	"github.com/jysperm/deploying/lib/utils"
 )
 
 var ErrInvalidDataSourceType = errors.New("invalid datasource type")
 
+// Serialize to /data-source/:name
 type DataSource struct {
 	Name      string `json:"name"`
 	Owner     string `json:"owner"`
 	Type      string `json:"type"`
 	Instances int    `json:"instances"`
+
+	// HTTP API token scoped to this dataSource
+	AgentToken string `json:"agentToken"`
 }
 
+// Serialize to /data-source/:name/nodes/:host
 type DataSourceNode struct {
+	// Reference to DataSource.Name
+	DataSourceName string `json:"dataSourceName"`
+	// Reported address and port, like `10.0.1.1:6380`
 	Host string `json:"host"`
+	// Reported Role, `master` or `slave`
 	Role string `json:"role"`
+	// Reported master host, like `10.0.1.1:6380`
+	MasterHost string `json:"masterHost"`
 }
 
-var availableTypes = []string{"mongodb", "redis", "mysql"}
+var availableTypes = []string{"mongodb", "redis"}
 
 func CreateDataSource(dataSource *DataSource) error {
 	if !validName.MatchString(dataSource.Name) {
@@ -34,6 +47,8 @@ func CreateDataSource(dataSource *DataSource) error {
 	if !utils.StringInSlice(dataSource.Type, availableTypes) {
 		return ErrInvalidDataSourceType
 	}
+
+	dataSource.AgentToken = utils.RandomString(32)
 
 	tran := etcd.NewTransaction()
 
@@ -273,10 +288,24 @@ func DeleteDataSourceByName(name string) error {
 	return err
 }
 
-func CreateDataSourceNode(dataSource *DataSource, dataSourceNode *DataSourceNode) error {
+func (dataSource *DataSource) FindNodeByHost(host string) (dataSourceNode DataSourceNode, err error) {
+	found, err := etcd.LoadKey(fmt.Sprintf("/data-source/%s/nodes/%s", dataSource.Name, host), &dataSourceNode)
+
+	if err != nil {
+		return dataSourceNode, err
+	} else if !found {
+		return dataSourceNode, errors.New("dataSource node not found")
+	} else {
+		return dataSourceNode, nil
+	}
+}
+
+func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
+	node.DataSourceName = dataSource.Name
+
 	tran := etcd.NewTransaction()
 
-	tran.CreateJSON(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, dataSourceNode.Host), dataSourceNode)
+	tran.CreateJSON(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, node.Host), node)
 
 	resp, err := tran.Execute()
 
@@ -285,8 +314,40 @@ func CreateDataSourceNode(dataSource *DataSource, dataSourceNode *DataSourceNode
 	}
 
 	if resp.Succeeded == false {
-		return ErrUpdateConflict
+		return errwrap.Wrapf("create dataSource node: {{err}}", ErrUpdateConflict)
 	}
+
+	return nil
+}
+
+func (node *DataSourceNode) Update(updates *DataSourceNode) error {
+	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(nodeKey, &DataSourceNode{}, func(watchedKey interface{}) error {
+		node := *watchedKey.(*DataSourceNode)
+
+		node.Role = updates.Role
+		node.MasterHost = updates.MasterHost
+
+		tran.PutJSON(nodeKey, node)
+
+		return nil
+	})
+
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return errwrap.Wrapf("update dataSource node: {{err}}", ErrUpdateConflict)
+	}
+
+	node.Role = updates.Role
+	node.MasterHost = updates.MasterHost
 
 	return nil
 }

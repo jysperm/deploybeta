@@ -39,6 +39,7 @@ func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
 	}
 
 	environments := []string{
+		"AGENT_TOKEN=" + dataSource.AgentToken,
 		"DATASOURCE_NAME=" + dataSource.Name,
 		"DEPLOYING_URL=http://" + config.HostPrivateAddress + config.Listen,
 	}

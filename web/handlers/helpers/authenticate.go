@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/hashicorp/errwrap"
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploying/lib/models"
@@ -75,10 +76,39 @@ func DataSourceMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func DataSourceAgentMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		dataSource, err := models.FindDataSourceByName(ctx.Param("name"))
+
+		if err != nil {
+			return NewHTTPError(http.StatusBadRequest, errwrap.Wrapf("find dataSource: {{err}}", err))
+		}
+
+		if dataSource.AgentToken != ctx.Request().Header.Get("Authorization") {
+			return NewHTTPError(http.StatusUnauthorized, errors.New("invalid agent token"))
+		}
+
+		dataSouceNode, err := dataSource.FindNodeByHost(ctx.Param("host"))
+
+		if err != nil {
+			return NewHTTPError(http.StatusBadRequest, errwrap.Wrapf("find dataSource node: {{err}}", err))
+		}
+
+		ctx.Set("dataSource", &dataSource)
+		ctx.Set("dataSourceNode", &dataSouceNode)
+
+		return next(ctx)
+	}
+}
+
 func GetSessionAccount(ctx echo.Context) *models.Account {
 	return ctx.Get("account").(*models.Account)
 }
 
 func GetDataSourceInfo(ctx echo.Context) *models.DataSource {
 	return ctx.Get("dataSource").(*models.DataSource)
+}
+
+func GetDataSourceNodeInfo(ctx echo.Context) *models.DataSourceNode {
+	return ctx.Get("dataSourceNode").(*models.DataSourceNode)
 }

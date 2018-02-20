@@ -157,11 +157,41 @@ func CreateDataSourceNode(ctx echo.Context) error {
 		Role: "master",
 	}
 
-	err = models.CreateDataSourceNode(helpers.GetDataSourceInfo(ctx), dataSourceNode)
+	dataSource := helpers.GetDataSourceInfo(ctx)
+
+	err = dataSource.CreateNode(dataSourceNode)
 
 	if err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	return ctx.JSON(http.StatusCreated, helpers.NewDataSourceNodeResponse(dataSourceNode))
+}
+
+func UpdateDataSourceNode(ctx echo.Context) error {
+	params := map[string]string{}
+	err := ctx.Bind(&params)
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	updates := &models.DataSourceNode{
+		Role:       params["role"],
+		MasterHost: params["masterHost"],
+	}
+
+	node := helpers.GetDataSourceNodeInfo(ctx)
+
+	err = node.Update(updates)
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return nil
+}
+
+func PollDataSourceNodeCommands(ctx echo.Context) error {
+	return nil
 }

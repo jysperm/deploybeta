@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jysperm/deploying/config"
 
@@ -12,31 +13,27 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Serialize to /apps/:appName/versions/:tag
 type Version struct {
+	AppName  string `json:"appName"`
 	Tag      string `json:"tag"`
 	Registry string `json:"registry"`
 	Status   string `json:"status"`
 }
 
-func CreateVersion(app *Application, tag string) (*Version, error) {
-
-	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
-
-	newVersion := new(Version)
-	newVersion.Registry = config.DefaultRegistry
-	newVersion.Tag = tag
-	newVersion.Status = "building"
-
-	jsonVersion, err := json.Marshal(newVersion)
-	if err != nil {
-		return nil, err
+func NewVersion(app *Application) Version {
+	return Version{
+		AppName:  app.Name,
+		Tag:      newVersionTag(),
+		Registry: config.DefaultRegistry,
+		Status:   "building",
 	}
+}
 
-	if _, err := etcd.Client.Put(context.Background(), versionKey, string(jsonVersion)); err != nil {
-		return nil, err
-	}
-
-	return newVersion, nil
+func (version *Version) Save() error {
+	tran := etcd.NewTransaction()
+	tran.CreateJSON(version.etcdKey(), version)
+	return tran.ExecuteMustSuccess()
 }
 
 func DeleteVersionByTag(app *Application, tag string) error {
@@ -123,4 +120,17 @@ func (v *Version) UpdateStatus(app *Application, status string) error {
 	v.Status = status
 
 	return nil
+}
+
+func (version *Version) ImageName() string {
+	return fmt.Sprintf("%s/%s:%s", version.Registry, version.AppName, version.Tag)
+}
+
+func (version *Version) etcdKey() string {
+	return fmt.Sprintf("/apps/%s/versions/%s", version.AppName, version.Tag)
+}
+
+func newVersionTag() string {
+	now := time.Now()
+	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 }

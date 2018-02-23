@@ -3,9 +3,12 @@ package etcd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 )
+
+var ErrEtcdTransactionFailed = errors.New("etcd transaction failed")
 
 type Transaction struct {
 	watchedKeys map[string]interface{}
@@ -92,4 +95,18 @@ func (tran *Transaction) Execute(resolvers ...func(map[string]interface{}) error
 		Then(tran.successOps...).
 		Else(tran.failedOps...).
 		Commit()
+}
+
+func (tran *Transaction) ExecuteMustSuccess() error {
+	resp, err := tran.Execute()
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Succeeded == false {
+		return ErrEtcdTransactionFailed
+	}
+
+	return nil
 }

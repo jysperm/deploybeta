@@ -45,17 +45,6 @@ type buildEvent struct {
 }
 
 func BuildVersion(app *models.Application, gitTag string) (*models.Version, error) {
-	versionTag := newTag()
-
-	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, versionTag)
-	buildOpts := types.ImageBuildOptions{
-		Tags:           []string{nameVersion},
-		Dockerfile:     "Dockerfile",
-		NoCache:        false,
-		Remove:         true,
-		SuppressOutput: false,
-	}
-
 	dirPath, err := cloneRepository(app.GitRepository, gitTag)
 	if err != nil {
 		return nil, err
@@ -78,19 +67,28 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 	defer buildCtx.Close()
 	defer os.RemoveAll(dirPath)
 
-	res, err := swarmClient.ImageBuild(context.Background(), buildCtx, buildOpts)
+	version := models.NewVersion(app)
+
+	res, err := swarmClient.ImageBuild(context.Background(), buildCtx, types.ImageBuildOptions{
+		Tags:           []string{version.ImageName()},
+		Dockerfile:     "Dockerfile",
+		NoCache:        false,
+		Remove:         true,
+		SuppressOutput: false,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	v, err := models.CreateVersion(app, versionTag)
+	err = version.Save()
 	if err != nil {
 		return nil, err
 	}
 
-	go wrtieProgress(app, versionTag, res.Body)
+	go wrtieProgress(app, version.Tag, res.Body)
 
-	return v, nil
+	return &version, nil
 }
 
 func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag string, event string) error {
@@ -183,11 +181,6 @@ func pushVersion(name string) error {
 	}
 
 	return nil
-}
-
-func newTag() string {
-	now := time.Now()
-	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 }
 
 func cloneRepository(url string, gitTag string) (string, error) {

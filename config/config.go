@@ -22,6 +22,7 @@ var NvmCnMirror string
 var DefaultRedisPort int
 var DefaultMongoDBPort int
 var HostPrivateAddress string
+var DockerPrefix string
 
 func init() {
 	err := godotenv.Load()
@@ -49,4 +50,5 @@ func init() {
 	DefaultRedisPort, _ = strconv.Atoi(StrDefaultRedisPort)
 	DefaultMongoDBPort, _ = strconv.Atoi(StrDefaultMongoDBPort)
 	HostPrivateAddress = os.Getenv("HOST_PRIVATE_ADDRESS")
+	DockerPrefix = os.Getenv("DOCKER_PREFIX")
 }

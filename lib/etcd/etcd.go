@@ -32,6 +32,18 @@ func LoadKey(key string, modelStruct interface{}) (bool, error) {
 	return true, nil
 }
 
+func PutKey(key string, data interface{}) error {
+	dataBytes, err := json.Marshal(data)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = Client.Put(context.Background(), key, string(dataBytes))
+
+	return err
+}
+
 func init() {
 	var err error
 

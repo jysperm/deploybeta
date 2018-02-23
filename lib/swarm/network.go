@@ -27,7 +27,7 @@ func CreateOverlay(datasource *models.DataSource) (string, error) {
 		IPAM:           &net,
 	}
 
-	res, err := swarmClient.NetworkCreate(context.Background(), datasource.Name, options)
+	res, err := swarmClient.NetworkCreate(context.Background(), datasource.SwarmNetworkName(), options)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +36,7 @@ func CreateOverlay(datasource *models.DataSource) (string, error) {
 }
 
 func RemoveOverlay(datasource *models.DataSource) error {
-	id, err := FindNetworkByName(datasource.Name)
+	id, err := FindNetworkByName(datasource.SwarmNetworkName())
 	if err != nil {
 		return err
 	}

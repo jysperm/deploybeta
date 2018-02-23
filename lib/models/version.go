@@ -47,7 +47,7 @@ func DeleteVersionByTag(app *Application, tag string) error {
 }
 
 func FindVersionByTag(app *Application, tag string) (version Version, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/accounts/%s", tag), &version)
+	found, err := etcd.LoadKey(fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag), &version)
 
 	if err != nil {
 		return version, err
@@ -122,8 +122,8 @@ func (v *Version) UpdateStatus(app *Application, status string) error {
 	return nil
 }
 
-func (version *Version) ImageName() string {
-	return fmt.Sprintf("%s/%s:%s", version.Registry, version.AppName, version.Tag)
+func (version *Version) DockerImageName() string {
+	return fmt.Sprintf("%s/%s%s:%s", version.Registry, config.DockerPrefix, version.AppName, version.Tag)
 }
 
 func (version *Version) etcdKey() string {

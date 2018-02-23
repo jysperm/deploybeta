@@ -67,7 +67,7 @@ func TestRemoveDataSource(t *testing.T) {
 	}
 }
 func cleanup(datasource models.DataSource) error {
-	serviceID, err := RetrieveServiceID(datasource.Name)
+	serviceID, err := RetrieveServiceID(datasource.SwarmServiceName())
 	err = swarmClient.ServiceRemove(context.Background(), serviceID)
 	if err != nil {
 		return err

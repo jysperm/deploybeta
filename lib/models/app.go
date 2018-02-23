@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/etcd"
 	"golang.org/x/net/context"
 )
@@ -172,6 +173,10 @@ func (app *Application) UpdateVersion(version string) error {
 	app.Version = version
 
 	return nil
+}
+
+func (app *Application) SwarmServiceName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, app.Name)
 }
 
 func FindAppByName(name string) (app Application, err error) {

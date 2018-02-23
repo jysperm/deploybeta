@@ -25,16 +25,14 @@ func UpdateApp(app *models.Application) error {
 	if err != nil {
 		return err
 	}
-	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
 
 	var upstreamConfig UpstreamConfig
 
-	if err := UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, []swarm.NetworkAttachmentConfig{}, nameVersion, []string{}); err != nil {
+	if err := UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, []swarm.NetworkAttachmentConfig{}, currentVersion.DockerImageName(), []string{}); err != nil {
 		return err
 	}
 
-	serviceID, _ := RetrieveServiceID(app.Name)
-	upstreamConfig.Port, err = RetrievePort(serviceID)
+	upstreamConfig.Port, err = RetrievePort(app.SwarmServiceName())
 	if err != nil {
 		return err
 	}
@@ -70,7 +68,7 @@ func RemoveApp(app *models.Application) error {
 		return err
 	}
 
-	return RemoveService(app.Name)
+	return RemoveService(app)
 }
 
 func LinkDataSource(app *models.Application, datasource *models.DataSource) error {
@@ -82,7 +80,7 @@ func LinkDataSource(app *models.Application, datasource *models.DataSource) erro
 		return ErrNetworkNotFound
 	}
 
-	serviceID, err := RetrieveServiceID(app.Name)
+	serviceID, err := RetrieveServiceID(app.SwarmServiceName())
 	if err != nil {
 		return err
 	}
@@ -112,7 +110,6 @@ func LinkDataSource(app *models.Application, datasource *models.DataSource) erro
 	if err != nil {
 		return err
 	}
-	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
 
 	port, err := RetrievePort(serviceID)
 	if err != nil {
@@ -121,7 +118,7 @@ func LinkDataSource(app *models.Application, datasource *models.DataSource) erro
 	dataSourceEnv := fmt.Sprintf("%s=%s:%d", datasource.Name, config.HostPrivateAddress, port)
 	envs = append(envs, dataSourceEnv)
 
-	return UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, nameVersion, envs)
+	return UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, currentVersion.DockerImageName(), envs)
 
 }
 
@@ -135,7 +132,7 @@ func UnlinkDataSource(app *models.Application, dataSource *models.DataSource) er
 		return ErrNetworkNotFound
 	}
 
-	serviceID, err := RetrieveServiceID(app.Name)
+	serviceID, err := RetrieveServiceID(app.SwarmServiceName())
 	if err != nil {
 		return err
 	}
@@ -170,8 +167,7 @@ func UnlinkDataSource(app *models.Application, dataSource *models.DataSource) er
 					if err != nil {
 						return err
 					}
-					nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, currentVersion.Tag)
-					return UpdateService(app.Name, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, nameVersion, service.Spec.TaskTemplate.ContainerSpec.Env)
+					return UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, currentVersion.DockerImageName(), service.Spec.TaskTemplate.ContainerSpec.Env)
 				}
 			}
 		}
@@ -181,7 +177,7 @@ func UnlinkDataSource(app *models.Application, dataSource *models.DataSource) er
 }
 
 func ListNodes(app *models.Application) ([]Container, error) {
-	containers, err := ListContainers(app.Name)
+	containers, err := ListContainers(app)
 	if err != nil {
 		return nil, err
 	}

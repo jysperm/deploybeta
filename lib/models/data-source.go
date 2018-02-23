@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/errwrap"
 
+	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/etcd"
 	"github.com/jysperm/deploying/lib/utils"
 )
@@ -96,6 +97,14 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 	datasource.Instances = instances
 
 	return nil
+}
+
+func (datasource *DataSource) SwarmServiceName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, datasource.Name)
+}
+
+func (datasource *DataSource) SwarmNetworkName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, datasource.Name)
 }
 
 func LinkDataSource(dataSource *DataSource, app *Application) error {

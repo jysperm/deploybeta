@@ -14,6 +14,10 @@ import (
 var ErrServiceNotFound = errors.New("Not found service")
 var swarmClient *client.Client
 
+type SwarmService interface {
+	SwarmServiceName() string
+}
+
 type Container struct {
 	State      string `json:"state"`
 	Image      string `json:"image,omitempty"`
@@ -29,11 +33,13 @@ func init() {
 	}
 }
 
-func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string, envs []string) error {
+func UpdateService(service SwarmService, instances uint64, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string, envs []string) error {
+	var serviceName = service.SwarmServiceName()
+
 	var create bool
 	var err error
 
-	serviceID, err := RetrieveServiceID(name)
+	serviceID, err := RetrieveServiceID(serviceName)
 	if err == ErrServiceNotFound {
 		create = true
 	} else {
@@ -47,7 +53,7 @@ func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig,
 	containerSpec := swarm.ContainerSpec{
 		Image: image,
 		Labels: map[string]string{
-			"deploying.name": name,
+			"deploying.name": serviceName,
 		},
 	}
 	if len(envs) != 0 {
@@ -82,7 +88,7 @@ func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig,
 	}
 
 	serviceSpec := swarm.ServiceSpec{
-		Annotations:  swarm.Annotations{Name: name},
+		Annotations:  swarm.Annotations{Name: serviceName},
 		TaskTemplate: taskSpec,
 		Mode:         serviceMode,
 		EndpointSpec: &endpointSpec,
@@ -96,7 +102,7 @@ func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig,
 		}
 		serviceID = serviceRes.ID
 	} else {
-		version, err := RetrieveServiceVersion(serviceID)
+		version, err := RetrieveServiceVersion(serviceName)
 		if err != nil {
 			return err
 		}
@@ -109,8 +115,8 @@ func UpdateService(name string, instances uint64, portConfig []swarm.PortConfig,
 	return nil
 }
 
-func RemoveService(name string) error {
-	serviceID, err := RetrieveServiceID(name)
+func RemoveService(service SwarmService) error {
+	serviceID, err := RetrieveServiceID(service.SwarmServiceName())
 	if err != nil {
 		return err
 	}
@@ -122,9 +128,9 @@ func RemoveService(name string) error {
 	return nil
 }
 
-func ListContainers(name string) ([]Container, error) {
+func ListContainers(service SwarmService) ([]Container, error) {
 	filter := filters.NewArgs()
-	filter.Add("service", name)
+	filter.Add("service", service.SwarmServiceName())
 	listOpts := types.TaskListOptions{
 		Filters: filter,
 	}

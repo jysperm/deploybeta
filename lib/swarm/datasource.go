@@ -44,12 +44,12 @@ func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
 		"DEPLOYING_URL=http://" + config.HostPrivateAddress + config.Listen,
 	}
 
-	return UpdateService(dataSource.Name, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, image, environments)
+	return UpdateService(dataSource, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, image, environments)
 
 }
 
 func RemoveDataSource(datasource *models.DataSource) error {
-	if err := RemoveService(datasource.Name); err != nil {
+	if err := RemoveService(datasource); err != nil {
 		return err
 	}
 

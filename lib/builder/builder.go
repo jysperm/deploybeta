@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/etcd"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
@@ -70,7 +69,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 	version := models.NewVersion(app)
 
 	res, err := swarmClient.ImageBuild(context.Background(), buildCtx, types.ImageBuildOptions{
-		Tags:           []string{version.ImageName()},
+		Tags:           []string{version.DockerImageName()},
 		Dockerfile:     "Dockerfile",
 		NoCache:        false,
 		Remove:         true,
@@ -86,7 +85,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 		return nil, err
 	}
 
-	go wrtieProgress(app, version.Tag, res.Body)
+	go wrtieProgress(app, &version, res.Body)
 
 	return &version, nil
 }
@@ -108,7 +107,7 @@ func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag s
 	return nil
 }
 
-func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
+func wrtieProgress(app *models.Application, version *models.Version, r io.ReadCloser) {
 	defer r.Close()
 
 	ttl, err := etcd.Client.Lease.Grant(context.Background(), defaultTTL)
@@ -116,10 +115,6 @@ func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	reader := bufio.NewReader(r)
-	v, err := models.FindVersionByTag(app, tag)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
 
 	for {
 		if _, err := etcd.Client.KeepAlive(context.Background(), ttl.ID); err != nil {
@@ -134,37 +129,36 @@ func wrtieProgress(app *models.Application, tag string, r io.ReadCloser) {
 			fmt.Fprintln(os.Stderr, err)
 		}
 
-		if err := wrtieEvent(app, ttl, tag, string(line)); err != nil {
+		if err := wrtieEvent(app, ttl, version.Tag, string(line)); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		if strings.Contains(string(line), "errorDetail") {
-			v.UpdateStatus(app, "fail")
-			if err := wrtieEvent(app, ttl, tag, "Deploying: Building finished."); err != nil {
+			version.UpdateStatus(app, "fail")
+			if err := wrtieEvent(app, ttl, version.Tag, "Deploying: Building finished."); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
 			return
 		}
 	}
 
-	nameVersion := fmt.Sprintf("%s/%s:%s", config.DefaultRegistry, app.Name, tag)
-
-	if err := pushVersion(nameVersion); err != nil {
+	if err := pushVersion(version); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		if err := v.UpdateStatus(app, "fail"); err != nil {
+		if err := version.UpdateStatus(app, "fail"); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 		}
 	}
 
-	if err := v.UpdateStatus(app, "success"); err != nil {
+	if err := version.UpdateStatus(app, "success"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 
-	if err := wrtieEvent(app, ttl, tag, "Deploying: Building finished."); err != nil {
+	if err := wrtieEvent(app, ttl, version.Tag, "Deploying: Building finished."); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 }
-func pushVersion(name string) error {
-	res, err := swarmClient.ImagePush(context.Background(), name, types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam})
+
+func pushVersion(version *models.Version) error {
+	res, err := swarmClient.ImagePush(context.Background(), version.DockerImageName(), types.ImagePushOptions{All: true, RegistryAuth: RegistryAuthParam})
 	if err != nil {
 		return err
 	}

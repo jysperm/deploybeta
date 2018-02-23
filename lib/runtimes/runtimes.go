@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/docker/docker/api/types/swarm"
+
+	"github.com/jysperm/deploying/lib/runtimes/datasource"
 	"github.com/jysperm/deploying/lib/runtimes/golang"
 	"github.com/jysperm/deploying/lib/runtimes/node"
 )
 
 var ErrUnknowType = errors.New("unknown type of project")
+var ErrInvalidDataSourceType = errors.New("invalid dataSource type")
 
 func Dockerlize(root string, extra interface{}) (*bytes.Buffer, error) {
 	if err := golang.Check(root); err == nil {
@@ -28,4 +32,20 @@ func Dockerlize(root string, extra interface{}) (*bytes.Buffer, error) {
 	}
 
 	return nil, ErrUnknowType
+}
+
+type DataSourceRuntime interface {
+	DockerImageName() string
+	ExposeProtocol() swarm.PortConfigProtocol
+	ExposePort() uint16
+}
+
+func NewDataSourceRuntime(dataSourceType string) DataSourceRuntime {
+	if dataSourceType == "mongodb" {
+		return &datasource.MongoDBRuntime{}
+	} else if dataSourceType == "redis" {
+		return &datasource.RedisRuntime{}
+	} else {
+		panic(ErrInvalidDataSourceType)
+	}
 }

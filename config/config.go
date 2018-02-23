@@ -6,8 +6,6 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"strconv"
-
 	"github.com/jysperm/deploying/lib/utils"
 )
 
@@ -19,8 +17,6 @@ var HttpsProxy string
 var AptCnMirror string
 var NpmCnMirror string
 var NvmCnMirror string
-var DefaultRedisPort int
-var DefaultMongoDBPort int
 var HostPrivateAddress string
 var DockerPrefix string
 
@@ -45,10 +41,6 @@ func init() {
 	AptCnMirror = os.Getenv("APT_CN_MIRROR")
 	NpmCnMirror = os.Getenv("NPM_CN_MIRROR")
 	NvmCnMirror = os.Getenv("NVM_CN_MIRROR")
-	StrDefaultRedisPort := os.Getenv("DEFAULT_REDIS_PORT")
-	StrDefaultMongoDBPort := os.Getenv("DEFAULT_MONGODB_PORT")
-	DefaultRedisPort, _ = strconv.Atoi(StrDefaultRedisPort)
-	DefaultMongoDBPort, _ = strconv.Atoi(StrDefaultMongoDBPort)
 	HostPrivateAddress = os.Getenv("HOST_PRIVATE_ADDRESS")
 	DockerPrefix = os.Getenv("DOCKER_PREFIX")
 }

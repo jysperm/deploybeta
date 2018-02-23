@@ -28,7 +28,7 @@ func init() {
 
 func MakeRedisImage() error {
 	redisAssets := utils.GetAssetFilePath("datasource-redis/")
-	redisTag := fmt.Sprintf("%s/redis:latest", config.DefaultRegistry)
+	redisTag := fmt.Sprintf("%s/%sdatasource-redis", config.DefaultRegistry, config.DockerPrefix)
 	buildOpts := types.ImageBuildOptions{
 		Tags:           []string{redisTag},
 		Dockerfile:     "Dockerfile",
@@ -71,7 +71,7 @@ func MakeRedisImage() error {
 
 func MakeMognoImage() error {
 	mongoAssets := utils.GetAssetFilePath("datasource-mongodb/")
-	mongoTag := fmt.Sprintf("%s/mongodb:latest", config.DefaultRegistry)
+	mongoTag := fmt.Sprintf("%s/%sdatasource-mongodb", config.DefaultRegistry, config.DockerPrefix)
 	buildOpts := types.ImageBuildOptions{
 		Tags:           []string{mongoTag},
 		Dockerfile:     "Dockerfile",

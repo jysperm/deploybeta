@@ -2,19 +2,17 @@ package swarm
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/models"
+	"github.com/jysperm/deploying/lib/runtimes"
 )
 
 var ErrNetworkNotFound = errors.New("Network not found")
 
 func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
-	image := fmt.Sprintf("%s/%s:latest", config.DefaultRegistry, dataSource.Type)
-
-	networkID, err := FindNetworkByName(dataSource.Name)
+	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
 	if err != nil {
 		return err
 	}
@@ -29,13 +27,11 @@ func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
 		Target: networkID,
 	}
 
-	var portConfig swarm.PortConfig
-	if dataSource.Type == "redis" {
-		portConfig.Protocol = swarm.PortConfigProtocolTCP
-		portConfig.TargetPort = uint32(config.DefaultRedisPort)
-	} else if dataSource.Type == "mongodb" {
-		portConfig.Protocol = swarm.PortConfigProtocolTCP
-		portConfig.TargetPort = uint32(config.DefaultMongoDBPort)
+	runtime := runtimes.NewDataSourceRuntime(dataSource.Type)
+
+	portConfig := swarm.PortConfig{
+		Protocol:   runtime.ExposeProtocol(),
+		TargetPort: uint32(runtime.ExposePort()),
 	}
 
 	environments := []string{
@@ -44,8 +40,7 @@ func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
 		"DEPLOYING_URL=http://" + config.HostPrivateAddress + config.Listen,
 	}
 
-	return UpdateService(dataSource, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, image, environments)
-
+	return UpdateService(dataSource, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, runtime.DockerImageName(), environments)
 }
 
 func RemoveDataSource(datasource *models.DataSource) error {

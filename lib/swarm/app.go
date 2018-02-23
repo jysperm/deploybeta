@@ -71,8 +71,8 @@ func RemoveApp(app *models.Application) error {
 	return RemoveService(app)
 }
 
-func LinkDataSource(app *models.Application, datasource *models.DataSource) error {
-	networkID, err := FindNetworkByName(datasource.Name)
+func LinkDataSource(app *models.Application, dataSource *models.DataSource) error {
+	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func LinkDataSource(app *models.Application, datasource *models.DataSource) erro
 	if err != nil {
 		return err
 	}
-	dataSourceEnv := fmt.Sprintf("%s=%s:%d", datasource.Name, config.HostPrivateAddress, port)
+	dataSourceEnv := fmt.Sprintf("%s=%s:%d", dataSource.Name, config.HostPrivateAddress, port)
 	envs = append(envs, dataSourceEnv)
 
 	return UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, currentVersion.DockerImageName(), envs)
@@ -123,7 +123,7 @@ func LinkDataSource(app *models.Application, datasource *models.DataSource) erro
 }
 
 func UnlinkDataSource(app *models.Application, dataSource *models.DataSource) error {
-	networkID, err := FindNetworkByName(dataSource.Name)
+	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
 	if err != nil {
 		return err
 	}

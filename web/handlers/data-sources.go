@@ -193,5 +193,9 @@ func UpdateDataSourceNode(ctx echo.Context) error {
 }
 
 func PollDataSourceNodeCommands(ctx echo.Context) error {
+	ctx.JSON(http.StatusOK, map[string]string{
+		"command": "noop",
+	})
+
 	return nil
 }

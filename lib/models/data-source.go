@@ -298,7 +298,7 @@ func DeleteDataSourceByName(name string) error {
 }
 
 func (dataSource *DataSource) FindNodeByHost(host string) (dataSourceNode DataSourceNode, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/data-source/%s/nodes/%s", dataSource.Name, host), &dataSourceNode)
+	found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, host), &dataSourceNode)
 
 	if err != nil {
 		return dataSourceNode, err

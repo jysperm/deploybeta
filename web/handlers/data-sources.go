@@ -144,6 +144,22 @@ func DeleteDataSource(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, "")
 }
 
+func ListDataSourceNodes(ctx echo.Context) error {
+	dataSource := helpers.GetDataSourceInfo(ctx)
+
+	nodes, err := dataSource.ListNodes()
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, helpers.NewDataSourceNodesResponse(nodes))
+}
+
+func SetDataSourceNodeRole(ctx echo.Context) error {
+	return nil
+}
+
 func CreateDataSourceNode(ctx echo.Context) error {
 	params := map[string]string{}
 	err := ctx.Bind(&params)

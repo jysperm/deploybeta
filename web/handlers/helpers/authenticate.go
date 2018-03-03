@@ -70,7 +70,7 @@ func DataSourceMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return NewHTTPError(http.StatusUnauthorized, errors.New("Not found datasource"))
 		}
 
-		ctx.Set("dataSource", &dataSource)
+		ctx.Set("dataSource", dataSource)
 
 		return next(ctx)
 	}

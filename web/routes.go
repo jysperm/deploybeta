@@ -43,6 +43,7 @@ func CreateWebServer() *echo.Echo {
 	app.POST("/data-sources/:name/links/:appName", handlers.LinkDataSource, auth, dataSource)
 	app.PUT("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, auth, dataSource)
 
+	app.GET("/data-sources/:name/nodes", handlers.ListDataSourceNodes, auth, dataSource)
 	app.POST("/data-sources/:name/agents", handlers.CreateDataSourceNode, dataSourceAgent)
 	app.PUT("/data-sources/:name/agents/:host", handlers.UpdateDataSourceNode, dataSourceAgent, dataSourceNode)
 	app.GET("/data-sources/:name/agents/:host/commands", handlers.PollDataSourceNodeCommands, dataSourceAgent, dataSourceNode)

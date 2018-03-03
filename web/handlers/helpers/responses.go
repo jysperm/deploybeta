@@ -85,11 +85,21 @@ func NewDataSourceResponse(dataSource *models.DataSource) DataSourceResponse {
 	}
 }
 
-func NewDataSourceNodeResponse(dataSource *models.DataSourceNode) DataSourceNodeResponse {
+func NewDataSourceNodeResponse(node *models.DataSourceNode) DataSourceNodeResponse {
 	return DataSourceNodeResponse{
-		Host: dataSource.Host,
-		Role: dataSource.Role,
+		Host: node.Host,
+		Role: node.Role,
 	}
+}
+
+func NewDataSourceNodesResponse(nodes []models.DataSourceNode) []DataSourceNodeResponse {
+	result := make([]DataSourceNodeResponse, 0)
+
+	for _, node := range nodes {
+		result = append(result, NewDataSourceNodeResponse(&node))
+	}
+
+	return result
 }
 
 func NewDataSourcesResponse(dataSources []models.DataSource) []DataSourceResponse {

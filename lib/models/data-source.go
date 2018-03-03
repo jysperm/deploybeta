@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/hashicorp/errwrap"
 
 	"github.com/jysperm/deploying/config"
@@ -327,6 +328,28 @@ func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
 	}
 
 	return nil
+}
+
+func (dataSource *DataSource) ListNodes() (nodes []DataSourceNode, err error) {
+	resp, err := etcd.Client.Get(context.Background(), fmt.Sprintf("/data-sources/%s/nodes/", dataSource.Name), etcdv3.WithPrefix())
+
+	if err != nil {
+		return nodes, err
+	}
+
+	for _, v := range resp.Kvs {
+		node := DataSourceNode{}
+
+		err = json.Unmarshal(v.Value, &node)
+
+		if err != nil {
+			return nodes, err
+		}
+
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
 }
 
 func (node *DataSourceNode) Update(updates *DataSourceNode) error {

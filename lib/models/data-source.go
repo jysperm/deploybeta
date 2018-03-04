@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/hashicorp/errwrap"
@@ -37,6 +38,13 @@ type DataSourceNode struct {
 	Role string `json:"role"`
 	// Reported master host, like `10.0.1.1:6380`
 	MasterHost string `json:"masterHost"`
+
+	ExpectedRole string `json:"expectedRole"`
+}
+
+type DataSourceNodeCommand struct {
+	Command string `json:"command"`
+	Role    string `json:"role"`
 }
 
 var availableTypes = []string{"mongodb", "redis"}
@@ -352,6 +360,32 @@ func (dataSource *DataSource) ListNodes() (nodes []DataSourceNode, err error) {
 	return nodes, nil
 }
 
+func (node *DataSourceNode) SetMaster() error {
+	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(nodeKey, &DataSourceNode{}, func(watchedKey interface{}) error {
+		node := *watchedKey.(*DataSourceNode)
+
+		node.ExpectedRole = "master"
+
+		tran.PutJSON(nodeKey, node)
+
+		return nil
+	})
+
+	err := tran.ExecuteMustSuccess()
+
+	if err != nil {
+		return err
+	}
+
+	node.ExpectedRole = "master"
+
+	return nil
+}
+
 func (node *DataSourceNode) Update(updates *DataSourceNode) error {
 	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
 
@@ -382,4 +416,52 @@ func (node *DataSourceNode) Update(updates *DataSourceNode) error {
 	node.MasterHost = updates.MasterHost
 
 	return nil
+}
+
+func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
+	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+
+	checkNewCommand := func(node DataSourceNode) *DataSourceNodeCommand {
+		if node.ExpectedRole != "" && node.Role != node.ExpectedRole {
+			return &DataSourceNodeCommand{
+				Command: "change-role",
+				Role:    node.ExpectedRole,
+			}
+		} else {
+			return nil
+		}
+	}
+
+	watcher := etcd.Client.Watch(context.TODO(), nodeKey)
+
+	latestNode := DataSourceNode{}
+
+	found, err := etcd.LoadKey(nodeKey, &latestNode)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if found {
+		if command := checkNewCommand(latestNode); command != nil {
+			return command, nil
+		}
+	}
+
+	for w := range watcher {
+		for _, ev := range w.Events {
+			latestNode := DataSourceNode{}
+			err = json.Unmarshal([]byte(ev.Kv.Value), &latestNode)
+
+			if err != nil {
+				log.Panicln(err)
+			}
+
+			if command := checkNewCommand(latestNode); command != nil {
+				return command, nil
+			}
+		}
+	}
+
+	return nil, nil
 }

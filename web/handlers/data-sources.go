@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -157,7 +158,26 @@ func ListDataSourceNodes(ctx echo.Context) error {
 }
 
 func SetDataSourceNodeRole(ctx echo.Context) error {
-	return nil
+	params := map[string]string{}
+	err := ctx.Bind(&params)
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if params["role"] != "master" {
+		return errors.New("you can only set a node to master")
+	}
+
+	node := helpers.GetDataSourceNodeInfo(ctx)
+
+	err = node.SetMaster()
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 func CreateDataSourceNode(ctx echo.Context) error {
@@ -209,9 +229,13 @@ func UpdateDataSourceNode(ctx echo.Context) error {
 }
 
 func PollDataSourceNodeCommands(ctx echo.Context) error {
-	ctx.JSON(http.StatusOK, map[string]string{
-		"command": "noop",
-	})
+	node := helpers.GetDataSourceNodeInfo(ctx)
 
-	return nil
+	command, err := node.WaitForCommand()
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, command)
 }

@@ -55,3 +55,11 @@ func RetrieveServiceVersion(serviceID string) (*swarm.Version, error) {
 	}
 	return &service.Meta.Version, nil
 }
+
+func getServicePort(service *swarm.Service) uint32 {
+	if len(service.Endpoint.Ports) != 0 {
+		return service.Endpoint.Ports[0].PublishedPort
+	} else {
+		return 0
+	}
+}

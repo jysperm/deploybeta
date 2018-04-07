@@ -2,9 +2,9 @@ package swarm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jysperm/deploying/config"
 	"github.com/jysperm/deploying/lib/etcd"
@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 )
 
+// Serialize to /upstreams/:appName
 type UpstreamConfig struct {
 	Port uint32 `json:"port"`
 }
@@ -20,38 +21,56 @@ type UpstreamConfig struct {
 var ErrNetworkJoined = errors.New("Had joined the network")
 var ErrNetworkNoUnlinkable = errors.New("No network could be unlinking")
 
-func UpdateApp(app *models.Application) error {
-	currentVersion, err := models.FindVersionByTag(app, app.Version)
+func UpdateAppService(app *models.Application) error {
+	networkConfigs := []swarm.NetworkAttachmentConfig{}
+	environments := []string{}
+
+	dataSources, err := models.GetDataSourcesOfApp(app)
+
 	if err != nil {
 		return err
 	}
 
-	var upstreamConfig UpstreamConfig
+	for _, dataSource := range dataSources {
+		dataSourceService, _, err := swarmClient.ServiceInspectWithRaw(context.TODO(), dataSource.SwarmServiceName())
 
-	if err := UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, []swarm.NetworkAttachmentConfig{}, currentVersion.DockerImageName(), []string{}); err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+
+		networkConfigs = append(networkConfigs, swarm.NetworkAttachmentConfig{
+			Target: dataSource.SwarmNetworkName(),
+		})
+
+		key := fmt.Sprintf("DATA_SOURCE_%s", strings.ToUpper(dataSource.Name))
+		value := fmt.Sprintf("%s:%d", config.HostPrivateAddress, getServicePort(&dataSourceService))
+
+		environments = append(environments, fmt.Sprintf("%s=%s", key, value))
 	}
 
-	upstreamConfig.Port, err = RetrievePort(app.SwarmServiceName())
+	version, err := models.FindVersionByTag(app, app.Version)
+
 	if err != nil {
 		return err
 	}
 
-	upstream, err := json.Marshal([]UpstreamConfig{upstreamConfig})
+	if err := UpdateService(app, []swarm.PortConfig{}, networkConfigs, version.DockerImageName(), environments); err != nil {
+		return err
+	}
+
+	appService, _, err := swarmClient.ServiceInspectWithRaw(context.TODO(), app.SwarmServiceName())
+
 	if err != nil {
 		return err
 	}
 
-	upstreamKey := fmt.Sprintf("/upstream/%s", app.Name)
-	if _, err := etcd.Client.Put(context.Background(), upstreamKey, string(upstream)); err != nil {
-		return err
+	upstreams := []UpstreamConfig{
+		UpstreamConfig{
+			Port: getServicePort(&appService),
+		},
 	}
 
-	if err := app.Update(app); err != nil {
-		return err
-	}
-
-	if err := app.UpdateVersion(currentVersion.Tag); err != nil {
+	if err := etcd.PutKey(fmt.Sprintf("/upstream/%s", app.Name), upstreams); err != nil {
 		return err
 	}
 
@@ -69,111 +88,6 @@ func RemoveApp(app *models.Application) error {
 	}
 
 	return RemoveService(app)
-}
-
-func LinkDataSource(app *models.Application, dataSource *models.DataSource) error {
-	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
-	if err != nil {
-		return err
-	}
-	if networkID == "" {
-		return ErrNetworkNotFound
-	}
-
-	serviceID, err := RetrieveServiceID(app.SwarmServiceName())
-	if err != nil {
-		return err
-	}
-	if serviceID == "" {
-		return ErrServiceNotFound
-	}
-
-	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
-	if err != nil {
-		return err
-	}
-
-	for _, v := range service.Spec.TaskTemplate.Networks {
-		if v.Target == networkID {
-			return ErrNetworkJoined
-		}
-	}
-
-	networkOpts := swarm.NetworkAttachmentConfig{
-		Target: networkID,
-	}
-	service.Spec.TaskTemplate.Networks = append(service.Spec.TaskTemplate.Networks, networkOpts)
-
-	envs := service.Spec.TaskTemplate.ContainerSpec.Env
-
-	currentVersion, err := models.FindVersionByTag(app, app.Version)
-	if err != nil {
-		return err
-	}
-
-	port, err := RetrievePort(serviceID)
-	if err != nil {
-		return err
-	}
-	dataSourceEnv := fmt.Sprintf("%s=%s:%d", dataSource.Name, config.HostPrivateAddress, port)
-	envs = append(envs, dataSourceEnv)
-
-	return UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, currentVersion.DockerImageName(), envs)
-
-}
-
-func UnlinkDataSource(app *models.Application, dataSource *models.DataSource) error {
-	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
-	if err != nil {
-		return err
-	}
-
-	if networkID == "" {
-		return ErrNetworkNotFound
-	}
-
-	serviceID, err := RetrieveServiceID(app.SwarmServiceName())
-	if err != nil {
-		return err
-	}
-
-	if serviceID == "" {
-		return ErrServiceNotFound
-	}
-
-	service, _, err := swarmClient.ServiceInspectWithRaw(context.Background(), serviceID)
-	if err != nil {
-		return err
-	}
-
-	if len(service.Spec.TaskTemplate.Networks) == 0 {
-		return ErrNetworkNoUnlinkable
-	}
-
-	port, err := RetrievePort(serviceID)
-	if err != nil {
-		return err
-	}
-
-	dataSourceEnv := fmt.Sprintf("%s=%s:%d", dataSource.Name, config.HostPrivateAddress, port)
-
-	for i := 0; i < len(service.Spec.TaskTemplate.Networks); i++ {
-		if service.Spec.TaskTemplate.Networks[i].Target == networkID {
-			service.Spec.TaskTemplate.Networks = append(service.Spec.TaskTemplate.Networks[:i], service.Spec.TaskTemplate.Networks[i+1:]...)
-			for j := 0; j < len(service.Spec.TaskTemplate.ContainerSpec.Env); j++ {
-				if service.Spec.TaskTemplate.ContainerSpec.Env[i] == dataSourceEnv {
-					service.Spec.TaskTemplate.ContainerSpec.Env = append(service.Spec.TaskTemplate.ContainerSpec.Env[:i], service.Spec.TaskTemplate.ContainerSpec.Env[i+1:]...)
-					currentVersion, err := models.FindVersionByTag(app, app.Version)
-					if err != nil {
-						return err
-					}
-					return UpdateService(app, uint64(app.Instances), []swarm.PortConfig{}, service.Spec.TaskTemplate.Networks, currentVersion.DockerImageName(), service.Spec.TaskTemplate.ContainerSpec.Env)
-				}
-			}
-		}
-	}
-
-	return ErrNetworkNoUnlinkable
 }
 
 func ListNodes(app *models.Application) ([]Container, error) {

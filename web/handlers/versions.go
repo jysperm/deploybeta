@@ -50,9 +50,11 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, errors.New("Version hadn't been built or had failed building"))
 	}
 
-	app.Version = version.Tag
+	if err := app.Update(&models.Application{Version: version.Tag}); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
 
-	if err := swarm.UpdateApp(&app); err != nil {
+	if err := swarm.UpdateAppService(&app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

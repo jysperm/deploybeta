@@ -1,13 +1,14 @@
 package helpers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo"
 )
 
 func NewHTTPError(code int, err error) error {
-	return echo.NewHTTPError(http.StatusConflict, NewErrorResponse(err))
+	return echo.NewHTTPError(code, NewErrorResponse(err))
 }
 
 func HTTPErrorHandler(err error, ctx echo.Context) {
@@ -27,7 +28,7 @@ func HTTPErrorHandler(err error, ctx echo.Context) {
 		msg = map[string]interface{}{"message": msg}
 	}
 
-	ctx.Echo().Logger.Error(ctx.Path(), " ", err)
+	log.Println(ctx.Path(), err)
 
 	if !ctx.Response().Committed {
 		if ctx.Request().Method == echo.HEAD {
@@ -36,7 +37,7 @@ func HTTPErrorHandler(err error, ctx echo.Context) {
 			err = ctx.JSON(code, msg)
 		}
 		if err != nil {
-			ctx.Echo().Logger.Error(ctx.Path(), " ", err)
+			log.Println("sending error response:", err)
 		}
 	}
 }

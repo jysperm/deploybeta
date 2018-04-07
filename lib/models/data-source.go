@@ -54,7 +54,7 @@ func CreateDataSource(dataSource *DataSource) error {
 		return ErrInvalidName
 	}
 
-	if !utils.StringInSlice(dataSource.Type, availableTypes) {
+	if !utils.StringInSlice(availableTypes, dataSource.Type) {
 		return ErrInvalidDataSourceType
 	}
 
@@ -108,120 +108,58 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 	return nil
 }
 
-func (datasource *DataSource) SwarmServiceName() string {
-	return fmt.Sprintf("%s%s", config.DockerPrefix, datasource.Name)
-}
-
-func (datasource *DataSource) SwarmNetworkName() string {
-	return fmt.Sprintf("%s%s", config.DockerPrefix, datasource.Name)
-}
-
-func LinkDataSource(dataSource *DataSource, app *Application) error {
-	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
-
+func (dataSource *DataSource) LinkApp(app *Application) error {
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(linksKey, &[]string{}, func(watchedKey interface{}) error {
-		apps := *watchedKey.(*[]string)
+	tran.AppendStringArray(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), app.Name)
+	tran.AppendStringArray(fmt.Sprintf("/apps/%s/data-sources", app.Name), dataSource.Name)
 
-		for _, v := range apps {
-			if v == app.Name {
-				return errors.New("DataSource has been attached")
-			}
-		}
-
-		apps = append(apps, app.Name)
-
-		tran.PutJSON(linksKey, apps)
-
-		return nil
-	})
-
-	resp, err := tran.Execute()
+	err := tran.ExecuteMustSuccess()
 
 	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	if err := UpdateDataSourceLinks(dataSource, app); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func UnlinkDataSource(dataSource *DataSource, app *Application) error {
-	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
-
+func (dataSource *DataSource) UnlinkApp(app *Application) error {
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(linksKey, &[]string{}, func(watchedKey interface{}) error {
-		links := *watchedKey.(*[]string)
+	tran.PullStringArray(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), app.Name)
+	tran.PullStringArray(fmt.Sprintf("/apps/%s/data-sources", app.Name), dataSource.Name)
 
-		for i := 0; i < len(links); i++ {
-			if links[i] == app.Name {
-				links = append(links[:i], links[i+1:]...)
-				tran.PutJSON(linksKey, links)
-				return nil
-			}
-		}
-
-		return errors.New("Not found link")
-	})
-
-	resp, err := tran.Execute()
+	err := tran.ExecuteMustSuccess()
 
 	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	if err := UpdateDataSourceLinks(dataSource, app); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func UpdateDataSourceLinks(dataSource *DataSource, app *Application) error {
-	appLinksKey := fmt.Sprintf("/app/%s/data-sources", app.Name)
+func (dataSource *DataSource) GetLinkedAppNames() ([]string, error) {
+	linkedApps := make([]string, 0)
 
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(appLinksKey, &[]string{}, func(watchedKey interface{}) error {
-		appLinks := *watchedKey.(*[]string)
-
-		for i := 0; i < len(appLinks); i++ {
-			if appLinks[i] == dataSource.Name {
-				appLinks = append(appLinks[:i], appLinks[i+1:]...)
-				tran.PutJSON(appLinksKey, appLinks)
-				return nil
-			}
-		}
-
-		appLinks = append(appLinks, dataSource.Name)
-
-		return nil
-	})
-
-	resp, err := tran.Execute()
+	_, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), linkedApps)
 
 	if err != nil {
-		return err
+		return linkedApps, err
 	}
 
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
+	return linkedApps, nil
+}
 
-	return nil
+func (dataSource *DataSource) SwarmServiceName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, dataSource.Name)
+}
+
+func (dataSource *DataSource) SwarmNetworkName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, dataSource.Name)
+}
+
+func (dataSource *DataSource) SwarmInstances() int {
+	return dataSource.Instances
 }
 
 func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err error) {
@@ -261,6 +199,32 @@ func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err er
 				return nil, err
 			}
 
+			dataSources = append(dataSources, dataSource)
+		}
+	}
+
+	return dataSources, nil
+}
+
+func GetDataSourcesOfApp(app *Application) ([]DataSource, error) {
+	dataSources := []DataSource{}
+
+	dataSourceNames := make([]string, 0)
+	_, err := etcd.LoadKey(fmt.Sprintf("/apps/%s/data-sources", app.Name), &dataSourceNames)
+
+	if err != nil {
+		return dataSources, err
+	}
+
+	for _, dataSourceName := range dataSourceNames {
+		dataSource := DataSource{}
+		found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s", dataSourceName), &dataSource)
+
+		if err != nil {
+			return dataSources, err
+		}
+
+		if found {
 			dataSources = append(dataSources, dataSource)
 		}
 	}

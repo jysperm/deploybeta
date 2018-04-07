@@ -52,7 +52,7 @@ func CreateDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := swarm.UpdateDataSource(dataSource, uint64(dataSource.Instances)); err != nil {
+	if err := swarm.UpdateDataSource(dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -84,7 +84,7 @@ func UpdateDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := swarm.UpdateDataSource(&dataSource, uint64(dataSource.Instances)); err != nil {
+	if err := swarm.UpdateDataSource(&dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -93,18 +93,19 @@ func UpdateDataSource(ctx echo.Context) error {
 
 func LinkDataSource(ctx echo.Context) error {
 	appName := ctx.Param("appName")
-	dataSource := ctx.Get("datasource").(models.DataSource)
+	dataSource := helpers.GetDataSourceInfo(ctx)
 
 	app, err := models.FindAppByName(appName)
+
 	if err != nil {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.LinkDataSource(&app, &dataSource); err != nil {
+	if err := dataSource.LinkApp(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.LinkDataSource(&dataSource, &app); err != nil {
+	if err := swarm.UpdateAppService(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -116,15 +117,16 @@ func UnlinkDataSource(ctx echo.Context) error {
 	dataSource := helpers.GetDataSourceInfo(ctx)
 
 	app, err := models.FindAppByName(appName)
+
 	if err != nil {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.UnlinkDataSource(&app, dataSource); err != nil {
+	if err := dataSource.UnlinkApp(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.UnlinkDataSource(dataSource, &app); err != nil {
+	if err := swarm.UpdateAppService(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 

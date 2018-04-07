@@ -90,7 +90,11 @@ func UpdateApp(ctx echo.Context) error {
 		update.Instances = realValue
 	}
 
-	if err := swarm.UpdateApp(&update); err != nil {
+	if err := app.Update(&update); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := swarm.UpdateAppService(&app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

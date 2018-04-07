@@ -41,7 +41,7 @@ func CreateWebServer() *echo.Echo {
 	app.DELETE("/data-sources/:name", handlers.DeleteDataSource, auth, dataSource)
 
 	app.POST("/data-sources/:name/links/:appName", handlers.LinkDataSource, auth, dataSource)
-	app.PUT("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, auth, dataSource)
+	app.DELETE("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, auth, dataSource)
 
 	app.GET("/data-sources/:name/nodes", handlers.ListDataSourceNodes, auth, dataSource)
 	app.PUT("/data-sources/:name/nodes/:host/role", handlers.ListDataSourceNodes, auth, dataSource, dataSourceNode)

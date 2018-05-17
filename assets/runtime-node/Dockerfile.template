@@ -49,9 +49,9 @@ RUN set -ex \
   && ln -s /opt/yarn/bin/yarn /usr/local/bin/yarnpkg \
   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
 
-RUN mkdir -p "/home/deploying/app"
-WORKDIR "/home/deploying/app"
-ADD . "/home/deploying/app"
+RUN mkdir -p "/home/deploybeta/app"
+WORKDIR "/home/deploybeta/app"
+ADD . "/home/deploybeta/app"
 
 {{if .NpmCnMirror}}
 RUN npm config set registry {{.NpmCnMirror}}

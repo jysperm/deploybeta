@@ -5,7 +5,7 @@ export default class LayoutView extends Component {
   render() {
     const pageHeader = <Row>
       <PageHeader>
-        Deploying <small>A simple container platform based on reliable solutions.</small>
+        Deploybeta <small>A simple container platform based on reliable solutions.</small>
       </PageHeader>
     </Row>;
 

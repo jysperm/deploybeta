@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "api-document": "raml2html ./restful/deploying.raml > ./public/deploying.html"
+    "api-document": "raml2html ./restful/deploybeta.raml > ./public/deploybeta.html"
   },
   "eslintIgnore": [
     "public/*"

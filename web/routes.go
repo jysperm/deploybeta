@@ -3,8 +3,8 @@ package web
 import (
 	"github.com/labstack/echo"
 
-	"github.com/jysperm/deploying/web/handlers"
-	"github.com/jysperm/deploying/web/handlers/helpers"
+	"github.com/jysperm/deploybeta/web/handlers"
+	"github.com/jysperm/deploybeta/web/handlers/helpers"
 )
 
 func CreateWebServer() *echo.Echo {

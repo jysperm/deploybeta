@@ -1,12 +1,12 @@
 OUTPUT=./releases
-REPO=github.com/jysperm/deploying
+REPO=github.com/jysperm/deploybeta
 
 export WORKDIR=$(shell pwd)
 
 all: pack-tar
 
 binaries:
-	GOOS=linux go build -o $(OUTPUT)/deploying-linux-amd64
+	GOOS=linux go build -o $(OUTPUT)/deploybeta-linux-amd64
 
 resources:
 	cd frontend && gulp
@@ -15,7 +15,7 @@ resources:
 	cp -r assets $(OUTPUT)
 
 pack-tar: binaries resources
-	cd $(OUTPUT) && tar --exclude *.tar.gz -zcvf deploying-linux-amd64.tar.gz *
+	cd $(OUTPUT) && tar --exclude *.tar.gz -zcvf deploybeta-linux-amd64.tar.gz *
 
 test:
 	go test -v $(REPO)

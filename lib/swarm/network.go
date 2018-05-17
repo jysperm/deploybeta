@@ -3,7 +3,7 @@ package swarm
 import (
 	"errors"
 
-	"github.com/jysperm/deploying/lib/models"
+	"github.com/jysperm/deploybeta/lib/models"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"

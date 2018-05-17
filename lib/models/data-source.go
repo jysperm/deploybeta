@@ -10,9 +10,9 @@ import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/hashicorp/errwrap"
 
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 var ErrInvalidDataSourceType = errors.New("invalid datasource type")

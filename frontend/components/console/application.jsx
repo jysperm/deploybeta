@@ -261,7 +261,7 @@ class BuildProgressModal extends Component {
     events.addEventListener('message', ({data}) => {
       const log = JSON.parse(data);
 
-      if (log.payload === 'Deploying: Building finished.') {
+      if (log.payload === 'Deploybeta: Building finished.') {
         events.close();
         return;
       }

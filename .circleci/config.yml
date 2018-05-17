@@ -2,7 +2,7 @@ version: 2
 
 jobs:
   build:
-    working_directory: /go/src/github.com/jysperm/deploying
+    working_directory: /go/src/github.com/jysperm/deploybeta
 
     docker:
       - image: circleci/golang:1.9

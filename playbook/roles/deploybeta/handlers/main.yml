@@ -9,7 +9,7 @@
     name: 'supervisor'
     state: restarted
 
-- name: restart deploying
+- name: restart deploybeta
   supervisorctl:
-    name: 'deploying'
+    name: 'deploybeta'
     state: restarted

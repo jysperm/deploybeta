@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 var ErrTokenConflict = errors.New("token conflict")

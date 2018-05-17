@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/errwrap"
 	"github.com/labstack/echo"
 
-	"github.com/jysperm/deploying/lib/models"
+	"github.com/jysperm/deploybeta/lib/models"
 )
 
 func AuthenticateMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

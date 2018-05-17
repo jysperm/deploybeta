@@ -6,9 +6,9 @@ import (
 
 	"github.com/docker/docker/api/types/swarm"
 
-	"github.com/jysperm/deploying/lib/runtimes/datasource"
-	"github.com/jysperm/deploying/lib/runtimes/golang"
-	"github.com/jysperm/deploying/lib/runtimes/node"
+	"github.com/jysperm/deploybeta/lib/runtimes/datasource"
+	"github.com/jysperm/deploybeta/lib/runtimes/golang"
+	"github.com/jysperm/deploybeta/lib/runtimes/node"
 )
 
 var ErrUnknowType = errors.New("unknown type of project")

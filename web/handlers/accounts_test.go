@@ -8,10 +8,10 @@ import (
 
 	"github.com/labstack/echo"
 
-	"github.com/jysperm/deploying/lib/models"
-	. "github.com/jysperm/deploying/lib/testing"
-	"github.com/jysperm/deploying/lib/utils"
-	"github.com/jysperm/deploying/web/handlers/helpers"
+	"github.com/jysperm/deploybeta/lib/models"
+	. "github.com/jysperm/deploybeta/lib/testing"
+	"github.com/jysperm/deploybeta/lib/utils"
+	"github.com/jysperm/deploybeta/web/handlers/helpers"
 )
 
 func TestRegisterAccount(t *testing.T) {

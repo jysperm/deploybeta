@@ -4,9 +4,9 @@ import (
 	"errors"
 
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/lib/models"
-	"github.com/jysperm/deploying/lib/runtimes"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/runtimes"
 )
 
 var ErrNetworkNotFound = errors.New("Network not found")
@@ -37,7 +37,7 @@ func UpdateDataSource(dataSource *models.DataSource) error {
 	environments := []string{
 		"AGENT_TOKEN=" + dataSource.AgentToken,
 		"DATASOURCE_NAME=" + dataSource.Name,
-		"DEPLOYING_URL=http://" + config.HostPrivateAddress + config.Listen,
+		"DEPLOYBETA_URL=http://" + config.HostPrivateAddress + config.Listen,
 	}
 
 	return UpdateService(dataSource, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, runtime.DockerImageName(), environments)

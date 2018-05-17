@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/web"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/web"
 )
 
 func main() {

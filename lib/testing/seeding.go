@@ -3,8 +3,8 @@ package testing
 import (
 	"strings"
 
-	"github.com/jysperm/deploying/lib/models"
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 func SeedAccount() (account models.Account, password string) {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jysperm/deploying/lib/models"
-	. "github.com/jysperm/deploying/lib/testing"
+	"github.com/jysperm/deploybeta/lib/models"
+	. "github.com/jysperm/deploybeta/lib/testing"
 )
 
 func TestCreateVersion(t *testing.T) {
@@ -44,7 +44,7 @@ func TestCreateVersion(t *testing.T) {
 	for {
 		line, _ := reader.ReadBytes('\n')
 		strLine := string(line)
-		if strings.Contains(strLine, "Deploying: Building finished.") {
+		if strings.Contains(strLine, "Deploybeta: Building finished.") {
 			break
 		}
 		fmt.Print(string(line))
@@ -91,7 +91,7 @@ func TestDeployVersion(t *testing.T) {
 	for {
 		line, _ := reader.ReadBytes('\n')
 		strLine := string(line)
-		if strings.Contains(strLine, "Deploying: Building finished.") {
+		if strings.Contains(strLine, "Deploybeta: Building finished.") {
 			break
 		}
 		fmt.Print(string(line))
@@ -141,7 +141,7 @@ func TestPushProgress(t *testing.T) {
 	for {
 		line, _ := reader.ReadBytes('\n')
 		strLine := string(line)
-		if strings.Contains(strLine, "Deploying: Building finished.") {
+		if strings.Contains(strLine, "Deploybeta: Building finished.") {
 			break
 		}
 		fmt.Print(string(line))

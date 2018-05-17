@@ -5,7 +5,7 @@ import (
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 
-	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploybeta/config"
 
 	"golang.org/x/net/context"
 )

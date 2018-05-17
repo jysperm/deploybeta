@@ -3,7 +3,7 @@ package runtimes
 import (
 	"testing"
 
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 func TestDockerlizeDep(t *testing.T) {

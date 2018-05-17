@@ -5,8 +5,8 @@ import (
 
 	"github.com/labstack/echo"
 
-	"github.com/jysperm/deploying/lib/models"
-	. "github.com/jysperm/deploying/web/handlers/helpers"
+	"github.com/jysperm/deploybeta/lib/models"
+	. "github.com/jysperm/deploybeta/web/handlers/helpers"
 )
 
 func RegisterAccount(ctx echo.Context) error {

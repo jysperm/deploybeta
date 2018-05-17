@@ -25,8 +25,8 @@ RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} curl -fsSL "$GOLANG_DO
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
-RUN mkdir -p $GOPATH/src $GOPATH/bin /home/deploying/app && chmod -R 777 $GOPATH
-WORKDIR /home/deploying/app
+RUN mkdir -p $GOPATH/src $GOPATH/bin /home/deploybeta/app && chmod -R 777 $GOPATH
+WORKDIR /home/deploybeta/app
 
 # install manager of packages
 RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} go get -u github.com/golang/dep/cmd/dep
@@ -40,8 +40,8 @@ ADD . /go/src/{{.PackagePath}}
 
 RUN cd /go/src/{{.PackagePath}} && http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} /go/bin/{{.DepManager}}
 
-RUN cd /go/src/{{.PackagePath}} && go build && cp -R . /home/deploying/app
+RUN cd /go/src/{{.PackagePath}} && go build && cp -R . /home/deploybeta/app
 
-CMD ["/home/deploying/app/{{.PackageName}}"]
+CMD ["/home/deploybeta/app/{{.PackageName}}"]
 
 EXPOSE 3000

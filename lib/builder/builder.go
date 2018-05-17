@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jysperm/deploying/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/etcd"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/docker/docker/api/types"
@@ -20,12 +20,12 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"golang.org/x/net/context"
 
-	"github.com/jysperm/deploying/lib/models"
-	"github.com/jysperm/deploying/lib/runtimes"
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/runtimes"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
-const RegistryAuthParam = "deploying"
+const RegistryAuthParam = "deploybeta"
 
 var swarmClient *client.Client
 var defaultTTL int64 = 60 * 10
@@ -134,7 +134,7 @@ func wrtieProgress(app *models.Application, version *models.Version, r io.ReadCl
 		}
 		if strings.Contains(string(line), "errorDetail") {
 			version.UpdateStatus(app, "fail")
-			if err := wrtieEvent(app, ttl, version.Tag, "Deploying: Building finished."); err != nil {
+			if err := wrtieEvent(app, ttl, version.Tag, "Deploybeta: Building finished."); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
 			return
@@ -152,7 +152,7 @@ func wrtieProgress(app *models.Application, version *models.Version, r io.ReadCl
 		fmt.Fprintln(os.Stderr, err)
 	}
 
-	if err := wrtieEvent(app, ttl, version.Tag, "Deploying: Building finished."); err != nil {
+	if err := wrtieEvent(app, ttl, version.Tag, "Deploybeta: Building finished."); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 }

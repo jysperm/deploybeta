@@ -5,7 +5,7 @@ import (
 
 	"github.com/docker/docker/api/types/swarm"
 
-	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploybeta/config"
 )
 
 type RedisRuntime struct {

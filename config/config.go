@@ -6,7 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 var Listen string

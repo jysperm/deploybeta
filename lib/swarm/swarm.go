@@ -54,7 +54,7 @@ func UpdateService(service SwarmService, portConfig []swarm.PortConfig, networkC
 	containerSpec := swarm.ContainerSpec{
 		Image: image,
 		Labels: map[string]string{
-			"deploying.name": serviceName,
+			"deploybeta.name": serviceName,
 		},
 	}
 	if len(envs) != 0 {
@@ -66,7 +66,7 @@ func UpdateService(service SwarmService, portConfig []swarm.PortConfig, networkC
 		LogDriver: &swarm.Driver{
 			Name: "json-file",
 			Options: map[string]string{
-				"labels": "deploying.name",
+				"labels": "deploybeta.name",
 			},
 		},
 		Networks: networkConfig,

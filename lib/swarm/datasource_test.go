@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jysperm/deploying/lib/models"
+	"github.com/jysperm/deploybeta/lib/models"
 )
 
 func TestCreateDataSource(t *testing.T) {

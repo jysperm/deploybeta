@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploybeta/config"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
-	"github.com/jysperm/deploying/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/etcd"
 	"golang.org/x/net/context"
 )
 

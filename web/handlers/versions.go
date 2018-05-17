@@ -10,11 +10,11 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/labstack/echo"
 
-	"github.com/jysperm/deploying/lib/builder"
-	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/models"
-	"github.com/jysperm/deploying/lib/swarm"
-	. "github.com/jysperm/deploying/web/handlers/helpers"
+	"github.com/jysperm/deploybeta/lib/builder"
+	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/swarm"
+	. "github.com/jysperm/deploybeta/web/handlers/helpers"
 )
 
 func CreateVersion(ctx echo.Context) error {
@@ -85,7 +85,7 @@ func PushProgress(ctx echo.Context) error {
 	for _, ev := range resp.Kvs {
 		fmt.Fprintf(rw, "data: %s\n\n", string(ev.Value))
 		flusher.Flush()
-		if strings.Contains(string(ev.Value), "Deploying: Building finished.") {
+		if strings.Contains(string(ev.Value), "Deploybeta: Building finished.") {
 			finishied = true
 			break
 		}
@@ -95,7 +95,7 @@ func PushProgress(ctx echo.Context) error {
 			for _, ev := range w.Events {
 				fmt.Fprintf(rw, "data: %s\n\n", string(ev.Kv.Value))
 				flusher.Flush()
-				if strings.Contains(string(ev.Kv.Value), "Deploying: Building finished.") {
+				if strings.Contains(string(ev.Kv.Value), "Deploybeta: Building finished.") {
 					break
 				}
 				break

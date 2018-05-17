@@ -1,7 +1,7 @@
 package etcd
 
 import (
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 func (tran *Transaction) AppendStringArray(key string, values ...string) {

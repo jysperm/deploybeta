@@ -1,0 +1,25 @@
+- name: create deploybeta user
+  user:
+    name: 'deploybeta'
+
+- name: upload binaries
+  unarchive:
+    src: '../releases/deploybeta-linux-amd64.tar.gz'
+    dest: '/home/deploybeta'
+    owner: 'deploybeta'
+  notify:
+    - restart deploybeta
+
+- name: upload supervisor configuration
+  template:
+    src: 'supervisor.conf'
+    dest: '/etc/supervisor/conf.d/deploybeta.conf'
+  notify:
+    - restart supervisor
+
+- name: upload nginx configuration
+  template:
+    src: 'nginx.conf'
+    dest: '/etc/nginx/sites-enabled/deploybeta.conf'
+  notify:
+    - restart openresty

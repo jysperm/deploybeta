@@ -3,8 +3,8 @@ package helpers
 import (
 	"log"
 
-	"github.com/jysperm/deploying/lib/models"
-	"github.com/jysperm/deploying/lib/swarm"
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/swarm"
 )
 
 type ErrorResponse struct {

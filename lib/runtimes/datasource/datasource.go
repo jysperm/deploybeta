@@ -6,17 +6,17 @@ import (
 	"io"
 	"os"
 
-	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploybeta/config"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 var swarmClient *client.Client
 
-const RegistryAuthParam = "deploying"
+const RegistryAuthParam = "deploybeta"
 
 func init() {
 	var err error

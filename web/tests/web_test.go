@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/lib/models"
-	"github.com/jysperm/deploying/lib/swarm"
-	. "github.com/jysperm/deploying/lib/testing"
-	"github.com/jysperm/deploying/web"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/swarm"
+	. "github.com/jysperm/deploybeta/lib/testing"
+	"github.com/jysperm/deploybeta/web"
 )
 
 func init() {

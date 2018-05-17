@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/parnurzeal/gorequest"
 
-	"github.com/jysperm/deploying/config"
+	"github.com/jysperm/deploybeta/config"
 )
 
 func Request(method string, url string) *gorequest.SuperAgent {

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/lib/etcd"
-	"github.com/jysperm/deploying/lib/models"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/models"
 
 	"github.com/docker/docker/api/types/swarm"
 )

@@ -3,7 +3,7 @@
   vars_files:
     - config.yml
   roles:
-    - deploying
+    - deploybeta
     - filebeat
 
 - hosts: dcloud1

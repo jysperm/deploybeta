@@ -16,7 +16,7 @@ func Clone(remoteURL string, gitTag string) (string, error) {
 		return "", errors.New("Not a valid git URL")
 	}
 
-	root, err := ioutil.TempDir("", "deploying-build")
+	root, err := ioutil.TempDir("", "deploybeta-build")
 	if err != nil {
 		return "", err
 	}

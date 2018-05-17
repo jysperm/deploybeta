@@ -13,8 +13,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/parnurzeal/gorequest"
 
-	"github.com/jysperm/deploying/config"
-	"github.com/jysperm/deploying/lib/utils"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 type Dockerfile struct {

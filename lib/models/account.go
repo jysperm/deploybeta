@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/jysperm/deploying/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/etcd"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"

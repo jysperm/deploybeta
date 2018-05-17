@@ -2,27 +2,27 @@
 
 AGENT_TOKEN="${AGENT_TOKEN}"
 DATASOURCE_NAME="${DATASOURCE_NAME}"
-DEPLOYING_URL="${DEPLOYING_URL:-http://localhost:7000}"
+DEPLOYBETA_URL="${DEPLOYBETA_URL:-http://localhost:7000}"
 
 NODE_ADDRESS="$(hostname -i)"
 NODE_HOST="${NODE_ADDRESS}:6380"
 
 cmd_usage() {
   cat <<EOF
-Deploying Control Agent for Redis
+Deploybeta Control Agent for Redis
 
 Usage:
   control-agent startup
-      Load configure from deploying, generate configuration and start redis-server.
+      Load configure from deploybeta, generate configuration and start redis-server.
 
   control-agent command-loop
-      Long polling from deploying, receive commands and change configuration.
+      Long polling from deploybeta, receive commands and change configuration.
 EOF
 }
 
 cmd_startup() {
   local status="{\"host\": \"${NODE_HOST}\"}"
-  local response=$(deploying_curl POST "/data-sources/${DATASOURCE_NAME}/agents" -H 'Content-Type: application/json' -d "${status}")
+  local response=$(deploybeta_curl POST "/data-sources/${DATASOURCE_NAME}/agents" -H 'Content-Type: application/json' -d "${status}")
   local role=$(echo ${response} | jq -r .role)
 
   if [ $role = "master" ]; then
@@ -44,7 +44,7 @@ cmd_command_loop() {
   log "command-loop: started"
 
   while true; do
-    local response=$(deploying_curl GET "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}/commands")
+    local response=$(deploybeta_curl GET "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}/commands")
     local command=$(echo ${response} | jq -r .command)
 
     case $command in
@@ -90,7 +90,7 @@ report_status() {
   fi
 
   local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
-  deploying_curl PUT "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}" -H 'Content-Type: application/json' -d "${status}" > /dev/null
+  deploybeta_curl PUT "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}" -H 'Content-Type: application/json' -d "${status}" > /dev/null
   log "report-status: ${status}"
 }
 
@@ -98,9 +98,9 @@ redis_cmd() {
   redis-cli -p 6380 "$@"
 }
 
-deploying_curl() {
+deploybeta_curl() {
   local method="${1}"; shift;
-  local url="${DEPLOYING_URL}${1}"; shift;
+  local url="${DEPLOYBETA_URL}${1}"; shift;
   curl -s -H "Authorization: ${AGENT_TOKEN}" -X ${method} ${url} "$@"
 }
 

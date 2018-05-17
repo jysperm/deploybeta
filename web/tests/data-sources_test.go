@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/jysperm/deploying/lib/testing"
-	"github.com/jysperm/deploying/lib/utils"
+	. "github.com/jysperm/deploybeta/lib/testing"
+	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 var dataSourceName string

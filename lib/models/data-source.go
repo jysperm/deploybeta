@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/hashicorp/errwrap"
 
 	"github.com/jysperm/deploying/config"
@@ -36,6 +38,13 @@ type DataSourceNode struct {
 	Role string `json:"role"`
 	// Reported master host, like `10.0.1.1:6380`
 	MasterHost string `json:"masterHost"`
+
+	ExpectedRole string `json:"expectedRole"`
+}
+
+type DataSourceNodeCommand struct {
+	Command string `json:"command"`
+	Role    string `json:"role"`
 }
 
 var availableTypes = []string{"mongodb", "redis"}
@@ -45,7 +54,7 @@ func CreateDataSource(dataSource *DataSource) error {
 		return ErrInvalidName
 	}
 
-	if !utils.StringInSlice(dataSource.Type, availableTypes) {
+	if !utils.StringInSlice(availableTypes, dataSource.Type) {
 		return ErrInvalidDataSourceType
 	}
 
@@ -99,120 +108,58 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 	return nil
 }
 
-func (datasource *DataSource) SwarmServiceName() string {
-	return fmt.Sprintf("%s%s", config.DockerPrefix, datasource.Name)
-}
-
-func (datasource *DataSource) SwarmNetworkName() string {
-	return fmt.Sprintf("%s%s", config.DockerPrefix, datasource.Name)
-}
-
-func LinkDataSource(dataSource *DataSource, app *Application) error {
-	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
-
+func (dataSource *DataSource) LinkApp(app *Application) error {
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(linksKey, &[]string{}, func(watchedKey interface{}) error {
-		apps := *watchedKey.(*[]string)
+	tran.AppendStringArray(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), app.Name)
+	tran.AppendStringArray(fmt.Sprintf("/apps/%s/data-sources", app.Name), dataSource.Name)
 
-		for _, v := range apps {
-			if v == app.Name {
-				return errors.New("DataSource has been attached")
-			}
-		}
-
-		apps = append(apps, app.Name)
-
-		tran.PutJSON(linksKey, apps)
-
-		return nil
-	})
-
-	resp, err := tran.Execute()
+	err := tran.ExecuteMustSuccess()
 
 	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	if err := UpdateDataSourceLinks(dataSource, app); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func UnlinkDataSource(dataSource *DataSource, app *Application) error {
-	linksKey := fmt.Sprintf("/data-source/%s/links", dataSource.Name)
-
+func (dataSource *DataSource) UnlinkApp(app *Application) error {
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(linksKey, &[]string{}, func(watchedKey interface{}) error {
-		links := *watchedKey.(*[]string)
+	tran.PullStringArray(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), app.Name)
+	tran.PullStringArray(fmt.Sprintf("/apps/%s/data-sources", app.Name), dataSource.Name)
 
-		for i := 0; i < len(links); i++ {
-			if links[i] == app.Name {
-				links = append(links[:i], links[i+1:]...)
-				tran.PutJSON(linksKey, links)
-				return nil
-			}
-		}
-
-		return errors.New("Not found link")
-	})
-
-	resp, err := tran.Execute()
+	err := tran.ExecuteMustSuccess()
 
 	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	if err := UpdateDataSourceLinks(dataSource, app); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func UpdateDataSourceLinks(dataSource *DataSource, app *Application) error {
-	appLinksKey := fmt.Sprintf("/app/%s/data-sources", app.Name)
+func (dataSource *DataSource) GetLinkedAppNames() ([]string, error) {
+	linkedApps := make([]string, 0)
 
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(appLinksKey, &[]string{}, func(watchedKey interface{}) error {
-		appLinks := *watchedKey.(*[]string)
-
-		for i := 0; i < len(appLinks); i++ {
-			if appLinks[i] == dataSource.Name {
-				appLinks = append(appLinks[:i], appLinks[i+1:]...)
-				tran.PutJSON(appLinksKey, appLinks)
-				return nil
-			}
-		}
-
-		appLinks = append(appLinks, dataSource.Name)
-
-		return nil
-	})
-
-	resp, err := tran.Execute()
+	_, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), linkedApps)
 
 	if err != nil {
-		return err
+		return linkedApps, err
 	}
 
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
+	return linkedApps, nil
+}
 
-	return nil
+func (dataSource *DataSource) SwarmServiceName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, dataSource.Name)
+}
+
+func (dataSource *DataSource) SwarmNetworkName() string {
+	return fmt.Sprintf("%s%s", config.DockerPrefix, dataSource.Name)
+}
+
+func (dataSource *DataSource) SwarmInstances() int {
+	return dataSource.Instances
 }
 
 func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err error) {
@@ -259,6 +206,32 @@ func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err er
 	return dataSources, nil
 }
 
+func GetDataSourcesOfApp(app *Application) ([]DataSource, error) {
+	dataSources := []DataSource{}
+
+	dataSourceNames := make([]string, 0)
+	_, err := etcd.LoadKey(fmt.Sprintf("/apps/%s/data-sources", app.Name), &dataSourceNames)
+
+	if err != nil {
+		return dataSources, err
+	}
+
+	for _, dataSourceName := range dataSourceNames {
+		dataSource := DataSource{}
+		found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s", dataSourceName), &dataSource)
+
+		if err != nil {
+			return dataSources, err
+		}
+
+		if found {
+			dataSources = append(dataSources, dataSource)
+		}
+	}
+
+	return dataSources, nil
+}
+
 func GetDataSourceOfAccount(dataSourceName string, account *Account) (*DataSource, error) {
 	resp, err := etcd.Client.Get(context.Background(), fmt.Sprint("/data-sources/", dataSourceName))
 
@@ -298,7 +271,7 @@ func DeleteDataSourceByName(name string) error {
 }
 
 func (dataSource *DataSource) FindNodeByHost(host string) (dataSourceNode DataSourceNode, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/data-source/%s/nodes/%s", dataSource.Name, host), &dataSourceNode)
+	found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, host), &dataSourceNode)
 
 	if err != nil {
 		return dataSourceNode, err
@@ -325,6 +298,54 @@ func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
 	if resp.Succeeded == false {
 		return errwrap.Wrapf("create dataSource node: {{err}}", ErrUpdateConflict)
 	}
+
+	return nil
+}
+
+func (dataSource *DataSource) ListNodes() (nodes []DataSourceNode, err error) {
+	resp, err := etcd.Client.Get(context.Background(), fmt.Sprintf("/data-sources/%s/nodes/", dataSource.Name), etcdv3.WithPrefix())
+
+	if err != nil {
+		return nodes, err
+	}
+
+	for _, v := range resp.Kvs {
+		node := DataSourceNode{}
+
+		err = json.Unmarshal(v.Value, &node)
+
+		if err != nil {
+			return nodes, err
+		}
+
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}
+
+func (node *DataSourceNode) SetMaster() error {
+	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+
+	tran := etcd.NewTransaction()
+
+	tran.WatchJSON(nodeKey, &DataSourceNode{}, func(watchedKey interface{}) error {
+		node := *watchedKey.(*DataSourceNode)
+
+		node.ExpectedRole = "master"
+
+		tran.PutJSON(nodeKey, node)
+
+		return nil
+	})
+
+	err := tran.ExecuteMustSuccess()
+
+	if err != nil {
+		return err
+	}
+
+	node.ExpectedRole = "master"
 
 	return nil
 }
@@ -359,4 +380,52 @@ func (node *DataSourceNode) Update(updates *DataSourceNode) error {
 	node.MasterHost = updates.MasterHost
 
 	return nil
+}
+
+func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
+	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+
+	checkNewCommand := func(node DataSourceNode) *DataSourceNodeCommand {
+		if node.ExpectedRole != "" && node.Role != node.ExpectedRole {
+			return &DataSourceNodeCommand{
+				Command: "change-role",
+				Role:    node.ExpectedRole,
+			}
+		} else {
+			return nil
+		}
+	}
+
+	watcher := etcd.Client.Watch(context.TODO(), nodeKey)
+
+	latestNode := DataSourceNode{}
+
+	found, err := etcd.LoadKey(nodeKey, &latestNode)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if found {
+		if command := checkNewCommand(latestNode); command != nil {
+			return command, nil
+		}
+	}
+
+	for w := range watcher {
+		for _, ev := range w.Events {
+			latestNode := DataSourceNode{}
+			err = json.Unmarshal([]byte(ev.Kv.Value), &latestNode)
+
+			if err != nil {
+				log.Panicln(err)
+			}
+
+			if command := checkNewCommand(latestNode); command != nil {
+				return command, nil
+			}
+		}
+	}
+
+	return nil, nil
 }

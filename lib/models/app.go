@@ -14,6 +14,7 @@ import (
 var ErrInvalidName = errors.New("invalid app name")
 var ErrUpdateConflict = errors.New("update version conflict")
 
+// Serialize to /apps/:name
 type Application struct {
 	Name          string `json:"name"`
 	Owner         string `json:"owner"`
@@ -177,6 +178,10 @@ func (app *Application) UpdateVersion(version string) error {
 
 func (app *Application) SwarmServiceName() string {
 	return fmt.Sprintf("%s%s", config.DockerPrefix, app.Name)
+}
+
+func (app *Application) SwarmInstances() int {
+	return app.Instances
 }
 
 func FindAppByName(name string) (app Application, err error) {

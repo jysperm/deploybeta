@@ -10,10 +10,13 @@ import (
 func CreateWebServer() *echo.Echo {
 	app := echo.New()
 
+	app.HTTPErrorHandler = helpers.HTTPErrorHandler
+
 	auth := helpers.AuthenticateMiddleware
 	appOwner := helpers.AppOwnerMiddleware
 	dataSource := helpers.DataSourceMiddleware
 	dataSourceAgent := helpers.DataSourceAgentMiddleware
+	dataSourceNode := helpers.DataSourceNodeMiddleware
 
 	app.File("/", "./frontend/public/index.html")
 	app.Static("/assets", "./frontend/public")
@@ -38,11 +41,14 @@ func CreateWebServer() *echo.Echo {
 	app.DELETE("/data-sources/:name", handlers.DeleteDataSource, auth, dataSource)
 
 	app.POST("/data-sources/:name/links/:appName", handlers.LinkDataSource, auth, dataSource)
-	app.PUT("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, auth, dataSource)
+	app.DELETE("/data-sources/:name/links/:appName", handlers.UnlinkDataSource, auth, dataSource)
+
+	app.GET("/data-sources/:name/nodes", handlers.ListDataSourceNodes, auth, dataSource)
+	app.PUT("/data-sources/:name/nodes/:host/role", handlers.ListDataSourceNodes, auth, dataSource, dataSourceNode)
 
 	app.POST("/data-sources/:name/agents", handlers.CreateDataSourceNode, dataSourceAgent)
-	app.PUT("/data-sources/:name/agents/:host", handlers.UpdateDataSourceNode, dataSourceAgent)
-	app.GET("/data-sources/:name/agents/:host/commands", handlers.PollDataSourceNodeCommands, dataSourceAgent)
+	app.PUT("/data-sources/:name/agents/:host", handlers.UpdateDataSourceNode, dataSourceAgent, dataSourceNode)
+	app.GET("/data-sources/:name/agents/:host/commands", handlers.PollDataSourceNodeCommands, dataSourceAgent, dataSourceNode)
 
 	return app
 }

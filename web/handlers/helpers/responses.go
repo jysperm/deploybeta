@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/jysperm/deploying/lib/models"
 	"github.com/jysperm/deploying/lib/swarm"
@@ -27,10 +27,11 @@ type AppResponse struct {
 }
 
 type DataSourceResponse struct {
-	Name      string `json:"name"`
-	Owner     string `json:"owner"`
-	Type      string `json:"type"`
-	Instances int    `json:"instances"`
+	Name       string   `json:"name"`
+	Owner      string   `json:"owner"`
+	Type       string   `json:"type"`
+	Instances  int      `json:"instances"`
+	LinkedApps []string `json:"linkedApps"`
 }
 
 type DataSourceNodeResponse struct {
@@ -77,19 +78,36 @@ func NewAppResponse(app *models.Application) AppResponse {
 }
 
 func NewDataSourceResponse(dataSource *models.DataSource) DataSourceResponse {
+	linkedApps, err := dataSource.GetLinkedAppNames()
+
+	if err != nil {
+		log.Println(err)
+	}
+
 	return DataSourceResponse{
-		Name:      dataSource.Name,
-		Owner:     dataSource.Owner,
-		Type:      dataSource.Type,
-		Instances: dataSource.Instances,
+		Name:       dataSource.Name,
+		Owner:      dataSource.Owner,
+		Type:       dataSource.Type,
+		Instances:  dataSource.Instances,
+		LinkedApps: linkedApps,
 	}
 }
 
-func NewDataSourceNodeResponse(dataSource *models.DataSourceNode) DataSourceNodeResponse {
+func NewDataSourceNodeResponse(node *models.DataSourceNode) DataSourceNodeResponse {
 	return DataSourceNodeResponse{
-		Host: dataSource.Host,
-		Role: dataSource.Role,
+		Host: node.Host,
+		Role: node.Role,
 	}
+}
+
+func NewDataSourceNodesResponse(nodes []models.DataSourceNode) []DataSourceNodeResponse {
+	result := make([]DataSourceNodeResponse, 0)
+
+	for _, node := range nodes {
+		result = append(result, NewDataSourceNodeResponse(&node))
+	}
+
+	return result
 }
 
 func NewDataSourcesResponse(dataSources []models.DataSource) []DataSourceResponse {
@@ -113,12 +131,12 @@ func NewAppsResponse(apps []models.Application) []AppResponse {
 		app.Instances = v.Instances
 		versions, err := models.ListVersions(&v)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		app.Versions = *versions
 		nodes, err := swarm.ListNodes(&v)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		}
 		if len(nodes) == 0 {
 			app.Nodes = []swarm.Container{}

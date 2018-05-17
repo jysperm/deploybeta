@@ -11,7 +11,7 @@ import (
 
 var ErrNetworkNotFound = errors.New("Network not found")
 
-func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
+func UpdateDataSource(dataSource *models.DataSource) error {
 	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func UpdateDataSource(dataSource *models.DataSource, instances uint64) error {
 		"DEPLOYING_URL=http://" + config.HostPrivateAddress + config.Listen,
 	}
 
-	return UpdateService(dataSource, instances, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, runtime.DockerImageName(), environments)
+	return UpdateService(dataSource, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, runtime.DockerImageName(), environments)
 }
 
 func RemoveDataSource(datasource *models.DataSource) error {

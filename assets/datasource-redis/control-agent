@@ -22,7 +22,7 @@ EOF
 
 cmd_startup() {
   local status="{\"host\": \"${NODE_HOST}\"}"
-  local response=$(deploying_curl POST "/data-sources/${DATASOURCE_NAME}/nodes" -d "${status}")
+  local response=$(deploying_curl POST "/data-sources/${DATASOURCE_NAME}/agents" -H 'Content-Type: application/json' -d "${status}")
   local role=$(echo ${response} | jq -r .role)
 
   if [ $role = "master" ]; then
@@ -44,7 +44,7 @@ cmd_command_loop() {
   log "command-loop: started"
 
   while true; do
-    local response=$(deploying_curl GET "/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}/commands")
+    local response=$(deploying_curl GET "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}/commands")
     local command=$(echo ${response} | jq -r .command)
 
     case $command in
@@ -90,7 +90,7 @@ report_status() {
   fi
 
   local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
-  deploying_curl PUT "/data-sources/${DATASOURCE_NAME}/nodes/${NODE_HOST}" -d "${status}" > /dev/null
+  deploying_curl PUT "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}" -H 'Content-Type: application/json' -d "${status}" > /dev/null
   log "report-status: ${status}"
 }
 

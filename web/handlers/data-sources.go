@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -51,7 +52,7 @@ func CreateDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := swarm.UpdateDataSource(dataSource, uint64(dataSource.Instances)); err != nil {
+	if err := swarm.UpdateDataSource(dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -83,7 +84,7 @@ func UpdateDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := swarm.UpdateDataSource(&dataSource, uint64(dataSource.Instances)); err != nil {
+	if err := swarm.UpdateDataSource(&dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -92,18 +93,19 @@ func UpdateDataSource(ctx echo.Context) error {
 
 func LinkDataSource(ctx echo.Context) error {
 	appName := ctx.Param("appName")
-	dataSource := ctx.Get("datasource").(models.DataSource)
+	dataSource := helpers.GetDataSourceInfo(ctx)
 
 	app, err := models.FindAppByName(appName)
+
 	if err != nil {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.LinkDataSource(&app, &dataSource); err != nil {
+	if err := dataSource.LinkApp(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.LinkDataSource(&dataSource, &app); err != nil {
+	if err := swarm.UpdateAppService(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -115,15 +117,16 @@ func UnlinkDataSource(ctx echo.Context) error {
 	dataSource := helpers.GetDataSourceInfo(ctx)
 
 	app, err := models.FindAppByName(appName)
+
 	if err != nil {
 		return helpers.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := swarm.UnlinkDataSource(&app, dataSource); err != nil {
+	if err := dataSource.UnlinkApp(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := models.UnlinkDataSource(dataSource, &app); err != nil {
+	if err := swarm.UpdateAppService(&app); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -142,6 +145,41 @@ func DeleteDataSource(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusOK, "")
+}
+
+func ListDataSourceNodes(ctx echo.Context) error {
+	dataSource := helpers.GetDataSourceInfo(ctx)
+
+	nodes, err := dataSource.ListNodes()
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, helpers.NewDataSourceNodesResponse(nodes))
+}
+
+func SetDataSourceNodeRole(ctx echo.Context) error {
+	params := map[string]string{}
+	err := ctx.Bind(&params)
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if params["role"] != "master" {
+		return errors.New("you can only set a node to master")
+	}
+
+	node := helpers.GetDataSourceNodeInfo(ctx)
+
+	err = node.SetMaster()
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 func CreateDataSourceNode(ctx echo.Context) error {
@@ -193,5 +231,13 @@ func UpdateDataSourceNode(ctx echo.Context) error {
 }
 
 func PollDataSourceNodeCommands(ctx echo.Context) error {
-	return nil
+	node := helpers.GetDataSourceNodeInfo(ctx)
+
+	command, err := node.WaitForCommand()
+
+	if err != nil {
+		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, command)
 }

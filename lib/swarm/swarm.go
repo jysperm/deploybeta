@@ -16,6 +16,7 @@ var swarmClient *client.Client
 
 type SwarmService interface {
 	SwarmServiceName() string
+	SwarmInstances() int
 }
 
 type Container struct {
@@ -33,7 +34,7 @@ func init() {
 	}
 }
 
-func UpdateService(service SwarmService, instances uint64, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string, envs []string) error {
+func UpdateService(service SwarmService, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string, envs []string) error {
 	var serviceName = service.SwarmServiceName()
 
 	var create bool
@@ -70,6 +71,8 @@ func UpdateService(service SwarmService, instances uint64, portConfig []swarm.Po
 		},
 		Networks: networkConfig,
 	}
+
+	instances := uint64(service.SwarmInstances())
 
 	replicatedService := swarm.ReplicatedService{Replicas: &instances}
 	serviceMode := swarm.ServiceMode{Replicated: &replicatedService}

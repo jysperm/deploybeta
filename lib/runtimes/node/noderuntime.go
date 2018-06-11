@@ -18,13 +18,12 @@ import (
 )
 
 type Dockerfile struct {
-	NodeVersion string
-	HasYarn     bool
-	HTTPProxy   string
-	HTTPSProxy  string
-	AptCnMirror string
-	NpmCnMirror string
-	NvmCnMirror string
+	NodeVersion  string
+	HasYarn      bool
+	ProxyCommand string
+	AptMirror    string
+	NpmMirror    string
+	NvmMirror    string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -38,12 +37,11 @@ func Check(root string) error {
 
 func GenerateDockerfile(root string) (*bytes.Buffer, error) {
 	cfg := Dockerfile{
-		HasYarn:     false,
-		HTTPProxy:   config.HttpProxy,
-		HTTPSProxy:  config.HttpsProxy,
-		AptCnMirror: config.AptCnMirror,
-		NpmCnMirror: config.NpmCnMirror,
-		NvmCnMirror: config.NvmCnMirror,
+		HasYarn:      false,
+		ProxyCommand: "http_proxy=" + config.HttpProxy + " https_proxy=" + config.HttpProxy,
+		AptMirror:    config.AptMirror,
+		NpmMirror:    config.NpmMirror,
+		NvmMirror:    config.NvmMirror,
 	}
 
 	node, err := extraVersion(root)

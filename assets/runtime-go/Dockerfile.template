@@ -1,7 +1,7 @@
 FROM buildpack-deps:xenial-scm
 
-{{if .AptCnMirror}}
-RUN sed -i 's/archive.ubuntu.com/{{.AptCnMirror}}/g' /etc/apt/sources.list
+{{if .AptMirror}}
+RUN sed -i 's/archive.ubuntu.com/{{.AptMirror}}/g' /etc/apt/sources.list
 {{end}}
 
 # gcc for cgo
@@ -17,7 +17,7 @@ ENV GOLANG_VERSION 1.8.1
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
 ENV GOLANG_DOWNLOAD_SHA256 a579ab19d5237e263254f1eac5352efcf1d70b9dacadb6d6bb12b0911ede8994
 
-RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
+RUN {{.ProxyCommand}} curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
 	&& echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
 	&& tar -C /usr/local -xzf golang.tar.gz \
 	&& rm golang.tar.gz
@@ -29,16 +29,12 @@ RUN mkdir -p $GOPATH/src $GOPATH/bin /home/deploybeta/app && chmod -R 777 $GOPAT
 WORKDIR /home/deploybeta/app
 
 # install manager of packages
-RUN http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} go get -u github.com/golang/dep/cmd/dep
-ENV http_proxy={{.HTTPProxy}}
-ENV https_proxy={{.HTTPSProxy}}
-RUN curl "https://glide.sh/get" | sh
-ENV http_proxy ""
-ENV https_proxy ""
+RUN {{.ProxyCommand}} go get -u github.com/golang/dep/cmd/dep
+RUN {{.ProxyCommand}} curl "https://glide.sh/get" | {{.ProxyCommand}} sh
 
 ADD . /go/src/{{.PackagePath}}
 
-RUN cd /go/src/{{.PackagePath}} && http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}} /go/bin/{{.DepManager}}
+RUN cd /go/src/{{.PackagePath}} && {{.ProxyCommand}} /go/bin/{{.DepManager}}
 
 RUN cd /go/src/{{.PackagePath}} && go build && cp -R . /home/deploybeta/app
 

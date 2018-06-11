@@ -2,8 +2,8 @@ FROM buildpack-deps:xenial-scm
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-{{if .AptCnMirror}}
-RUN sed -i 's/archive.ubuntu.com/{{.AptCnMirror}}/g' /etc/apt/sources.list
+{{if .AptMirror}}
+RUN sed -i 's/archive.ubuntu.com/{{.AptMirror}}/g' /etc/apt/sources.list
 {{end}}
 
 RUN apt-get update \
@@ -14,15 +14,11 @@ ENV NVM_DIR /usr/local/nvm
 
 ENV NODE_VERSION {{.NodeVersion}}
 
-ENV http_proxy {{.HTTPProxy}}
-ENV https_proxy {{.HTTPSProxy}}
-RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
-ENV http_proxy ""
-ENV https_proxy ""
+RUN {{.ProxyCommand}} curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 
 RUN source $NVM_DIR/nvm.sh \
   && echo $NODE_VERSION > .nvmrc \
-  && NVM_NODEJS_ORG_MIRROR={{.NvmCnMirror}} nvm install $NODE_VERSION \
+  && {{if .NvmMirror}} NVM_NODEJS_ORG_MIRROR={{.NvmMirror}}{{end}} nvm install $NODE_VERSION \
   && nvm alias default $NODE_VERSION \
   && nvm use default
 
@@ -40,8 +36,8 @@ RUN set -ex \
     gpg --keyserver keyserver.pgp.com --recv-keys "$key" || \
     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key" ; \
   done \
-  && http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}};curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
-  && http_proxy={{.HTTPProxy}} https_proxy={{.HTTPSProxy}};curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
+  && {{.ProxyCommand}} curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
+  && {{.ProxyCommand}} curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz \
   && mkdir -p /opt/yarn \
   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/yarn --strip-components=1 \
@@ -53,8 +49,8 @@ RUN mkdir -p "/home/deploybeta/app"
 WORKDIR "/home/deploybeta/app"
 ADD . "/home/deploybeta/app"
 
-{{if .NpmCnMirror}}
-RUN npm config set registry {{.NpmCnMirror}}
+{{if .NpmMirror}}
+RUN npm config set registry {{.NpmMirror}}
 {{end}}
 {{if .HasYarn}}
 RUN yarn install

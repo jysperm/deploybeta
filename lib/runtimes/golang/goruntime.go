@@ -16,12 +16,11 @@ import (
 )
 
 type Dockerfile struct {
-	PackagePath string
-	DepManager  string
-	PackageName string
-	HTTPProxy   string
-	HTTPSProxy  string
-	AptCnMirror string
+	PackagePath  string
+	DepManager   string
+	PackageName  string
+	ProxyCommand string
+	AptMirror    string
 }
 
 var ErrUnknowType = errors.New("unknown type of project")
@@ -36,12 +35,11 @@ func Check(root string) error {
 func GenerateDockerfile(root string, remoteURL string) (*bytes.Buffer, error) {
 	name, path := extractInfo(remoteURL)
 	cfg := Dockerfile{
-		PackagePath: path,
-		PackageName: name,
-		DepManager:  "",
-		HTTPProxy:   config.HttpProxy,
-		HTTPSProxy:  config.HttpsProxy,
-		AptCnMirror: config.AptCnMirror,
+		PackagePath:  path,
+		PackageName:  name,
+		DepManager:   "",
+		ProxyCommand: "http_proxy=" + config.HttpProxy + " https_proxy=" + config.HttpProxy,
+		AptMirror:    config.AptMirror,
 	}
 
 	templatePath := utils.GetAssetFilePath("runtime-go/Dockerfile.template")

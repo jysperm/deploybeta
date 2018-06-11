@@ -8,8 +8,8 @@ User=etcd
 Type=notify
 Environment=ETCD_DATA_DIR=/var/lib/etcd
 Environment=ETCD_NAME={{ ansible_hostname }}
-Environment=ETCD_DISCOVERY_SRV=dcloud.run
-Environment=ETCD_INITIAL_ADVERTISE_PEER_URLS=http://{{ ansible_hostname }}.dcloud.run:2380
+Environment=ETCD_DISCOVERY_SRV=deploybeta.io
+Environment=ETCD_INITIAL_ADVERTISE_PEER_URLS=http://{{ ansible_hostname }}-internal.deploybeta.io:2380
 Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
 ExecStart=/usr/local/bin/etcd
 Restart=always

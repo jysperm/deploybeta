@@ -3,24 +3,27 @@
   vars_files:
     - config.yml
   roles:
-    - deploybeta
     - filebeat
+    -
+      role: deploybeta
+      tags: [deploybeta]
 
-- hosts: dcloud1
+- hosts: deploy1
   vars:
-    letsencrypt:
-      - registry1.dcloud.run
-    registry:
-      name: registry1
-      domain: registry1.dcloud.run
     elasticsearch:
-      name: es1
-      url: 'http://es1.dcloud.run:9200'
+      name: es
+      url: 'http://es.deploybeta.io:9200'
     kibana:
       name: kibana
-      domain: kibana.dcloud.run
+      domain: kibana.deploybeta.io
   roles:
-    - letsencrypt
-    - registry
     - elasticsearch
     - kibana
+
+- hosts: deploy2
+  vars:
+    registry:
+      name: registry
+      domain: registry.deploybeta.io
+  roles:
+    - registry

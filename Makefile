@@ -10,8 +10,9 @@ binaries:
 
 resources:
 	cd frontend && gulp
+	mkdir -p $(OUTPUT)/frontend/public
 	cp -r frontend/public $(OUTPUT)/frontend
-	rm -r $(OUTPUT)/frontend/scripts
+	rm -r $(OUTPUT)/frontend/public/scripts
 	cp -r assets $(OUTPUT)
 
 pack-tar: binaries resources

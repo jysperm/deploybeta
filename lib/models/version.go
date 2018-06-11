@@ -132,5 +132,5 @@ func (version *Version) etcdKey() string {
 
 func newVersionTag() string {
 	now := time.Now()
-	return fmt.Sprintf("%d%d%d-%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	return fmt.Sprintf("%02d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 }

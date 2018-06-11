@@ -118,7 +118,7 @@ func (app *Application) Update(update *Application) error {
 			app.Instances = update.Instances
 		}
 
-		update.Version = app.Version
+		app.Version = update.Version
 
 		tran.PutJSON(appKey, app)
 
@@ -141,6 +141,10 @@ func (app *Application) Update(update *Application) error {
 
 	if update.Instances != 0 {
 		app.Instances = update.Instances
+	}
+
+	if update.Version != "" {
+		app.Version = update.Version
 	}
 
 	return nil

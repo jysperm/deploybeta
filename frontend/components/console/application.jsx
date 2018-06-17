@@ -38,7 +38,7 @@ export default class ApplicationsTab extends Component {
           {this.props.apps.map( app => {
             return <tr key={app.name}>
               <td>{app.name}</td>
-              <td>{app.instances}</td>
+              <td><a href='#' onClick={this.onSetAppInstances.bind(this, app.name)}>{app.instances}</a></td>
               <td className='application-version'>
                 <div>
                   <Label bsStyle='primary'>{app.version || 'N/A'}</Label>
@@ -92,6 +92,23 @@ export default class ApplicationsTab extends Component {
     this.setState({
       editingApp: _.find(this.props.apps, {name}),
     });
+  }
+
+  onSetAppInstances(name, event) {
+    event.preventDefault();
+
+    const instances = parseInt(prompt('Instances',  _.find(this.props.apps, {name}).instances));
+
+    if (!isNaN(instances)) {
+      return requestJson(`/apps/${name}`, {
+        method: 'PATCH',
+        body: {
+          instances
+        }
+      }).then( app => {
+        this.props.onAppEdited(app);
+      }).catch(alertError);
+    }
   }
 
   onBuildVersion(name) {

@@ -50,7 +50,7 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, errors.New("Version hadn't been built or had failed building"))
 	}
 
-	if err := app.Update(&models.Application{Version: version.Tag}); err != nil {
+	if err := app.UpdateVersion(version.Tag); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

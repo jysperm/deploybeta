@@ -1,2 +1,3 @@
 - [Home](/)
 - [Releases](Releases)
+- [Install And Initialize](Install-And-Initialize)

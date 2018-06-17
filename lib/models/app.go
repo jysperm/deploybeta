@@ -118,8 +118,6 @@ func (app *Application) Update(update *Application) error {
 			app.Instances = update.Instances
 		}
 
-		update.Version = app.Version
-
 		tran.PutJSON(appKey, app)
 
 		return nil

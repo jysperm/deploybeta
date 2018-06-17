@@ -1,3 +1,4 @@
+---
 - name: create deploybeta user
   user:
     name: 'deploybeta'
@@ -9,6 +10,7 @@
     owner: 'deploybeta'
   notify:
     - restart deploybeta
+    - build images
 
 - name: upload supervisor configuration
   template:

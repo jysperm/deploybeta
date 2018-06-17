@@ -13,10 +13,9 @@ var Listen string
 var EtcdEndpoints []string
 var DefaultRegistry string
 var HttpProxy string
-var HttpsProxy string
-var AptCnMirror string
-var NpmCnMirror string
-var NvmCnMirror string
+var AptMirror string
+var NpmMirror string
+var NvmMirror string
 var HostPrivateAddress string
 var DockerPrefix string
 
@@ -37,10 +36,9 @@ func init() {
 	EtcdEndpoints = strings.Split(os.Getenv("ETCD_ENDPOINTS"), ",")
 	DefaultRegistry = os.Getenv("DEFAULT_REGISTRY")
 	HttpProxy = os.Getenv("PROXY_HTTP")
-	HttpsProxy = os.Getenv("PROXY_HTTPS")
-	AptCnMirror = os.Getenv("APT_CN_MIRROR")
-	NpmCnMirror = os.Getenv("NPM_CN_MIRROR")
-	NvmCnMirror = os.Getenv("NVM_CN_MIRROR")
+	AptMirror = os.Getenv("APT_MIRROR")
+	NpmMirror = os.Getenv("NPM_MIRROR")
+	NvmMirror = os.Getenv("NVM_MIRROR")
 	HostPrivateAddress = os.Getenv("HOST_PRIVATE_ADDRESS")
 	DockerPrefix = os.Getenv("DOCKER_PREFIX")
 }

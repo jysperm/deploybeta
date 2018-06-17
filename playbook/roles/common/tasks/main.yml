@@ -30,6 +30,7 @@
     protocol: icmp
     jump: ACCEPT
 
+# TODO: Should be configure in infrastructures.yml
 - name: setup iptables allow internal hosts
   iptables:
     table: filter

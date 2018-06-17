@@ -13,3 +13,11 @@
   supervisorctl:
     name: 'deploybeta'
     state: restarted
+
+- name: build images
+  shell: |
+    docker build --tag registry.deploybeta.io/deploybeta-datasource-{{item}}:latest /home/deploybeta/assets/datasource-{{item}}
+    docker push registry.deploybeta.io/deploybeta-datasource-{{item}}:latest
+  with_items:
+    - mongodb
+    - redis

@@ -70,7 +70,7 @@ func UpdateAppService(app *models.Application) error {
 		},
 	}
 
-	if err := etcd.PutKey(fmt.Sprintf("/upstream/%s", app.Name), upstreams); err != nil {
+	if err := etcd.PutKey(fmt.Sprintf("/upstreams/%s", app.Name), upstreams); err != nil {
 		return err
 	}
 

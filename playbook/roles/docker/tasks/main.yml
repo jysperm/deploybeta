@@ -11,6 +11,14 @@
 - name: install apt packages
   apt: name=docker-ce
 
+- name: setup daemon cinfig
+  template:
+    src: 'daemon.json'
+    dest: '/etc/docker/daemon.json'
+    mode: '0644'
+  notify:
+    - restart docker
+
 - name: update systemd service
   template:
     src: 'docker.service'

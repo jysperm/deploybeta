@@ -1,3 +1,11 @@
+## v0.4 (2018-06-17)
+
+- Add DataSource feature, currently supports Redis and MongoDB
+- Add support to change app instances
+- Use docsify rewrite website
+- Rename to deploybeta, use Apache 2.0 License
+- Upgrade frontend dependencies
+
 ## v0.3 (2017-12-09)
 
 - Display realtime build progress

@@ -15,5 +15,15 @@ Current status: **Under heavy development**.
 - **Stateful container** Run common database in container
 - **Control the release cycle** CI, Canary release, A/B test (Long-term)
 
+## Tech stasks
+
+- Golang (main language)
+- Etcd (main database)
+- React, Bootstrap (frontend)
+- Docker, Swarm (container platform)
+- Openresty (reverse proxy)
+- Ansible (configuration management)
+- Bash (tools in container)
+
 ## License
 Apache License 2.0

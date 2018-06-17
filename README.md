@@ -14,3 +14,6 @@ Current status: **Under heavy development**.
 - **High availability** No single points of failure
 - **Stateful container** Run common database in container
 - **Control the release cycle** CI, Canary release, A/B test (Long-term)
+
+## License
+Apache License 2.0

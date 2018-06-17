@@ -37,7 +37,7 @@ export default class DataSourcesTab extends Component {
             return <tr key={dataSource.name}>
               <td>{dataSource.name}</td>
               <td>{dataSource.type}</td>
-              <td>{dataSource.instances}</td>
+              <td><a href='#' onClick={this.onSetDataSourceInstances.bind(this, dataSource.name)}>{dataSource.instances}</a></td>
               <td>
                 <Button bsStyle='info' onClick={this.onEditingLinks.bind(this, dataSource.name)}>Edit Links</Button>
               </td>
@@ -61,6 +61,23 @@ export default class DataSourcesTab extends Component {
     this.setState({
       editingDataSource: {}
     });
+  }
+
+  onSetDataSourceInstances(name, event) {
+    event.preventDefault();
+
+    const instances = parseInt(prompt('Instances',  _.find(this.props.dataSources, {name}).instances));
+
+    if (!isNaN(instances)) {
+      return requestJson(`/data-sources/${name}`, {
+        method: 'PATCH',
+        body: {
+          instances
+        }
+      }).then( dataSource => {
+        this.props.onDataSourceEdited(dataSource);
+      }).catch(alertError);
+    }
   }
 
   onDataSourceEdited(dataSource) {

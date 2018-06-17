@@ -17,7 +17,7 @@ import (
 
 var ErrInvalidDataSourceType = errors.New("invalid datasource type")
 
-// Serialize to /data-source/:name
+// Serialize to /data-sources/:name
 type DataSource struct {
 	Name      string `json:"name"`
 	Owner     string `json:"owner"`
@@ -28,7 +28,7 @@ type DataSource struct {
 	AgentToken string `json:"agentToken"`
 }
 
-// Serialize to /data-source/:name/nodes/:host
+// Serialize to /data-sources/:name/nodes/:host
 type DataSourceNode struct {
 	// Reference to DataSource.Name
 	DataSourceName string `json:"dataSourceName"`
@@ -78,17 +78,17 @@ func CreateDataSource(dataSource *DataSource) error {
 	return nil
 }
 
-func (datasource *DataSource) UpdateInstances(instances int) error {
-	datasourceKey := fmt.Sprintf("/data-source/%s", datasource.Name)
+func (dataSource *DataSource) UpdateInstances(instances int) error {
+	dataSourceKey := fmt.Sprintf("/data-sources/%s", dataSource.Name)
 
 	tran := etcd.NewTransaction()
 
-	tran.WatchJSON(datasourceKey, &DataSource{}, func(watchedKey interface{}) error {
+	tran.WatchJSON(dataSourceKey, &DataSource{}, func(watchedKey interface{}) error {
 		ds := *watchedKey.(*DataSource)
 
 		ds.Instances = instances
 
-		tran.PutJSON(datasourceKey, ds)
+		tran.PutJSON(dataSourceKey, ds)
 
 		return nil
 	})
@@ -103,7 +103,7 @@ func (datasource *DataSource) UpdateInstances(instances int) error {
 		return ErrUpdateConflict
 	}
 
-	datasource.Instances = instances
+	dataSource.Instances = instances
 
 	return nil
 }

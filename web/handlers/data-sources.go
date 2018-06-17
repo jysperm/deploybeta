@@ -60,7 +60,7 @@ func CreateDataSource(ctx echo.Context) error {
 }
 
 func UpdateDataSource(ctx echo.Context) error {
-	dataSource := ctx.Get("datasource").(models.DataSource)
+	dataSource := helpers.GetDataSourceInfo(ctx)
 	jsonBuf := make([]byte, 1024)
 
 	if _, err := ctx.Request().Body.Read(jsonBuf); err != nil && err != io.EOF {
@@ -84,11 +84,11 @@ func UpdateDataSource(ctx echo.Context) error {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	if err := swarm.UpdateDataSource(&dataSource); err != nil {
+	if err := swarm.UpdateDataSource(dataSource); err != nil {
 		return helpers.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, helpers.NewDataSourceResponse(&dataSource))
+	return ctx.JSON(http.StatusOK, helpers.NewDataSourceResponse(dataSource))
 }
 
 func LinkDataSource(ctx echo.Context) error {

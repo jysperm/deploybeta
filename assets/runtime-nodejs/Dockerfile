@@ -52,7 +52,7 @@ ADD . "/home/deploybeta/app"
 {{if .NpmMirror}}
 RUN npm config set registry {{.NpmMirror}}
 {{end}}
-{{if .HasYarn}}
+{{if .UseYarn}}
 RUN yarn install
 {{- else}}
 RUN npm install

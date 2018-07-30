@@ -49,7 +49,12 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 		return nil, err
 	}
 
-	fileBuffer, err := runtimes.Dockerlize(dirPath, app.GitRepository)
+	runtime, err := runtimes.DecideRuntime(runtimes.NewBuildContext(dirPath, app.GitRepository))
+	if err != nil {
+		return nil, err
+	}
+
+	fileBuffer, err := runtime.Dockerfile()
 	if err != nil {
 		return nil, err
 	}

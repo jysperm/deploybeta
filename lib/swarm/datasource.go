@@ -5,8 +5,8 @@ import (
 
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/datasources"
 	"github.com/jysperm/deploybeta/lib/models"
-	"github.com/jysperm/deploybeta/lib/runtimes"
 )
 
 var ErrNetworkNotFound = errors.New("Network not found")
@@ -27,7 +27,7 @@ func UpdateDataSource(dataSource *models.DataSource) error {
 		Target: networkID,
 	}
 
-	runtime := runtimes.NewDataSourceRuntime(dataSource.Type)
+	runtime := datasources.NewDataSourceRuntime(dataSource.Type)
 
 	portConfig := swarm.PortConfig{
 		Protocol:   runtime.ExposeProtocol(),

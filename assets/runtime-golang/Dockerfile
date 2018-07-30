@@ -34,7 +34,7 @@ RUN {{.ProxyCommand}} curl "https://glide.sh/get" | {{.ProxyCommand}} sh
 
 ADD . /go/src/{{.PackagePath}}
 
-RUN cd /go/src/{{.PackagePath}} && {{.ProxyCommand}} /go/bin/{{.DepManager}}
+RUN cd /go/src/{{.PackagePath}} && {{.ProxyCommand}} /go/bin/{{.DepManager.InstallCommand}}
 
 RUN cd /go/src/{{.PackagePath}} && go build && cp -R . /home/deploybeta/app
 

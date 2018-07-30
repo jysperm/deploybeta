@@ -6,37 +6,37 @@ import (
 	"github.com/jysperm/deploybeta/lib/utils"
 )
 
-func TestDockerlizeDep(t *testing.T) {
-	root, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "dep")
-	buf, err := Dockerlize(root, "https://github.com/jysperm/deploying-samples.git")
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(buf.String())
+const sampleGitUrl = "https://github.com/jysperm/deploybeta-samples.git"
+
+func TestNodejs(t *testing.T) {
+	dockerlize(t, "nodejs-npm-express")
+	dockerlize(t, "nodejs-yarn-express")
 }
 
-func TestDockerlizeGlide(t *testing.T) {
-	root, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "glide")
-	buf, err := Dockerlize(root, "https://github.com/jysperm/deploying-samples.git")
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(buf.String())
-}
-func TestDockerlizeNpm(t *testing.T) {
-	root, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "npm")
-	buf, err := Dockerlize(root, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(buf.String())
+func TestGolang(t *testing.T) {
+	dockerlize(t, "golang-dep-echo")
+	dockerlize(t, "golang-glide-echo")
 }
 
-func TestDockerlizeYarn(t *testing.T) {
-	root, err := utils.Clone("https://github.com/jysperm/deploying-samples.git", "yarn")
-	buf, err := Dockerlize(root, nil)
+func dockerlize(t *testing.T, branch string) {
+	root, err := utils.Clone(sampleGitUrl, branch)
+
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	t.Log(buf.String())
+
+	runtime, err := DecideRuntime(NewBuildContext(root, sampleGitUrl))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dockerfile, err := runtime.Dockerfile()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(branch)
+	t.Log(dockerfile.String())
 }

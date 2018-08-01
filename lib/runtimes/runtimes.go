@@ -3,49 +3,45 @@ package runtimes
 import (
 	"bytes"
 	"errors"
-
-	"github.com/docker/docker/api/types/swarm"
-
-	"github.com/jysperm/deploybeta/lib/runtimes/datasource"
-	"github.com/jysperm/deploybeta/lib/runtimes/golang"
-	"github.com/jysperm/deploybeta/lib/runtimes/node"
 )
 
-var ErrUnknowType = errors.New("unknown type of project")
-var ErrInvalidDataSourceType = errors.New("invalid dataSource type")
+var ErrInvalidRuntimeType = errors.New("invalid runtime type")
 
-func Dockerlize(root string, extra interface{}) (*bytes.Buffer, error) {
-	if err := golang.Check(root); err == nil {
-		buf, err := golang.GenerateDockerfile(root, (extra).(string))
-		if err != nil {
-			return nil, err
-		}
-		return buf, nil
-	}
+type RuntimeDecider = func(context *BuildContext) (bool, error)
 
-	if err := node.Check(root); err == nil {
-		buf, err := node.GenerateDockerfile(root)
-		if err != nil {
-			return nil, err
-		}
-		return buf, nil
-	}
-
-	return nil, ErrUnknowType
+type Runtime interface {
+	Dockerfile() (*bytes.Buffer, error)
 }
 
-type DataSourceRuntime interface {
-	DockerImageName() string
-	ExposeProtocol() swarm.PortConfigProtocol
-	ExposePort() uint16
+func DecideRuntime(context *BuildContext) (Runtime, error) {
+	deciders := map[string]RuntimeDecider{
+		"nodejs": DecideNodejsRuntime,
+		"golang": DecideGolangRuntime,
+	}
+
+	for runtime, decider := range deciders {
+		isThisRuntime, err := decider(context)
+
+		if err != nil {
+			return nil, err
+		} else if isThisRuntime {
+			return NewRuntime(runtime, context), nil
+		}
+	}
+
+	return nil, ErrInvalidRuntimeType
 }
 
-func NewDataSourceRuntime(dataSourceType string) DataSourceRuntime {
-	if dataSourceType == "mongodb" {
-		return &datasource.MongoDBRuntime{}
-	} else if dataSourceType == "redis" {
-		return &datasource.RedisRuntime{}
+func NewRuntime(runtimeType string, context *BuildContext) Runtime {
+	if runtimeType == "nodejs" {
+		return &NodejsRuntime{
+			BuildContext: *context,
+		}
+	} else if runtimeType == "golang" {
+		return &GolangRuntime{
+			BuildContext: *context,
+		}
 	} else {
-		panic(ErrInvalidDataSourceType)
+		panic(ErrInvalidRuntimeType)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
+	"github.com/hashicorp/errwrap"
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploybeta/lib/models"
@@ -95,6 +96,7 @@ func UpdateApp(ctx echo.Context) error {
 	}
 
 	if err := swarm.UpdateAppService(&app); err != nil {
+		err := errwrap.Wrapf("apply changes to swarm: {{err}}", err)
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

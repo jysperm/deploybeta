@@ -22,6 +22,10 @@ var ErrNetworkJoined = errors.New("Had joined the network")
 var ErrNetworkNoUnlinkable = errors.New("No network could be unlinking")
 
 func UpdateAppService(app *models.Application) error {
+	if app.Version == "" {
+		return nil
+	}
+
 	networkConfigs := []swarm.NetworkAttachmentConfig{}
 	environments := []string{}
 

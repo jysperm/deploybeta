@@ -141,10 +141,10 @@ func (dataSource *DataSource) UnlinkApp(app *Application) error {
 func (dataSource *DataSource) GetLinkedAppNames() ([]string, error) {
 	linkedApps := make([]string, 0)
 
-	_, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), linkedApps)
+	_, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), &linkedApps)
 
 	if err != nil {
-		return linkedApps, err
+		return linkedApps, errwrap.Wrapf("load etcd key: {{err}}", err)
 	}
 
 	return linkedApps, nil

@@ -39,7 +39,7 @@ func CreateDataSource(ctx echo.Context) error {
 		Name:      params["name"],
 		Type:      params["type"],
 		Owner:     helpers.GetSessionAccount(ctx).Username,
-		Instances: 1,
+		Instances: 2,
 	}
 
 	err = models.CreateDataSource(dataSource)

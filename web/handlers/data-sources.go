@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/buger/jsonparser"
-
+	"github.com/hashicorp/errwrap"
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploybeta/lib/models"
@@ -137,7 +139,7 @@ func DeleteDataSource(ctx echo.Context) error {
 	dataSource := helpers.GetDataSourceInfo(ctx)
 
 	if err := swarm.RemoveDataSource(dataSource); err != nil {
-		return helpers.NewHTTPError(http.StatusInternalServerError, err)
+		fmt.Fprintln(os.Stderr, errwrap.Wrapf("remote dataSource service: {{err}}", err).Error())
 	}
 
 	if err := models.DeleteDataSourceByName(dataSource.Name); err != nil {

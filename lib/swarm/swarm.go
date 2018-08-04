@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/docker/docker/api/types/filters"
 
@@ -36,6 +37,8 @@ func init() {
 
 func UpdateService(service SwarmService, portConfig []swarm.PortConfig, networkConfig []swarm.NetworkAttachmentConfig, image string, envs []string) error {
 	var serviceName = service.SwarmServiceName()
+
+	fmt.Printf("Updating service %s\n", serviceName)
 
 	var create bool
 	var err error

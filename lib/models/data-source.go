@@ -7,29 +7,59 @@ import (
 	"fmt"
 	"log"
 
-	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/hashicorp/errwrap"
 
 	"github.com/jysperm/deploybeta/config"
-	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/db"
 	"github.com/jysperm/deploybeta/lib/utils"
 )
 
 var ErrInvalidDataSourceType = errors.New("invalid datasource type")
+var ErrDataSourceNotFound = errors.New("dataSource not found")
+var ErrDataSourceNodeNotFound = errors.New("dataSource node not found")
 
-// Serialize to /data-sources/:name
 type DataSource struct {
-	Name      string `json:"name"`
-	Owner     string `json:"owner"`
-	Type      string `json:"type"`
-	Instances int    `json:"instances"`
+	db.ResourceMeta
+
+	Name          string `json:"name"`
+	OwnerUsername string `json:"ownerUsername"`
+	Type          string `json:"type"`
+	Instances     int    `json:"instances"`
 
 	// HTTP API token scoped to this dataSource
 	AgentToken string `json:"agentToken"`
 }
 
-// Serialize to /data-sources/:name/nodes/:host
+func (dataSource *DataSource) ResourceKey() string {
+	return fmt.Sprintf("/data-sources/%s", dataSource.Name)
+}
+
+func (dataSource *DataSource) Associations() []db.Association {
+	return []db.Association{
+		dataSource.Nodes(),
+		dataSource.Apps(),
+		dataSource.Owner(),
+	}
+}
+
+func (dataSource *DataSource) Nodes() db.HasManyAssociation {
+	return db.HasManyPrefix(fmt.Sprintf("/data-sources/%s/nodes/", dataSource.Name))
+}
+
+func (dataSource *DataSource) Apps() db.HasManyAssociation {
+	return db.HasManyThrough(fmt.Sprintf("/data-sources/%s/apps", dataSource.Name))
+}
+
+func (dataSource *DataSource) Owner() db.BelongsToAssociation {
+	return db.BelongsTo(
+		(&Account{Username: dataSource.OwnerUsername}).ResourceKey(),
+		fmt.Sprintf("/accounts/%s/data-sources", dataSource.OwnerUsername),
+	)
+}
+
 type DataSourceNode struct {
+	db.ResourceMeta
+
 	// Reference to DataSource.Name
 	DataSourceName string `json:"dataSourceName"`
 	// Reported address and port, like `10.0.1.1:6380`
@@ -40,6 +70,20 @@ type DataSourceNode struct {
 	MasterHost string `json:"masterHost"`
 
 	ExpectedRole string `json:"expectedRole"`
+}
+
+func (node *DataSourceNode) ResourceKey() string {
+	return fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+}
+
+func (node *DataSourceNode) Associations() []db.Association {
+	return []db.Association{
+		node.DataSource(),
+	}
+}
+
+func (node *DataSourceNode) DataSource() db.BelongsToAssociation {
+	return db.BelongsTo((&DataSource{Name: node.DataSourceName}).ResourceKey())
 }
 
 type DataSourceNodeCommand struct {
@@ -60,94 +104,74 @@ func CreateDataSource(dataSource *DataSource) error {
 
 	dataSource.AgentToken = utils.RandomString(32)
 
-	tran := etcd.NewTransaction()
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Create(dataSource)
+	})
 
-	tran.AppendStringArray(fmt.Sprintf("/accounts/%s/data-sources", dataSource.Owner), dataSource.Name)
-	tran.CreateJSON(fmt.Sprint("/data-sources/", dataSource.Name), dataSource)
+	return err
+}
 
-	resp, err := tran.Execute()
+func FindDataSourceByName(name string) (*DataSource, error) {
+	dataSource := &DataSource{
+		Name: name,
+	}
+
+	err := db.Fetch(dataSource)
+
+	if err == db.ErrResourceNotFound {
+		return nil, errwrap.Wrap(ErrDataSourceNotFound, err)
+	}
+
+	return dataSource, err
+}
+
+func GetDataSourceOfAccount(dataSourceName string, account *Account) (*DataSource, error) {
+	dataSource, err := FindDataSourceByName(dataSourceName)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
+	if dataSource.OwnerUsername != account.Username {
+		return nil, ErrDataSourceNotFound
 	}
 
-	return nil
+	return dataSource, nil
 }
 
 func (dataSource *DataSource) UpdateInstances(instances int) error {
-	dataSourceKey := fmt.Sprintf("/data-sources/%s", dataSource.Name)
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		err := db.Fetch(dataSource)
 
-	tran := etcd.NewTransaction()
+		if err != nil {
+			tran.SetError(err)
+			return
+		}
 
-	tran.WatchJSON(dataSourceKey, &DataSource{}, func(watchedKey interface{}) error {
-		ds := *watchedKey.(*DataSource)
+		dataSource.Instances = instances
 
-		ds.Instances = instances
-
-		tran.PutJSON(dataSourceKey, ds)
-
-		return nil
+		tran.Update(dataSource)
 	})
 
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	dataSource.Instances = instances
-
-	return nil
+	return err
 }
 
 func (dataSource *DataSource) LinkApp(app *Application) error {
-	tran := etcd.NewTransaction()
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		app.DataSources().Attach(tran, dataSource)
+		dataSource.Apps().Attach(tran, app)
+	})
 
-	tran.AppendStringArray(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), app.Name)
-	tran.AppendStringArray(fmt.Sprintf("/apps/%s/data-sources", app.Name), dataSource.Name)
-
-	err := tran.ExecuteMustSuccess()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (dataSource *DataSource) UnlinkApp(app *Application) error {
-	tran := etcd.NewTransaction()
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		app.DataSources().Detach(tran, dataSource)
+		dataSource.Apps().Detach(tran, app)
+	})
 
-	tran.PullStringArray(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), app.Name)
-	tran.PullStringArray(fmt.Sprintf("/apps/%s/data-sources", app.Name), dataSource.Name)
-
-	err := tran.ExecuteMustSuccess()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (dataSource *DataSource) GetLinkedAppNames() ([]string, error) {
-	linkedApps := make([]string, 0)
-
-	_, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/links", dataSource.Name), &linkedApps)
-
-	if err != nil {
-		return linkedApps, errwrap.Wrapf("load etcd key: {{err}}", err)
-	}
-
-	return linkedApps, nil
+	return err
 }
 
 func (dataSource *DataSource) SwarmServiceName() string {
@@ -162,222 +186,78 @@ func (dataSource *DataSource) SwarmInstances() int {
 	return dataSource.Instances
 }
 
-func GetDataSourcesOfAccount(account *Account) (dataSources []DataSource, err error) {
-	dataSources = make([]DataSource, 0)
-
-	resp, err := etcd.Client.Get(context.Background(), fmt.Sprintf("/accounts/%s/data-sources", account.Username))
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Kvs) == 0 {
-		return dataSources, nil
-	}
-
-	accountDataSources := []string{}
-
-	err = json.Unmarshal([]byte(resp.Kvs[0].Value), &accountDataSources)
-
-	if err != nil {
-		return nil, err
-	}
-
-	for _, dataSourceName := range accountDataSources {
-		resp, err = etcd.Client.Get(context.Background(), fmt.Sprint("/data-sources/", dataSourceName))
-
-		if err != nil {
-			return nil, err
-		}
-
-		dataSource := DataSource{}
-
-		if len(resp.Kvs) != 0 {
-			err = json.Unmarshal([]byte(resp.Kvs[0].Value), &dataSource)
-
-			if err != nil {
-				return nil, err
-			}
-
-			dataSources = append(dataSources, dataSource)
-		}
-	}
-
-	return dataSources, nil
-}
-
-func GetDataSourcesOfApp(app *Application) ([]DataSource, error) {
-	dataSources := []DataSource{}
-
-	dataSourceNames := make([]string, 0)
-	_, err := etcd.LoadKey(fmt.Sprintf("/apps/%s/data-sources", app.Name), &dataSourceNames)
-
-	if err != nil {
-		return dataSources, err
-	}
-
-	for _, dataSourceName := range dataSourceNames {
-		dataSource := DataSource{}
-		found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s", dataSourceName), &dataSource)
-
-		if err != nil {
-			return dataSources, err
-		}
-
-		if found {
-			dataSources = append(dataSources, dataSource)
-		}
-	}
-
-	return dataSources, nil
-}
-
-func GetDataSourceOfAccount(dataSourceName string, account *Account) (*DataSource, error) {
-	resp, err := etcd.Client.Get(context.Background(), fmt.Sprint("/data-sources/", dataSourceName))
-
-	if err != nil {
-		return nil, err
-	}
-
-	dataSource := &DataSource{}
-
-	if len(resp.Kvs) != 0 {
-		err = json.Unmarshal([]byte(resp.Kvs[0].Value), &dataSource)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return dataSource, nil
-}
-
-func FindDataSourceByName(name string) (dataSource DataSource, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s", name), &dataSource)
-
-	if err != nil {
-		return dataSource, err
-	} else if !found {
-		return dataSource, errors.New("dataSource not found")
-	} else {
-		return dataSource, nil
-	}
-}
-
-func DeleteDataSourceByName(name string) error {
-	_, err := etcd.Client.Delete(context.Background(), fmt.Sprint("/data-sources/", name))
+func (dataSource *DataSource) Destroy() error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Delete(dataSource)
+	})
 
 	return err
 }
 
-func (dataSource *DataSource) FindNodeByHost(host string) (dataSourceNode DataSourceNode, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, host), &dataSourceNode)
-
-	if err != nil {
-		return dataSourceNode, err
-	} else if !found {
-		return dataSourceNode, errors.New("dataSource node not found")
-	} else {
-		return dataSourceNode, nil
+func (dataSource *DataSource) FindNodeByHost(host string) (*DataSourceNode, error) {
+	node := &DataSourceNode{
+		DataSourceName: dataSource.Name,
+		Host:           host,
 	}
+
+	err := db.Fetch(node)
+
+	if err == db.ErrResourceNotFound {
+		return nil, errwrap.Wrap(ErrDataSourceNodeNotFound, err)
+	}
+
+	return node, err
 }
 
 func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
 	node.DataSourceName = dataSource.Name
 
-	tran := etcd.NewTransaction()
-
-	tran.CreateJSON(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, node.Host), node)
-
-	resp, err := tran.Execute()
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Create(node)
+	})
 
 	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return errwrap.Wrapf("create dataSource node: {{err}}", ErrUpdateConflict)
+		return errwrap.Wrapf("create dataSource node: {{err}}", err)
 	}
 
 	return nil
-}
-
-func (dataSource *DataSource) ListNodes() (nodes []DataSourceNode, err error) {
-	resp, err := etcd.Client.Get(context.Background(), fmt.Sprintf("/data-sources/%s/nodes/", dataSource.Name), etcdv3.WithPrefix())
-
-	if err != nil {
-		return nodes, err
-	}
-
-	for _, v := range resp.Kvs {
-		node := DataSourceNode{}
-
-		err = json.Unmarshal(v.Value, &node)
-
-		if err != nil {
-			return nodes, err
-		}
-
-		nodes = append(nodes, node)
-	}
-
-	return nodes, nil
 }
 
 func (node *DataSourceNode) SetMaster() error {
-	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		err := db.Fetch(node)
 
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(nodeKey, &DataSourceNode{}, func(watchedKey interface{}) error {
-		node := *watchedKey.(*DataSourceNode)
+		if err != nil {
+			tran.SetError(err)
+			return
+		}
 
 		node.ExpectedRole = "master"
 
-		tran.PutJSON(nodeKey, node)
-
-		return nil
+		tran.Update(node)
 	})
 
-	err := tran.ExecuteMustSuccess()
-
-	if err != nil {
-		return err
-	}
-
-	node.ExpectedRole = "master"
-
-	return nil
+	return err
 }
 
 func (node *DataSourceNode) Update(updates *DataSourceNode) error {
-	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		err := db.Fetch(node)
 
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(nodeKey, &DataSourceNode{}, func(watchedKey interface{}) error {
-		node := *watchedKey.(*DataSourceNode)
+		if err != nil {
+			tran.SetError(err)
+			return
+		}
 
 		node.Role = updates.Role
 		node.MasterHost = updates.MasterHost
 
-		tran.PutJSON(nodeKey, node)
-
-		return nil
+		tran.Update(node)
 	})
 
-	resp, err := tran.Execute()
-
 	if err != nil {
-		return err
+		return errwrap.Wrapf("update dataSource node: {{err}}", err)
 	}
-
-	if resp.Succeeded == false {
-		return errwrap.Wrapf("update dataSource node: {{err}}", ErrUpdateConflict)
-	}
-
-	node.Role = updates.Role
-	node.MasterHost = updates.MasterHost
 
 	return nil
 }
@@ -385,7 +265,7 @@ func (node *DataSourceNode) Update(updates *DataSourceNode) error {
 func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
 	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
 
-	checkNewCommand := func(node DataSourceNode) *DataSourceNodeCommand {
+	checkNewCommand := func(node *DataSourceNode) *DataSourceNodeCommand {
 		if node.ExpectedRole != "" && node.Role != node.ExpectedRole {
 			return &DataSourceNodeCommand{
 				Command: "change-role",
@@ -396,32 +276,29 @@ func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
 		}
 	}
 
-	watcher := etcd.Client.Watch(context.TODO(), nodeKey)
+	watcher := db.Client.Watch(context.TODO(), nodeKey)
 
-	latestNode := DataSourceNode{}
+	err := db.Fetch(node)
 
-	found, err := etcd.LoadKey(nodeKey, &latestNode)
+	if err == ErrDataSourceNodeNotFound {
 
-	if err != nil {
+	} else if err != nil {
 		return nil, err
-	}
-
-	if found {
-		if command := checkNewCommand(latestNode); command != nil {
+	} else {
+		if command := checkNewCommand(node); command != nil {
 			return command, nil
 		}
 	}
 
 	for w := range watcher {
 		for _, ev := range w.Events {
-			latestNode := DataSourceNode{}
-			err = json.Unmarshal([]byte(ev.Kv.Value), &latestNode)
+			err = json.Unmarshal([]byte(ev.Kv.Value), node)
 
 			if err != nil {
 				log.Panicln(err)
 			}
 
-			if command := checkNewCommand(latestNode); command != nil {
+			if command := checkNewCommand(node); command != nil {
 				return command, nil
 			}
 		}

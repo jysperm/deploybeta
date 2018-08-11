@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploybeta/lib/builder"
-	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/db"
 	"github.com/jysperm/deploybeta/lib/models"
 	"github.com/jysperm/deploybeta/lib/swarm"
 	. "github.com/jysperm/deploybeta/web/handlers/helpers"
@@ -58,7 +58,7 @@ func DeployVersion(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, NewVersionResponse(&version))
+	return ctx.JSON(http.StatusOK, NewVersionResponse(version))
 }
 
 func PushProgress(ctx echo.Context) error {
@@ -67,7 +67,7 @@ func PushProgress(ctx echo.Context) error {
 	finishied := false
 
 	watchPrefix := fmt.Sprintf("/progress/%s/%s/", app.Name, tag)
-	watcher := etcd.Client.Watch(context.Background(), watchPrefix, clientv3.WithPrefix())
+	watcher := db.Client.Watch(context.Background(), watchPrefix, clientv3.WithPrefix())
 
 	rw := ctx.Response().Writer
 	flusher, ok := rw.(http.Flusher)
@@ -78,7 +78,7 @@ func PushProgress(ctx echo.Context) error {
 	ctx.Response().Header().Set("Content-Type", "text/event-stream")
 	ctx.Response().WriteHeader(http.StatusOK)
 
-	resp, err := etcd.Client.Get(context.Background(), watchPrefix, clientv3.WithPrefix())
+	resp, err := db.Client.Get(context.Background(), watchPrefix, clientv3.WithPrefix())
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}

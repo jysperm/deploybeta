@@ -41,7 +41,7 @@ export default class ApplicationsTab extends Component {
               <td><a href='#' onClick={this.onSetAppInstances.bind(this, app.name)}>{app.instances}</a></td>
               <td className='application-version'>
                 <div>
-                  <Label bsStyle='primary'>{app.version || 'N/A'}</Label>
+                  <Label bsStyle='primary'>{app.versionTag || 'N/A'}</Label>
                 </div>
                 <div>
                   <ButtonGroup>

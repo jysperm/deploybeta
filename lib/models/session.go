@@ -1,11 +1,12 @@
 package models
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
-	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/hashicorp/errwrap"
+
+	"github.com/jysperm/deploybeta/lib/db"
 	"github.com/jysperm/deploybeta/lib/utils"
 )
 
@@ -13,52 +14,55 @@ var ErrTokenConflict = errors.New("token conflict")
 var ErrTokenNotFound = errors.New("token not found")
 
 type Session struct {
+	db.ResourceMeta
+
 	Token    string `json:"token"`
 	Username string `json:"username"`
 }
 
-func CreateSession(account *Account) (*Session, error) {
-	sessionToken := utils.RandomString(32)
-	sessionKey := fmt.Sprint("/sessions/", sessionToken)
+func (session *Session) ResourceKey() string {
+	return fmt.Sprintf("/sessions/%s", session.Token)
+}
 
+func (session *Session) Associations() []db.Association {
+	return []db.Association{}
+}
+
+func (session *Session) Account() db.HasOneAssociation {
+	return db.HasOne((&Account{Username: session.Username}).ResourceKey())
+}
+
+func CreateSession(account *Account) (*Session, error) {
 	session := &Session{
-		Token:    sessionToken,
+		Token:    utils.RandomString(32),
 		Username: account.Username,
 	}
 
-	tran := etcd.NewTransaction()
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Create(session)
+	})
 
-	tran.CreateJSON(sessionKey, session)
+	return session, err
+}
 
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return nil, err
+func FindSessionByToken(token string) (*Session, error) {
+	session := &Session{
+		Token: token,
 	}
 
-	if resp.Succeeded == false {
-		return nil, ErrTokenConflict
+	err := db.Fetch(session)
+
+	if err == db.ErrResourceNotFound {
+		return nil, errwrap.Wrap(ErrTokenNotFound, err)
 	}
 
 	return session, err
 }
 
-func FindSessionByToken(token string) (session Session, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/sessions/%s", token), &session)
-
-	if err != nil {
-		return session, err
-	} else if !found {
-		return session, ErrTokenNotFound
-	} else {
-		return session, nil
-	}
-}
-
-func DeleteSessionByToken(token string) error {
-	sessionKey := fmt.Sprint("/sessions/", token)
-
-	_, err := etcd.Client.Delete(context.Background(), sessionKey)
+func (session *Session) Destroy() error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Delete(session)
+	})
 
 	return err
 }

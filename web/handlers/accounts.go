@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/hashicorp/errwrap"
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploybeta/lib/models"
@@ -24,9 +25,9 @@ func RegisterAccount(ctx echo.Context) error {
 
 	err = models.RegisterAccount(account, params["password"])
 
-	if err != nil && err == models.ErrUsernameConflict {
+	if errwrap.ContainsType(err, models.ErrUsernameConflict) {
 		return NewHTTPError(http.StatusConflict, err)
-	} else if err != nil && err == models.ErrInvalidUsername {
+	} else if err == models.ErrInvalidUsername {
 		return NewHTTPError(http.StatusBadRequest, err)
 	} else if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)

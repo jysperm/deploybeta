@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -16,13 +17,34 @@ import (
 
 func GetMyApps(ctx echo.Context) error {
 	account := GetSessionAccount(ctx)
-	apps, err := models.GetAppsOfAccount(account)
+
+	apps := make([]models.Application, 0)
+	err := account.Apps().FetchAll(&apps)
 
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, NewAppsResponse(apps))
+	responses := make([]ApplicationResponse, len(apps))
+
+	for i, app := range apps {
+		versions := make([]models.Version, 0)
+		err := app.Versions().FetchAll(&versions)
+
+		if err != nil {
+			return err
+		}
+
+		nodes, err := swarm.ListNodes(&app)
+
+		if err != nil {
+			log.Println(errwrap.Wrapf("list swarm nodes: {{err}}", err))
+		}
+
+		responses[i] = *NewApplicationResponse(&app, versions, nodes)
+	}
+
+	return ctx.JSON(http.StatusOK, responses)
 }
 
 func CreateApp(ctx echo.Context) error {
@@ -35,10 +57,10 @@ func CreateApp(ctx echo.Context) error {
 
 	app := &models.Application{
 		Name:          params["name"],
-		Owner:         GetSessionAccount(ctx).Username,
+		OwnerUsername: GetSessionAccount(ctx).Username,
 		GitRepository: params["gitRepository"],
 		Instances:     1,
-		Version:       params["version"],
+		VersionTag:    params["versionTag"],
 	}
 
 	err = models.CreateApp(app)
@@ -51,7 +73,7 @@ func CreateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusCreated, NewAppResponse(app))
+	return ctx.JSON(http.StatusCreated, NewApplicationResponse(app, nil, nil))
 }
 
 func UpdateApp(ctx echo.Context) error {
@@ -61,7 +83,7 @@ func UpdateApp(ctx echo.Context) error {
 
 	update := models.Application{
 		Name:          app.Name,
-		Owner:         app.Owner,
+		OwnerUsername: app.OwnerUsername,
 		GitRepository: "",
 	}
 
@@ -100,7 +122,7 @@ func UpdateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, NewAppResponse(&app))
+	return ctx.JSON(http.StatusOK, NewApplicationResponse(&app, nil, nil))
 }
 
 func DeleteApp(ctx echo.Context) error {
@@ -109,7 +131,12 @@ func DeleteApp(ctx echo.Context) error {
 	if err != nil {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
-	if err := swarm.RemoveApp(&app); err != nil {
+
+	if err := app.Destroy(); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := swarm.RemoveApp(app); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

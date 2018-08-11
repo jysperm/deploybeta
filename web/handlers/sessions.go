@@ -31,7 +31,7 @@ func CreateSession(ctx echo.Context) error {
 		return NewHTTPError(http.StatusUnauthorized, err)
 	}
 
-	session, err := models.CreateSession(&account)
+	session, err := models.CreateSession(account)
 
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)

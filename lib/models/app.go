@@ -1,26 +1,60 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
 
+	"github.com/hashicorp/errwrap"
+
 	"github.com/jysperm/deploybeta/config"
-	"github.com/jysperm/deploybeta/lib/etcd"
-	"golang.org/x/net/context"
+	"github.com/jysperm/deploybeta/lib/db"
 )
 
 var ErrInvalidName = errors.New("invalid app name")
 var ErrUpdateConflict = errors.New("update version conflict")
+var ErrAppNotFound = errors.New("app not found")
 
-// Serialize to /apps/:name
 type Application struct {
+	db.ResourceMeta
+
 	Name          string `json:"name"`
-	Owner         string `json:"owner"`
+	OwnerUsername string `json:"ownerUsername"`
 	GitRepository string `json:"gitRepository"`
 	Instances     int    `json:"instances"`
-	Version       string `json:"version"`
+	VersionTag    string `json:"versionTag"`
+}
+
+func (app *Application) ResourceKey() string {
+	return fmt.Sprintf("/apps/%s", app.Name)
+}
+
+func (app *Application) Associations() []db.Association {
+	return []db.Association{
+		app.Owner(),
+		app.Version(),
+		app.Versions(),
+		app.DataSources(),
+	}
+}
+
+func (app *Application) Owner() db.HasOneAssociation {
+	return db.BelongsTo(
+		(&Account{Username: app.OwnerUsername}).ResourceKey(),
+		fmt.Sprintf("/accounts/%s/apps", app.OwnerUsername),
+	)
+}
+
+func (app *Application) Version() db.HasOneAssociation {
+	return db.HasOne(fmt.Sprintf("/apps/%s/versions/%s", app.Name, app.VersionTag))
+}
+
+func (app *Application) Versions() db.HasManyAssociation {
+	return db.HasManyPrefix(fmt.Sprintf("/apps/%s/versions/", app.Name))
+}
+
+func (app *Application) DataSources() db.HasManyAssociation {
+	return db.HasManyPrefix(fmt.Sprintf("/apps/%s/data-sources", app.Name))
 }
 
 var validName = regexp.MustCompile(`^[a-z0-9_-]+$`)
@@ -30,148 +64,73 @@ func CreateApp(app *Application) error {
 		return ErrInvalidName
 	}
 
-	tran := etcd.NewTransaction()
-
-	tran.AppendStringArray(fmt.Sprintf("/account/%s/apps", app.Owner), app.Name)
-	tran.CreateJSON(fmt.Sprint("/apps/", app.Name), app)
-
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	return nil
-}
-
-// TODO: Delete app name from `/account/:name/apps`
-func DeleteAppByName(name string) error {
-	appKey := fmt.Sprint("/apps/", name)
-
-	_, err := etcd.Client.Delete(context.Background(), appKey)
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Create(app)
+	})
 
 	return err
 }
 
-func GetAppsOfAccount(account *Account) (result []Application, err error) {
-	accountAppsKey := fmt.Sprintf("/account/%s/apps", account.Username)
-	resp, err := etcd.Client.Get(context.Background(), accountAppsKey)
-
-	result = make([]Application, 0)
-
-	if err != nil {
-		return nil, err
+func FindAppByName(name string) (*Application, error) {
+	app := &Application{
+		Name: name,
 	}
 
-	if len(resp.Kvs) == 0 {
-		return result, nil
+	err := db.Fetch(app)
+
+	if err == db.ErrResourceNotFound {
+		return nil, errwrap.Wrap(ErrAppNotFound, err)
 	}
 
-	accountApps := []string{}
-	err = json.Unmarshal([]byte(resp.Kvs[0].Value), &accountApps)
+	return app, err
+}
 
-	if err != nil {
-		return nil, err
-	}
+func (app *Application) Destroy() error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Delete(app)
+	})
 
-	for _, appName := range accountApps {
-		appKey := fmt.Sprint("/apps/", appName)
-		resp, err = etcd.Client.Get(context.Background(), appKey)
+	return err
+}
+
+func (app *Application) Update(updates *Application) error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		err := db.Fetch(app)
 
 		if err != nil {
-			return result, err
+			tran.SetError(err)
+			return
 		}
 
-		app := Application{}
-
-		if len(resp.Kvs) != 0 {
-			err = json.Unmarshal([]byte(resp.Kvs[0].Value), &app)
-
-			if err != nil {
-				return result, err
-			}
-
-			result = append(result, app)
-		}
-	}
-
-	return result, nil
-}
-
-func (app *Application) Update(update *Application) error {
-	appKey := fmt.Sprint("/apps/", app.Name)
-
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(appKey, &Application{}, func(watchedKey interface{}) error {
-		app := *watchedKey.(*Application)
-
-		if update.GitRepository != "" {
-			app.GitRepository = update.GitRepository
+		if updates.GitRepository != "" {
+			app.GitRepository = updates.GitRepository
 		}
 
-		if update.Instances != 0 {
-			app.Instances = update.Instances
+		if updates.Instances != 0 {
+			app.Instances = updates.Instances
 		}
 
-		tran.PutJSON(appKey, app)
-
-		return nil
+		tran.Update(app)
 	})
 
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	if update.GitRepository != "" {
-		app.GitRepository = update.GitRepository
-	}
-
-	if update.Instances != 0 {
-		app.Instances = update.Instances
-	}
-
-	return nil
+	return err
 }
 
-func (app *Application) UpdateVersion(version string) error {
-	appKey := fmt.Sprint("/apps/", app.Name)
+func (app *Application) UpdateVersion(versionTag string) error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		err := db.Fetch(app)
 
-	tran := etcd.NewTransaction()
+		if err != nil {
+			tran.SetError(err)
+			return
+		}
 
-	tran.WatchJSON(appKey, &Application{}, func(watchedKey interface{}) error {
-		app := *watchedKey.(*Application)
+		app.VersionTag = versionTag
 
-		app.Version = version
-
-		tran.PutJSON(appKey, app)
-
-		return nil
+		tran.Update(app)
 	})
 
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	app.Version = version
-
-	return nil
+	return err
 }
 
 func (app *Application) SwarmServiceName() string {
@@ -180,16 +139,4 @@ func (app *Application) SwarmServiceName() string {
 
 func (app *Application) SwarmInstances() int {
 	return app.Instances
-}
-
-func FindAppByName(name string) (app Application, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/apps/%s", name), &app)
-
-	if err != nil {
-		return app, err
-	} else if !found {
-		return app, errors.New("app not found")
-	} else {
-		return app, nil
-	}
 }

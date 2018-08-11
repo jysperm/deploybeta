@@ -24,7 +24,7 @@ func AuthenticateMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return NewHTTPError(http.StatusUnauthorized, err)
 		}
 
-		ctx.Set("account", &account)
+		ctx.Set("account", account)
 
 		return next(ctx)
 	}
@@ -34,7 +34,9 @@ func AppOwnerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		account := GetSessionAccount(ctx)
 		appName := ctx.Param("name")
-		apps, err := models.GetAppsOfAccount(account)
+
+		apps := make([]models.Application, 0)
+		err := account.Apps().FetchAll(&apps)
 
 		if err != nil {
 			return NewHTTPError(http.StatusInternalServerError, err)

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/db"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/docker/docker/api/types"
@@ -89,7 +89,7 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 		return nil, err
 	}
 
-	err = version.Save()
+	err = version.Create()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag s
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	if _, err := etcd.Client.Put(context.Background(), eventKey, string(e), etcdv3.WithLease(lease.ID)); err != nil {
+	if _, err := db.Client.Put(context.Background(), eventKey, string(e), etcdv3.WithLease(lease.ID)); err != nil {
 		return err
 	}
 	return nil
@@ -119,14 +119,14 @@ func wrtieEvent(app *models.Application, lease *etcdv3.LeaseGrantResponse, tag s
 func wrtieProgress(app *models.Application, version *models.Version, r io.ReadCloser) {
 	defer r.Close()
 
-	ttl, err := etcd.Client.Lease.Grant(context.Background(), defaultTTL)
+	ttl, err := db.Client.Lease.Grant(context.Background(), defaultTTL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	reader := bufio.NewReader(r)
 
 	for {
-		if _, err := etcd.Client.KeepAlive(context.Background(), ttl.ID); err != nil {
+		if _, err := db.Client.KeepAlive(context.Background(), ttl.ID); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 

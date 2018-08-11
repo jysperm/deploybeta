@@ -1,24 +1,39 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/jysperm/deploybeta/config"
+	"github.com/hashicorp/errwrap"
 
-	etcdv3 "github.com/coreos/etcd/clientv3"
-	"github.com/jysperm/deploybeta/lib/etcd"
-	"golang.org/x/net/context"
+	"github.com/jysperm/deploybeta/config"
+	"github.com/jysperm/deploybeta/lib/db"
 )
 
-// Serialize to /apps/:appName/versions/:tag
+var ErrVersionNotFound = errors.New("version not found")
+
 type Version struct {
+	db.ResourceMeta
+
 	AppName  string `json:"appName"`
 	Tag      string `json:"tag"`
 	Registry string `json:"registry"`
 	Status   string `json:"status"`
+}
+
+func (version *Version) ResourceKey() string {
+	return fmt.Sprintf("/apps/%s/versions/%s", version.AppName, version.Tag)
+}
+
+func (version *Version) Associations() []db.Association {
+	return []db.Association{
+		version.App(),
+	}
+}
+
+func (version *Version) App() db.BelongsToAssociation {
+	return db.BelongsTo((&Application{Name: version.AppName}).ResourceKey())
 }
 
 func NewVersion(app *Application) Version {
@@ -30,104 +45,60 @@ func NewVersion(app *Application) Version {
 	}
 }
 
-func (version *Version) Save() error {
-	tran := etcd.NewTransaction()
-	tran.CreateJSON(version.etcdKey(), version)
-	return tran.ExecuteMustSuccess()
+func FindVersionByTag(app *Application, tag string) (*Version, error) {
+	version := &Version{
+		AppName: app.Name,
+		Tag:     tag,
+	}
+
+	err := db.Fetch(version)
+
+	if err == db.ErrResourceNotFound {
+		return nil, errwrap.Wrap(ErrVersionNotFound, err)
+	}
+
+	return version, err
 }
 
-func DeleteVersionByTag(app *Application, tag string) error {
-	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag)
+func (version *Version) Create() error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Create(version)
+	})
 
-	if _, err := etcd.Client.Delete(context.Background(), versionKey); err != nil {
-		return err
+	if err != nil {
+		return errwrap.Wrapf("create version: {{err}}", err)
 	}
 
 	return nil
 }
 
-func FindVersionByTag(app *Application, tag string) (version Version, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/apps/%s/versions/%s", app.Name, tag), &version)
+func (version *Version) Destroy() error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Delete(version)
+	})
 
-	if err != nil {
-		return version, err
-	} else if !found {
-		return version, errors.New("version not found")
-	} else {
-		return version, nil
-	}
+	return err
 }
 
-func ListVersions(app *Application) (*[]Version, error) {
-	versionPrefix := fmt.Sprintf("/apps/%s/versions/", app.Name)
+func (version *Version) UpdateStatus(app *Application, status string) error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		err := db.Fetch(version)
 
-	res, err := etcd.Client.Get(context.Background(), versionPrefix, etcdv3.WithPrefix())
-	if err != nil {
-		return &[]Version{}, err
-	}
-
-	var versionArray []Version
-
-	for _, v := range res.Kvs {
-		var t Version
-		_ = json.Unmarshal(v.Value, &t)
-		versionArray = append(versionArray, t)
-	}
-
-	if len(versionArray) == 0 {
-		return &[]Version{}, nil
-	}
-
-	return &versionArray, nil
-}
-
-func DeleteAllVersion(app *Application) error {
-	versionPrefix := fmt.Sprintf("/apps/%s/versions/", app.Name)
-
-	_, err := etcd.Client.Delete(context.Background(), versionPrefix, etcdv3.WithPrefix())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (v *Version) UpdateStatus(app *Application, status string) error {
-	versionKey := fmt.Sprintf("/apps/%s/versions/%s", app.Name, v.Tag)
-
-	tran := etcd.NewTransaction()
-
-	tran.WatchJSON(versionKey, &Version{}, func(watchedKey interface{}) error {
-		version := *watchedKey.(*Version)
+		if err != nil {
+			tran.SetError(err)
+			return
+		}
 
 		version.Status = status
 
-		tran.PutJSON(versionKey, version)
-
-		return nil
+		tran.Update(version)
 	})
 
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUpdateConflict
-	}
-
-	v.Status = status
-
-	return nil
+	return err
 }
 
 func (version *Version) DockerImageName() string {
 	return fmt.Sprintf("%s/%s%s:%s", version.Registry, config.DockerPrefix, version.AppName, version.Tag)
-}
-
-func (version *Version) etcdKey() string {
-	return fmt.Sprintf("/apps/%s/versions/%s", version.AppName, version.Tag)
 }
 
 func newVersionTag() string {

@@ -5,29 +5,88 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/hashicorp/errwrap"
+	"github.com/jysperm/deploybeta/lib/db"
 
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/net/context"
 )
 
 var ErrInvalidUsername = errors.New("invalid username")
 var ErrUsernameConflict = errors.New("username conflict")
 var ErrAccountNotFound = errors.New("account not found")
 
+var regexValidUsername = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
 type Account struct {
+	db.ResourceMeta
+
 	Username     string `json:"username"`
 	PasswordHash string `json:"passwordHash"`
 	Email        string `json:"email"`
 }
 
-var validUsername = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+func (account *Account) ResourceKey() string {
+	return fmt.Sprintf("/accounts/%s", account.Username)
+}
+
+func (account *Account) Associations() []db.Association {
+	return []db.Association{
+		account.Apps(),
+		account.DataSources(),
+	}
+}
+
+func (account *Account) Apps() db.HasManyAssociation {
+	return db.HasManyThrough(fmt.Sprintf("/accounts/%s/apps", account.Username))
+}
+
+func (account *Account) DataSources() db.HasManyAssociation {
+	return db.HasManyThrough(fmt.Sprintf("/accounts/%s/data-sources", account.Username))
+}
 
 func RegisterAccount(account *Account, password string) error {
-	if !validUsername.MatchString(account.Username) {
+	if !regexValidUsername.MatchString(account.Username) {
 		return ErrInvalidUsername
 	}
 
+	account.SetPassword(password)
+
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Create(account)
+	})
+
+	if err == db.ErrEtcdTransactionFailed {
+		return errwrap.Wrap(ErrUsernameConflict, err)
+	} else if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FindAccountByName(username string) (*Account, error) {
+	account := &Account{
+		Username: username,
+	}
+
+	err := db.Fetch(account)
+
+	if err == db.ErrResourceNotFound {
+		return nil, errwrap.Wrap(ErrAccountNotFound, err)
+	}
+
+	return account, err
+}
+
+func (account *Account) Destroy() error {
+	_, err := db.StartTransaction(func(tran *db.Transaction) {
+		tran.Delete(account)
+	})
+
+	return err
+}
+
+func (account *Account) SetPassword(password string) error {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
@@ -36,43 +95,7 @@ func RegisterAccount(account *Account, password string) error {
 
 	account.PasswordHash = string(passwordHash)
 
-	accountKey := fmt.Sprint("/accounts/", account.Username)
-
-	tran := etcd.NewTransaction()
-
-	tran.CreateJSON(accountKey, account)
-
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrUsernameConflict
-	}
-
 	return nil
-}
-
-func FindAccountByName(username string) (account Account, err error) {
-	found, err := etcd.LoadKey(fmt.Sprintf("/accounts/%s", username), &account)
-
-	if err != nil {
-		return account, err
-	} else if !found {
-		return account, ErrAccountNotFound
-	} else {
-		return account, nil
-	}
-}
-
-func DeleteAccountByName(username string) error {
-	accountKey := fmt.Sprint("/accounts/", username)
-
-	_, err := etcd.Client.Delete(context.Background(), accountKey)
-
-	return err
 }
 
 func (account *Account) ComparePassword(password string) error {

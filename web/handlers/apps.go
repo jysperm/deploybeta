@@ -118,8 +118,7 @@ func UpdateApp(ctx echo.Context) error {
 	}
 
 	if err := swarm.UpdateAppService(&app); err != nil {
-		err := errwrap.Wrapf("apply changes to swarm: {{err}}", err)
-		return NewHTTPError(http.StatusInternalServerError, err)
+		return NewHTTPError(http.StatusInternalServerError, errwrap.Wrapf("apply changes to swarm: {{err}}", err))
 	}
 
 	return ctx.JSON(http.StatusOK, NewApplicationResponse(&app, nil, nil))

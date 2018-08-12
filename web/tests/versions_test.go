@@ -18,7 +18,7 @@ func TestCreateVersion(t *testing.T) {
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "dep",
+			"gitTag": "golang-dep-echo",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
@@ -64,7 +64,7 @@ func TestDeployVersion(t *testing.T) {
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "yarn",
+			"gitTag": "nodejs-yarn-express",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Error(errs)
@@ -115,7 +115,7 @@ func TestPushProgress(t *testing.T) {
 	res, body, errs := Request("POST", requestPath).
 		Set("Authorization", globalSession.Token).
 		SendStruct(map[string]string{
-			"gitTag": "npm",
+			"gitTag": "nodejs-npm-express",
 		}).EndBytes()
 	if res.StatusCode != 201 || len(errs) != 0 {
 		t.Fatal(errs)

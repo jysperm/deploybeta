@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/buger/jsonparser"
@@ -152,12 +150,12 @@ func UnlinkDataSource(ctx echo.Context) error {
 func DeleteDataSource(ctx echo.Context) error {
 	dataSource := GetDataSourceInfo(ctx)
 
-	if err := swarm.RemoveDataSource(dataSource); err != nil {
-		fmt.Fprintln(os.Stderr, errwrap.Wrapf("remove dataSource service: {{err}}", err).Error())
-	}
-
 	if err := dataSource.Destroy(); err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if err := swarm.RemoveDataSource(dataSource); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, errwrap.Wrapf("remove dataSource service: {{err}}", err))
 	}
 
 	return ctx.String(http.StatusOK, "")

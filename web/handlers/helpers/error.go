@@ -28,7 +28,7 @@ func HTTPErrorHandler(err error, ctx echo.Context) {
 		msg = map[string]interface{}{"message": msg}
 	}
 
-	log.Println(ctx.Path(), err)
+	log.Println(ctx.Request().Method, ctx.Path(), err)
 
 	if !ctx.Response().Committed {
 		if ctx.Request().Method == echo.HEAD {

@@ -90,7 +90,7 @@ func DataSourceAgentMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return NewHTTPError(http.StatusUnauthorized, errors.New("invalid agent token"))
 		}
 
-		ctx.Set("dataSource", &dataSource)
+		ctx.Set("dataSource", dataSource)
 
 		return next(ctx)
 	}
@@ -106,7 +106,7 @@ func DataSourceNodeMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return NewHTTPError(http.StatusBadRequest, errwrap.Wrapf("find dataSource node: {{err}}", err))
 		}
 
-		ctx.Set("dataSourceNode", &dataSouceNode)
+		ctx.Set("dataSourceNode", dataSouceNode)
 
 		return next(ctx)
 	}

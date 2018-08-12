@@ -1,13 +1,12 @@
 package tests
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"testing"
 
 	"github.com/jysperm/deploybeta/config"
 	"github.com/jysperm/deploybeta/lib/models"
-	"github.com/jysperm/deploybeta/lib/swarm"
 	. "github.com/jysperm/deploybeta/lib/testing"
 	"github.com/jysperm/deploybeta/web"
 )
@@ -23,14 +22,21 @@ var globalApp models.Application
 func TestMain(m *testing.M) {
 	globalAccount, _ = SeedAccount()
 	globalSession = SeedSession(&globalAccount)
-	globalApp = SeedApp("https://github.com/jysperm/deploying-samples.git", globalAccount.Username)
+	globalApp = SeedApp("https://github.com/jysperm/deploybeta-samples.git", globalAccount.Username)
 
-	fmt.Println(globalAccount)
+	exitCode := m.Run()
 
-	exitVal := m.Run()
+	if err := globalSession.Destroy(); err != nil {
+		log.Println(err)
+	}
 
-	models.DeleteSessionByToken(globalSession.Token)
-	models.DeleteAccountByName(globalAccount.Username)
-	swarm.RemoveService(&globalApp)
-	os.Exit(exitVal)
+	if err := globalAccount.Destroy(); err != nil {
+		log.Println(err)
+	}
+
+	if err := globalApp.Destroy(); err != nil {
+		log.Println(err)
+	}
+
+	os.Exit(exitCode)
 }

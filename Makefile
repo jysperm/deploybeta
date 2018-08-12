@@ -22,13 +22,15 @@ test:
 	go test -v $(REPO)
 	go test -v $(REPO)/config
 	go test -v $(REPO)/lib/builder
-	go test -v $(REPO)/lib/etcd
+	go test -v $(REPO)/lib/datasources
+	go test -v $(REPO)/lib/db
 	go test -v $(REPO)/lib/models
 	go test -v $(REPO)/lib/runtimes
 	go test -v $(REPO)/lib/swarm
 	go test -v $(REPO)/lib/testing
 	go test -v $(REPO)/lib/utils
 	go test -v $(REPO)/web/handlers
+	go test -v $(REPO)/web/handlers/helpers
 	go test -v $(REPO)/web/tests
 
 clean:

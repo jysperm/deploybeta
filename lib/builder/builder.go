@@ -44,6 +44,8 @@ type buildEvent struct {
 }
 
 func BuildVersion(app *models.Application, gitTag string) (*models.Version, error) {
+	fmt.Printf("Clone from %s\n", app.GitRepository)
+
 	dirPath, err := cloneRepository(app.GitRepository, gitTag)
 	if err != nil {
 		return nil, err
@@ -72,6 +74,8 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 	defer os.RemoveAll(dirPath)
 
 	version := models.NewVersion(app)
+
+	fmt.Printf("Building image %s\n", version.DockerImageName())
 
 	res, err := swarmClient.ImageBuild(context.Background(), buildCtx, types.ImageBuildOptions{
 		Tags:           []string{version.DockerImageName()},

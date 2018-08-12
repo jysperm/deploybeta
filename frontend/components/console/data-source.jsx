@@ -173,7 +173,7 @@ class EditLinksModal extends FormComponent {
         {this.props.apps.map( app => {
           let checked = _.includes(this.state.linkedApps, app.name);
 
-          return <Checkbox key={app.name} value={checked} onChange={this.onCheckChanged.bind(this, app.name)}>
+          return <Checkbox key={app.name} checked={checked} onChange={this.onCheckChanged.bind(this, app.name)}>
             {app.name}
           </Checkbox>;
         })}
@@ -190,11 +190,11 @@ class EditLinksModal extends FormComponent {
     }).then( () => {
       if (target.checked) {
         this.setState({
-          linkedApps: _.union(this.state.linkedApps, [appName])
+          linkedApps: _.without(this.state.linkedApps, appName)
         });
       } else {
         this.setState({
-          linkedApps: _.without(this.state.linkedApps, appName)
+          linkedApps: _.union(this.state.linkedApps, [appName])
         });
       }
     }).catch(alertError);

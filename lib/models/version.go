@@ -61,7 +61,7 @@ func FindVersionByTag(app *Application, tag string) (*Version, error) {
 }
 
 func (version *Version) Create() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(version)
 	})
 
@@ -73,7 +73,7 @@ func (version *Version) Create() error {
 }
 
 func (version *Version) Destroy() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Delete(version)
 	})
 
@@ -81,7 +81,7 @@ func (version *Version) Destroy() error {
 }
 
 func (version *Version) UpdateStatus(app *Application, status string) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		err := db.Fetch(version)
 
 		if err != nil {

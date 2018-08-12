@@ -51,7 +51,7 @@ func RegisterAccount(account *Account, password string) error {
 
 	account.SetPassword(password)
 
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(account)
 	})
 
@@ -79,7 +79,7 @@ func FindAccountByName(username string) (*Account, error) {
 }
 
 func (account *Account) Destroy() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Delete(account)
 	})
 

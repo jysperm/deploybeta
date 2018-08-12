@@ -104,7 +104,7 @@ func CreateDataSource(dataSource *DataSource) error {
 
 	dataSource.AgentToken = utils.RandomString(32)
 
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(dataSource)
 	})
 
@@ -140,7 +140,7 @@ func GetDataSourceOfAccount(dataSourceName string, account *Account) (*DataSourc
 }
 
 func (dataSource *DataSource) UpdateInstances(instances int) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		err := db.Fetch(dataSource)
 
 		if err != nil {
@@ -157,7 +157,7 @@ func (dataSource *DataSource) UpdateInstances(instances int) error {
 }
 
 func (dataSource *DataSource) LinkApp(app *Application) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		app.DataSources().Attach(tran, dataSource)
 		dataSource.Apps().Attach(tran, app)
 	})
@@ -166,7 +166,7 @@ func (dataSource *DataSource) LinkApp(app *Application) error {
 }
 
 func (dataSource *DataSource) UnlinkApp(app *Application) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		app.DataSources().Detach(tran, dataSource)
 		dataSource.Apps().Detach(tran, app)
 	})
@@ -187,7 +187,7 @@ func (dataSource *DataSource) SwarmInstances() int {
 }
 
 func (dataSource *DataSource) Destroy() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Delete(dataSource)
 	})
 
@@ -212,7 +212,7 @@ func (dataSource *DataSource) FindNodeByHost(host string) (*DataSourceNode, erro
 func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
 	node.DataSourceName = dataSource.Name
 
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(node)
 	})
 
@@ -224,7 +224,7 @@ func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
 }
 
 func (node *DataSourceNode) SetMaster() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		err := db.Fetch(node)
 
 		if err != nil {
@@ -241,7 +241,7 @@ func (node *DataSourceNode) SetMaster() error {
 }
 
 func (node *DataSourceNode) Update(updates *DataSourceNode) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		err := db.Fetch(node)
 
 		if err != nil {

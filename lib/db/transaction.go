@@ -12,31 +12,29 @@ import (
 
 var ErrEtcdTransactionFailed = errors.New("etcd transaction failed")
 
-type Transaction struct {
-	compares   []etcdv3.Cmp
-	successOps []etcdv3.Op
-	failedOps  []etcdv3.Op
-	err        error
+// Transaction represents a Txn operation of Etcd.
+type Transaction interface {
+	Put(resource Resource)
+	Create(resource Resource)
+	Update(resource Resource)
+	Remove(resource Resource)
+	Delete(resource Resource)
+	DeleteKey(key string)
+	DeletePrefix(prefix string)
+
+	AddToStringSet(key string, value string)
+	PullfromStringSet(key string, value string)
+
+	SetError(err error)
+	Execute(updaters ...func() error) (*etcdv3.TxnResponse, error)
 }
 
-func RetryTransaction(updater func(tran *Transaction)) (*etcdv3.TxnResponse, error) {
-	for attempts := 1; attempts <= 3; attempts++ {
-		resp, err := StartTransaction(updater)
-
-		if err == ErrEtcdTransactionFailed {
-			continue
-		} else if err != nil {
-			return nil, err
-		} else {
-			return resp, nil
-		}
-	}
-
-	return nil, ErrEtcdTransactionFailed
+func NewTransaction() Transaction {
+	return &transaction{}
 }
 
-func StartTransaction(updater func(tran *Transaction)) (*etcdv3.TxnResponse, error) {
-	tran := &Transaction{}
+func StartTransaction(updater func(tran Transaction)) (*etcdv3.TxnResponse, error) {
+	tran := NewTransaction()
 
 	updater(tran)
 
@@ -53,7 +51,48 @@ func StartTransaction(updater func(tran *Transaction)) (*etcdv3.TxnResponse, err
 	return resp, nil
 }
 
-func (tran *Transaction) Create(resource Resource) {
+func RetryTransaction(updater func(tran Transaction)) (*etcdv3.TxnResponse, error) {
+	for attempts := 1; attempts <= 3; attempts++ {
+		resp, err := StartTransaction(updater)
+
+		if err == ErrEtcdTransactionFailed {
+			continue
+		} else if err != nil {
+			return nil, err
+		} else {
+			return resp, nil
+		}
+	}
+
+	return nil, ErrEtcdTransactionFailed
+}
+
+type transaction struct {
+	compares   []etcdv3.Cmp
+	successOps []etcdv3.Op
+	failedOps  []etcdv3.Op
+	err        error
+}
+
+func (tran *transaction) Put(resource Resource) {
+	key := resource.ResourceKey()
+
+	for _, association := range resource.Associations() {
+		association.onCreate(tran, resource)
+	}
+
+	dataBytes, err := json.Marshal(resource)
+
+	if err != nil {
+		tran.SetError(err)
+	} else {
+		successOp := etcdv3.OpPut(key, string(dataBytes))
+
+		tran.successOps = append(tran.successOps, successOp)
+	}
+}
+
+func (tran *transaction) Create(resource Resource) {
 	key := resource.ResourceKey()
 
 	for _, association := range resource.Associations() {
@@ -73,27 +112,66 @@ func (tran *Transaction) Create(resource Resource) {
 	}
 }
 
-func (tran *Transaction) AddToStringSet(key string, value string) {
-	resp, err := client.Get(context.Background(), key)
+func (tran *transaction) Update(resource Resource) {
+	key := resource.ResourceKey()
+	dataBytes, err := json.Marshal(resource)
+
+	if err != nil {
+		tran.SetError(err)
+	} else {
+		compare := etcdv3.Compare(etcdv3.Version(key), "=", resource.GetResourceMeta().EtcdVersion)
+		successOp := etcdv3.OpPut(key, string(dataBytes))
+
+		tran.compares = append(tran.compares, compare)
+		tran.successOps = append(tran.successOps, successOp)
+	}
+}
+
+func (tran *transaction) Remove(resource Resource) {
+	key := resource.ResourceKey()
+
+	for _, association := range resource.Associations() {
+		association.onDelete(tran, resource)
+	}
+
+	compare := etcdv3.Compare(etcdv3.CreateRevision(key), "!=", 0)
+	successOp := etcdv3.OpDelete(key)
+
+	tran.compares = append(tran.compares, compare)
+	tran.successOps = append(tran.successOps, successOp)
+}
+
+func (tran *transaction) Delete(resource Resource) {
+	for _, association := range resource.Associations() {
+		association.onDelete(tran, resource)
+	}
+
+	DeleteKey(resource.ResourceKey())
+}
+
+func (tran *transaction) DeleteKey(key string) {
+	successOp := etcdv3.OpDelete(key)
+
+	tran.successOps = append(tran.successOps, successOp)
+}
+
+func (tran *transaction) DeletePrefix(prefix string) {
+	successOp := etcdv3.OpDelete(prefix, etcdv3.WithPrefix())
+
+	tran.successOps = append(tran.successOps, successOp)
+}
+
+func (tran *transaction) AddToStringSet(key string, value string) {
+	values := []string{}
+	kv, err := FetchJSON(key, &values)
 
 	if err != nil {
 		tran.SetError(err)
 		return
 	}
 
-	values := []string{}
-
-	if len(resp.Kvs) > 0 {
-		keyValue := resp.Kvs[0]
-
-		err = json.Unmarshal([]byte(keyValue.Value), &values)
-
-		if err != nil {
-			tran.SetError(err)
-			return
-		}
-
-		tran.compares = append(tran.compares, etcdv3.Compare(etcdv3.Version(key), "=", keyValue.Version))
+	if kv != nil {
+		tran.compares = append(tran.compares, etcdv3.Compare(etcdv3.Version(key), "=", kv.Version))
 	} else {
 		tran.compares = append(tran.compares, etcdv3.Compare(etcdv3.CreateRevision(key), "=", 0))
 	}
@@ -109,108 +187,40 @@ func (tran *Transaction) AddToStringSet(key string, value string) {
 	}
 }
 
-func (tran *Transaction) PullfromStringSet(key string, value string) {
-	resp, err := client.Get(context.Background(), key)
+func (tran *transaction) PullfromStringSet(key string, value string) {
+	values := []string{}
+	kv, err := FetchJSON(key, &values)
 
 	if err != nil {
 		tran.SetError(err)
 		return
 	}
 
-	values := []string{}
+	if kv != nil {
+		tran.compares = append(tran.compares, etcdv3.Compare(etcdv3.Version(key), "=", kv.Version))
 
-	if len(resp.Kvs) > 0 {
-		keyValue := resp.Kvs[0]
+		values = utils.PullStringFromSlice(values, value)
 
-		err = json.Unmarshal([]byte(keyValue.Value), &values)
+		dataBytes, err := json.Marshal(values)
 
 		if err != nil {
 			tran.SetError(err)
-			return
+		} else {
+			tran.successOps = append(tran.successOps, etcdv3.OpPut(key, string(dataBytes)))
 		}
 
-		tran.compares = append(tran.compares, etcdv3.Compare(etcdv3.Version(key), "=", keyValue.Version))
 	} else {
 		tran.compares = append(tran.compares, etcdv3.Compare(etcdv3.CreateRevision(key), "=", 0))
 	}
-
-	values = utils.PullStringFromSlice(values, value)
-
-	dataBytes, err := json.Marshal(values)
-
-	if err != nil {
-		tran.SetError(err)
-	} else {
-		tran.successOps = append(tran.successOps, etcdv3.OpPut(key, string(dataBytes)))
-	}
 }
 
-func (tran *Transaction) SetError(err error) {
+func (tran *transaction) SetError(err error) {
 	if tran.err == nil {
 		tran.err = err
 	}
 }
 
-func (tran *Transaction) Put(resource Resource) {
-	key := resource.ResourceKey()
-
-	for _, association := range resource.Associations() {
-		association.onCreate(tran, resource)
-	}
-
-	dataBytes, err := json.Marshal(resource)
-
-	if err != nil {
-		tran.SetError(err)
-	} else {
-		successOp := etcdv3.OpPut(key, string(dataBytes))
-
-		tran.successOps = append(tran.successOps, successOp)
-	}
-}
-
-func (tran *Transaction) Update(resource Resource) {
-	key := resource.ResourceKey()
-	dataBytes, err := json.Marshal(resource)
-
-	if err != nil {
-		tran.SetError(err)
-	} else {
-		compare := etcdv3.Compare(etcdv3.Version(key), "=", resource.GetResourceMeta().EtcdVersion)
-		successOp := etcdv3.OpPut(key, string(dataBytes))
-
-		tran.compares = append(tran.compares, compare)
-		tran.successOps = append(tran.successOps, successOp)
-	}
-}
-
-func (tran *Transaction) Remove(resource Resource) {
-	key := resource.ResourceKey()
-
-	for _, association := range resource.Associations() {
-		association.onDelete(tran, resource)
-	}
-
-	compare := etcdv3.Compare(etcdv3.CreateRevision(key), "!=", 0)
-	successOp := etcdv3.OpDelete(key)
-
-	tran.compares = append(tran.compares, compare)
-	tran.successOps = append(tran.successOps, successOp)
-}
-
-func (tran *Transaction) Delete(resource Resource) {
-	key := resource.ResourceKey()
-
-	for _, association := range resource.Associations() {
-		association.onDelete(tran, resource)
-	}
-
-	successOp := etcdv3.OpDelete(key)
-
-	tran.successOps = append(tran.successOps, successOp)
-}
-
-func (tran *Transaction) Execute(updaters ...func() error) (*etcdv3.TxnResponse, error) {
+func (tran *transaction) Execute(updaters ...func() error) (*etcdv3.TxnResponse, error) {
 	if tran.err != nil {
 		return nil, tran.err
 	}
@@ -228,18 +238,4 @@ func (tran *Transaction) Execute(updaters ...func() error) (*etcdv3.TxnResponse,
 		Then(tran.successOps...).
 		Else(tran.failedOps...).
 		Commit()
-}
-
-func (tran *Transaction) ExecuteMustSuccess() error {
-	resp, err := tran.Execute()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.Succeeded == false {
-		return ErrEtcdTransactionFailed
-	}
-
-	return nil
 }

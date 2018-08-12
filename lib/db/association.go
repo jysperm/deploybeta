@@ -9,32 +9,33 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Association represents relationships between Resource, includes HasMany, HasOne and BelongsTo association.
 type Association interface {
-	onCreate(tran *Transaction, resource Resource)
-	onDelete(tran *Transaction, resource Resource)
+	onCreate(tran Transaction, resource Resource)
+	onDelete(tran Transaction, resource Resource)
 }
 
 type HasManyAssociation interface {
 	FetchAll(resources interface{}) error
-	Attach(tran *Transaction, resource Resource)
-	Detach(tran *Transaction, resource Resource)
+	Attach(tran Transaction, resource Resource)
+	Detach(tran Transaction, resource Resource)
 
-	onCreate(tran *Transaction, resource Resource)
-	onDelete(tran *Transaction, resource Resource)
+	onCreate(tran Transaction, resource Resource)
+	onDelete(tran Transaction, resource Resource)
 }
 
 type HasOneAssociation interface {
 	Fetch(resource Resource) error
 
-	onCreate(tran *Transaction, resource Resource)
-	onDelete(tran *Transaction, resource Resource)
+	onCreate(tran Transaction, resource Resource)
+	onDelete(tran Transaction, resource Resource)
 }
 
 type BelongsToAssociation interface {
 	Fetch(resource Resource) error
 
-	onCreate(tran *Transaction, resource Resource)
-	onDelete(tran *Transaction, resource Resource)
+	onCreate(tran Transaction, resource Resource)
+	onDelete(tran Transaction, resource Resource)
 }
 
 func HasManyThrough(key string) HasManyAssociation {
@@ -71,7 +72,8 @@ func BelongsTo(relatedKey string, belongToKeys ...string) BelongsToAssociation {
 }
 
 type hasManyThroughAssociation struct {
-	relatedKey string
+	relatedKey    string
+	cascadeDelete bool
 }
 
 func (assoc *hasManyThroughAssociation) FetchAll(resources interface{}) error {
@@ -109,22 +111,24 @@ func (assoc *hasManyThroughAssociation) FetchAll(resources interface{}) error {
 	return json.Unmarshal(resourcesBytes.Bytes(), resources)
 }
 
-func (assoc *hasManyThroughAssociation) onCreate(tran *Transaction, resource Resource) {
+func (assoc *hasManyThroughAssociation) onCreate(tran Transaction, resource Resource) {
 }
 
-func (assoc *hasManyThroughAssociation) onDelete(tran *Transaction, resource Resource) {
+func (assoc *hasManyThroughAssociation) onDelete(tran Transaction, resource Resource) {
+	tran.DeleteKey(assoc.relatedKey)
 }
 
-func (assoc *hasManyThroughAssociation) Attach(tran *Transaction, resource Resource) {
+func (assoc *hasManyThroughAssociation) Attach(tran Transaction, resource Resource) {
 	tran.AddToStringSet(assoc.relatedKey, resource.ResourceKey())
 }
 
-func (assoc *hasManyThroughAssociation) Detach(tran *Transaction, resource Resource) {
+func (assoc *hasManyThroughAssociation) Detach(tran Transaction, resource Resource) {
 	tran.PullfromStringSet(assoc.relatedKey, resource.ResourceKey())
 }
 
 type hasManyPrefixAssociation struct {
 	relatedPrefix string
+	cascadeDelete bool
 }
 
 func (assoc *hasManyPrefixAssociation) FetchAll(resources interface{}) error {
@@ -148,17 +152,18 @@ func (assoc *hasManyPrefixAssociation) FetchAll(resources interface{}) error {
 	return json.Unmarshal(resourcesBytes.Bytes(), resources)
 }
 
-func (assoc *hasManyPrefixAssociation) onCreate(tran *Transaction, resource Resource) {
+func (assoc *hasManyPrefixAssociation) onCreate(tran Transaction, resource Resource) {
 }
 
-func (assoc *hasManyPrefixAssociation) onDelete(tran *Transaction, resource Resource) {
+func (assoc *hasManyPrefixAssociation) onDelete(tran Transaction, resource Resource) {
+	tran.DeletePrefix(assoc.relatedPrefix)
 }
 
-func (assoc *hasManyPrefixAssociation) Attach(tran *Transaction, resource Resource) {
+func (assoc *hasManyPrefixAssociation) Attach(tran Transaction, resource Resource) {
 	panic("can not attach to HasManyPrefix association")
 }
 
-func (assoc *hasManyPrefixAssociation) Detach(tran *Transaction, resource Resource) {
+func (assoc *hasManyPrefixAssociation) Detach(tran Transaction, resource Resource) {
 	panic("can not detach from HasManyPrefix association")
 }
 
@@ -170,10 +175,10 @@ func (assoc *hasOneAssociation) Fetch(resource Resource) error {
 	return FetchFrom(assoc.relatedKey, resource)
 }
 
-func (assoc *hasOneAssociation) onCreate(tran *Transaction, resource Resource) {
+func (assoc *hasOneAssociation) onCreate(tran Transaction, resource Resource) {
 }
 
-func (assoc *hasOneAssociation) onDelete(tran *Transaction, resource Resource) {
+func (assoc *hasOneAssociation) onDelete(tran Transaction, resource Resource) {
 }
 
 type belongsToAssociation struct {
@@ -185,13 +190,13 @@ func (assoc *belongsToAssociation) Fetch(resource Resource) error {
 	return FetchFrom(assoc.relatedKey, resource)
 }
 
-func (assoc *belongsToAssociation) onCreate(tran *Transaction, resource Resource) {
+func (assoc *belongsToAssociation) onCreate(tran Transaction, resource Resource) {
 	if assoc.belongToKey != "" {
 		tran.AddToStringSet(assoc.belongToKey, resource.ResourceKey())
 	}
 }
 
-func (assoc *belongsToAssociation) onDelete(tran *Transaction, resource Resource) {
+func (assoc *belongsToAssociation) onDelete(tran Transaction, resource Resource) {
 	if assoc.belongToKey != "" {
 		tran.PullfromStringSet(assoc.belongToKey, resource.ResourceKey())
 	}

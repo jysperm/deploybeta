@@ -38,7 +38,7 @@ func CreateSession(account *Account) (*Session, error) {
 		Username: account.Username,
 	}
 
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(session)
 	})
 
@@ -60,7 +60,7 @@ func FindSessionByToken(token string) (*Session, error) {
 }
 
 func (session *Session) Destroy() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Delete(session)
 	})
 

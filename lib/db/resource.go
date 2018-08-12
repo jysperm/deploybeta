@@ -9,6 +9,7 @@ import (
 
 var ErrResourceNotFound = errors.New("resource not found")
 
+// Resource represents a Golang struct can store in Etcd, in JSON serialization.
 type Resource interface {
 	ResourceKey() string
 	Associations() []Association

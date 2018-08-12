@@ -54,7 +54,7 @@ func (app *Application) Versions() db.HasManyAssociation {
 }
 
 func (app *Application) DataSources() db.HasManyAssociation {
-	return db.HasManyPrefix(fmt.Sprintf("/apps/%s/data-sources", app.Name))
+	return db.HasManyThrough(fmt.Sprintf("/apps/%s/data-sources", app.Name))
 }
 
 var validName = regexp.MustCompile(`^[a-z0-9_-]+$`)
@@ -64,7 +64,7 @@ func CreateApp(app *Application) error {
 		return ErrInvalidName
 	}
 
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(app)
 	})
 
@@ -86,7 +86,7 @@ func FindAppByName(name string) (*Application, error) {
 }
 
 func (app *Application) Destroy() error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Delete(app)
 	})
 
@@ -94,7 +94,7 @@ func (app *Application) Destroy() error {
 }
 
 func (app *Application) Update(updates *Application) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		err := db.Fetch(app)
 
 		if err != nil {
@@ -117,7 +117,7 @@ func (app *Application) Update(updates *Application) error {
 }
 
 func (app *Application) UpdateVersion(versionTag string) error {
-	_, err := db.StartTransaction(func(tran *db.Transaction) {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
 		err := db.Fetch(app)
 
 		if err != nil {

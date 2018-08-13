@@ -39,7 +39,7 @@ func SeedApp(gitRepository string, owner string) models.Application {
 		Name:          strings.ToLower(utils.RandomString(10)),
 		GitRepository: gitRepository,
 		Instances:     1,
-		Owner:         owner,
+		OwnerUsername: owner,
 	}
 
 	if err := models.CreateApp(&app); err != nil {

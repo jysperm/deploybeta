@@ -9,6 +9,14 @@ func StringInSlice(list []string, str string) bool {
 	return false
 }
 
+func AddStringToUniqueSlice(list []string, str string) []string {
+	if StringInSlice(list, str) {
+		return list
+	} else {
+		return append(list, str)
+	}
+}
+
 func PullStringFromSlice(list []string, str string) []string {
 	result := make([]string, 0)
 

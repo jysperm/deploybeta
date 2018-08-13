@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/swarm"
 	. "github.com/jysperm/deploybeta/lib/testing"
 	"github.com/jysperm/deploybeta/lib/utils"
 )
@@ -36,13 +38,27 @@ func TestListDataSources(t *testing.T) {
 }
 
 func TestCreateDataSourceNode(t *testing.T) {
+	dataSource, err := models.FindDataSourceByName(dataSourceName)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	res, _, errs := Request("POST", "/data-sources/"+dataSourceName+"/agents").
-		Set("Authorization", globalSession.Token).
+		Set("Authorization", dataSource.AgentToken).
 		SendStruct(map[string]string{
 			"host": "127.0.0.1",
 		}).EndBytes()
 
 	if res.StatusCode != 201 || len(errs) != 0 {
-		t.Error(errs)
+		t.Error(res.StatusCode, errs)
+	}
+
+	if err := swarm.RemoveDataSource(dataSource); err != nil {
+		t.Error(err)
+	}
+
+	if err := dataSource.Destroy(); err != nil {
+		t.Error(err)
 	}
 }

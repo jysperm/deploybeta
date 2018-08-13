@@ -7,13 +7,12 @@ import (
 	"strings"
 
 	"github.com/jysperm/deploybeta/config"
-	"github.com/jysperm/deploybeta/lib/etcd"
+	"github.com/jysperm/deploybeta/lib/db"
 	"github.com/jysperm/deploybeta/lib/models"
 
 	"github.com/docker/docker/api/types/swarm"
 )
 
-// Serialize to /upstreams/:appName
 type UpstreamConfig struct {
 	Port uint32 `json:"port"`
 }
@@ -22,14 +21,16 @@ var ErrNetworkJoined = errors.New("Had joined the network")
 var ErrNetworkNoUnlinkable = errors.New("No network could be unlinking")
 
 func UpdateAppService(app *models.Application) error {
-	if app.Version == "" {
+	if app.VersionTag == "" {
 		return nil
 	}
 
 	networkConfigs := []swarm.NetworkAttachmentConfig{}
 	environments := []string{}
 
-	dataSources, err := models.GetDataSourcesOfApp(app)
+	dataSources := make([]models.DataSource, 0)
+
+	err := app.DataSources().FetchAll(&dataSources)
 
 	if err != nil {
 		return err
@@ -52,7 +53,8 @@ func UpdateAppService(app *models.Application) error {
 		environments = append(environments, fmt.Sprintf("%s=%s", key, value))
 	}
 
-	version, err := models.FindVersionByTag(app, app.Version)
+	version := models.Version{}
+	err = app.Version().Fetch(&version)
 
 	if err != nil {
 		return err
@@ -74,7 +76,7 @@ func UpdateAppService(app *models.Application) error {
 		},
 	}
 
-	if err := etcd.PutKey(fmt.Sprintf("/upstreams/%s", app.Name), upstreams); err != nil {
+	if err := db.PutJSON(fmt.Sprintf("/upstreams/%s", app.Name), upstreams); err != nil {
 		return err
 	}
 
@@ -82,12 +84,7 @@ func UpdateAppService(app *models.Application) error {
 }
 
 func RemoveApp(app *models.Application) error {
-	upstreamKey := fmt.Sprintf("/upstreams/%s", app.Name)
-	if _, err := etcd.Client.Delete(context.Background(), upstreamKey); err != nil {
-		return err
-	}
-
-	if err := models.DeleteAppByName(app.Name); err != nil {
+	if err := db.DeleteKey(fmt.Sprintf("/upstreams/%s", app.Name)); err != nil {
 		return err
 	}
 
@@ -106,7 +103,7 @@ func ListNodes(app *models.Application) ([]Container, error) {
 
 	for i := 0; i < len(containers); i++ {
 		containers[i].Image = ""
-		containers[i].VersionTag = app.Version
+		containers[i].VersionTag = app.VersionTag
 	}
 
 	return containers, nil

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/hashicorp/errwrap"
 	"github.com/labstack/echo"
 
 	"github.com/jysperm/deploybeta/lib/builder"
@@ -27,6 +28,7 @@ func CreateVersion(ctx echo.Context) error {
 
 	version, err := builder.BuildVersion(&app, params["gitTag"])
 	if err != nil {
+		err := errwrap.Wrapf("builder error: {{err}", err)
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -51,10 +53,12 @@ func DeployVersion(ctx echo.Context) error {
 	}
 
 	if err := app.UpdateVersion(version.Tag); err != nil {
+		err := errwrap.Wrapf("apply changes to etcd: {{err}}", err)
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	if err := swarm.UpdateAppService(&app); err != nil {
+		err := errwrap.Wrapf("apply changes to swarm: {{err}", err)
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 

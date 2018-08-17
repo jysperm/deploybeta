@@ -83,12 +83,14 @@ func UpdateDataSource(ctx echo.Context) error {
 
 	instances, valueType, _, err := jsonparser.Get(jsonBuf, "instances")
 	if err != jsonparser.KeyPathNotFoundError && err != nil {
+		err := errwrap.Wrapf("number of instances error: {{err}}", err)
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	if valueType != jsonparser.NotExist {
 		realValue, err := strconv.Atoi(string(instances))
 		if err != nil {
+			err := errwrap.Wrapf("strconv error: {{err}}", err)
 			return NewHTTPError(http.StatusBadRequest, err)
 		}
 		dataSource.Instances = realValue

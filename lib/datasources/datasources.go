@@ -17,6 +17,8 @@ type DataSourceRuntime interface {
 func NewDataSourceRuntime(dataSourceType string) DataSourceRuntime {
 	if dataSourceType == "mongodb" {
 		return &MongoDBRuntime{}
+	} else if dataSourceType == "mysql" {
+		return &MySQLRuntime{}
 	} else if dataSourceType == "redis" {
 		return &RedisRuntime{}
 	} else {

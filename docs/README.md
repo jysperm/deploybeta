@@ -1,4 +1,4 @@
-# Deploybeta
+# DeployBeta
 A simple container platform based on reliable solutions.
 
 ## Features

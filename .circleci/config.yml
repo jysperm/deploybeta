@@ -5,11 +5,9 @@ jobs:
     working_directory: /go/src/github.com/jysperm/deploybeta
 
     docker:
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.11
 
     steps:
       - checkout
-
-      - run: go get -u github.com/golang/dep/cmd/dep
-      - run: dep ensure -v
+      - run: go mod tidy
       - run: go build -v

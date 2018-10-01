@@ -33,8 +33,9 @@ type DataSourceResponse struct {
 }
 
 type DataSourceNodeResponse struct {
-	Host string `json:"host"`
-	Role string `json:"role"`
+	Host       string `json:"host"`
+	Role       string `json:"role"`
+	MasterHost string `json:"masterHost"`
 }
 
 func NewErrorResponse(err error) *ErrorResponse {
@@ -78,18 +79,26 @@ func NewDataSourceResponse(dataSource *models.DataSource, apps []models.Applicat
 	}
 }
 
-func NewDataSourceNodeResponse(node *models.DataSourceNode) *DataSourceNodeResponse {
-	return &DataSourceNodeResponse{
-		Host: node.Host,
-		Role: node.Role,
+func NewDataSourceNodeResponse(node *models.DataSourceNode, command *models.DataSourceNodeCommand) *DataSourceNodeResponse {
+	nodeResponse := &DataSourceNodeResponse{
+		Host:       node.Host,
+		Role:       node.Role,
+		MasterHost: node.MasterHost,
 	}
+
+	if command != nil && command.Command == models.COMMAND_CHANGE_ROLE {
+		nodeResponse.Role = command.Role
+		nodeResponse.MasterHost = command.MasterHost
+	}
+
+	return nodeResponse
 }
 
 func NewDataSourceNodesResponse(nodes []models.DataSourceNode) []DataSourceNodeResponse {
 	responses := make([]DataSourceNodeResponse, len(nodes))
 
 	for i, node := range nodes {
-		responses[i] = *NewDataSourceNodeResponse(&node)
+		responses[i] = *NewDataSourceNodeResponse(&node, nil)
 	}
 
 	return responses

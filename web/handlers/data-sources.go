@@ -198,6 +198,8 @@ func SetDataSourceNodeRole(ctx echo.Context) error {
 }
 
 func CreateDataSourceNode(ctx echo.Context) error {
+	var command *models.DataSourceNodeCommand
+
 	params := map[string]string{}
 	err := ctx.Bind(&params)
 
@@ -205,20 +207,23 @@ func CreateDataSourceNode(ctx echo.Context) error {
 		return NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	dataSourceNode := &models.DataSourceNode{
-		Host: params["host"],
-		Role: "master",
-	}
-
 	dataSource := GetDataSourceInfo(ctx)
 
-	err = dataSource.CreateNode(dataSourceNode)
+	dataSourceNode, err := dataSource.FindNodeByHost(params["host"])
+
+	if errwrap.ContainsType(err, models.ErrDataSourceNodeNotFound) {
+		dataSourceNode = &models.DataSourceNode{
+			Host: params["host"],
+		}
+
+		command, err = dataSource.CreateNode(dataSourceNode)
+	}
 
 	if err != nil {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusCreated, NewDataSourceNodeResponse(dataSourceNode))
+	return ctx.JSON(http.StatusCreated, NewDataSourceNodeResponse(dataSourceNode, command))
 }
 
 func UpdateDataSourceNode(ctx echo.Context) error {

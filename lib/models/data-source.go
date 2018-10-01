@@ -1,17 +1,22 @@
 package models
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/errwrap"
 
 	"github.com/jysperm/deploybeta/config"
 	"github.com/jysperm/deploybeta/lib/db"
 	"github.com/jysperm/deploybeta/lib/utils"
+)
+
+const (
+	ROLE_MASTER  = "master"
+	ROLE_SLAVE   = "slave"
+	ROLE_UNKNOWN = ""
+
+	COMMAND_CHANGE_ROLE = "change-role"
 )
 
 var ErrInvalidDataSourceType = errors.New("invalid datasource type")
@@ -26,6 +31,8 @@ type DataSource struct {
 	Type          string `json:"type"`
 	Instances     int    `json:"instances"`
 
+	// Current master node
+	MasterNodeHost string `json:"masterNodeHost"`
 	// HTTP API token scoped to this dataSource
 	AgentToken string `json:"agentToken"`
 }
@@ -39,7 +46,12 @@ func (dataSource *DataSource) Associations() []db.Association {
 		dataSource.Nodes(),
 		dataSource.Apps(),
 		dataSource.Owner(),
+		dataSource.MasterNode(),
 	}
+}
+
+func (dataSource *DataSource) MasterNode() db.HasOneAssociation {
+	return db.HasOne(fmt.Sprintf("/data-sources/%s/nodes/%s", dataSource.Name, dataSource.MasterNodeHost))
 }
 
 func (dataSource *DataSource) Nodes() db.HasManyAssociation {
@@ -60,16 +72,14 @@ func (dataSource *DataSource) Owner() db.BelongsToAssociation {
 type DataSourceNode struct {
 	db.ResourceMeta
 
-	// Reference to DataSource.Name
 	DataSourceName string `json:"dataSourceName"`
+
 	// Reported address and port, like `10.0.1.1:6380`
 	Host string `json:"host"`
 	// Reported Role, `master` or `slave`
 	Role string `json:"role"`
 	// Reported master host, like `10.0.1.1:6380`
 	MasterHost string `json:"masterHost"`
-
-	ExpectedRole string `json:"expectedRole"`
 }
 
 func (node *DataSourceNode) ResourceKey() string {
@@ -87,11 +97,12 @@ func (node *DataSourceNode) DataSource() db.BelongsToAssociation {
 }
 
 type DataSourceNodeCommand struct {
-	Command string `json:"command"`
-	Role    string `json:"role"`
+	Command    string `json:"command"`
+	Role       string `json:"role"`
+	MasterHost string `json:"masterHost"`
 }
 
-var availableTypes = []string{"mongodb", "redis"}
+var availableTypes = []string{"mongodb", "mysql", "redis"}
 
 func CreateDataSource(dataSource *DataSource) error {
 	if !validName.MatchString(dataSource.Name) {
@@ -209,32 +220,54 @@ func (dataSource *DataSource) FindNodeByHost(host string) (*DataSourceNode, erro
 	return node, err
 }
 
-func (dataSource *DataSource) CreateNode(node *DataSourceNode) error {
+func (dataSource *DataSource) CreateNode(node *DataSourceNode) (*DataSourceNodeCommand, error) {
 	node.DataSourceName = dataSource.Name
 
-	_, err := db.StartTransaction(func(tran db.Transaction) {
-		tran.Create(node)
-	})
-
-	if err != nil {
-		return errwrap.Wrapf("create dataSource node: {{err}}", err)
+	command := &DataSourceNodeCommand{
+		Command: COMMAND_CHANGE_ROLE,
 	}
 
-	return nil
-}
-
-func (node *DataSourceNode) SetMaster() error {
 	_, err := db.StartTransaction(func(tran db.Transaction) {
-		err := db.Fetch(node)
+		err := db.Fetch(dataSource)
 
 		if err != nil {
 			tran.SetError(err)
 			return
 		}
 
-		node.ExpectedRole = "master"
+		if dataSource.MasterNodeHost == ROLE_UNKNOWN {
+			dataSource.MasterNodeHost = node.Host
+			command.Role = ROLE_MASTER
+		} else {
+			command.Role = ROLE_SLAVE
+			command.MasterHost = dataSource.MasterNodeHost
+		}
 
-		tran.Update(node)
+		tran.Update(dataSource)
+		tran.Create(node)
+	})
+
+	if err != nil {
+		return nil, errwrap.Wrapf("create dataSource node: {{err}}", err)
+	}
+
+	return command, nil
+}
+
+func (node *DataSourceNode) SetMaster() error {
+	dataSource := &DataSource{}
+
+	_, err := db.StartTransaction(func(tran db.Transaction) {
+		err := node.DataSource().Fetch(dataSource)
+
+		if err != nil {
+			tran.SetError(err)
+			return
+		}
+
+		dataSource.MasterNodeHost = node.Host
+
+		tran.Update(dataSource)
 	})
 
 	return err
@@ -263,46 +296,58 @@ func (node *DataSourceNode) Update(updates *DataSourceNode) error {
 }
 
 func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
-	nodeKey := fmt.Sprintf("/data-sources/%s/nodes/%s", node.DataSourceName, node.Host)
+	dataSource := &DataSource{}
+	err := node.DataSource().Fetch(dataSource)
 
-	checkNewCommand := func(node *DataSourceNode) *DataSourceNodeCommand {
-		if node.ExpectedRole != "" && node.Role != node.ExpectedRole {
+	if err != nil {
+		return nil, err
+	}
+
+	checkNewCommand := func() *DataSourceNodeCommand {
+		if dataSource.MasterNodeHost == node.Host && node.Role != ROLE_MASTER {
 			return &DataSourceNodeCommand{
-				Command: "change-role",
-				Role:    node.ExpectedRole,
+				Command: COMMAND_CHANGE_ROLE,
+				Role:    ROLE_MASTER,
+			}
+		} else if dataSource.MasterNodeHost != node.Host && node.Role == ROLE_MASTER {
+			return &DataSourceNodeCommand{
+				Command:    COMMAND_CHANGE_ROLE,
+				Role:       ROLE_SLAVE,
+				MasterHost: dataSource.MasterNodeHost,
 			}
 		} else {
 			return nil
 		}
 	}
 
-	watcher := db.Client.Watch(context.TODO(), nodeKey)
-
-	err := db.Fetch(node)
-
-	if err == ErrDataSourceNodeNotFound {
-
-	} else if err != nil {
-		return nil, err
-	} else {
-		if command := checkNewCommand(node); command != nil {
-			return command, nil
-		}
+	if command := checkNewCommand(); command != nil {
+		return command, nil
 	}
 
-	for w := range watcher {
-		for _, ev := range w.Events {
-			err = json.Unmarshal([]byte(ev.Kv.Value), node)
+	cancelWatchDataSource, dataSourceUpdates, dataSourceErrs := db.WatchUpdates(dataSource)
+	cancelWatchNode, nodeUpdates, nodeErrs := db.WatchUpdates(node)
 
-			if err != nil {
-				log.Panicln(err)
-			}
+	defer cancelWatchDataSource()
+	defer cancelWatchNode()
 
-			if command := checkNewCommand(node); command != nil {
+	for {
+		select {
+		case updated := <-dataSourceUpdates:
+			db.Assign(dataSource, updated)
+
+			if command := checkNewCommand(); command != nil {
 				return command, nil
 			}
+		case updated := <-nodeUpdates:
+			db.Assign(node, updated)
+
+			if command := checkNewCommand(); command != nil {
+				return command, nil
+			}
+		case err := <-dataSourceErrs:
+			return nil, err
+		case err := <-nodeErrs:
+			return nil, err
 		}
 	}
-
-	return nil, nil
 }

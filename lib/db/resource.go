@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 
 	"golang.org/x/net/context"
 )
@@ -22,6 +23,10 @@ type ResourceMeta struct {
 
 func (meta *ResourceMeta) GetResourceMeta() *ResourceMeta {
 	return meta
+}
+
+func Assign(dest Resource, src Resource) {
+	reflect.ValueOf(dest).Set(reflect.ValueOf(src))
 }
 
 func Fetch(resource Resource) error {
@@ -50,4 +55,8 @@ func FetchFrom(key string, resource Resource) error {
 	}
 
 	return nil
+}
+
+func clone(dest Resource, src Resource) {
+	reflect.ValueOf(&dest).Set(reflect.New(reflect.TypeOf(reflect.ValueOf(src))))
 }

@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+
+AGENT_TOKEN="${AGENT_TOKEN}"
+DATASOURCE_NAME="${DATASOURCE_NAME}"
+DEPLOYBETA_URL="${DEPLOYBETA_URL:-http://localhost:7000}"
+
+NODE_ADDRESS="$(hostname -i)"
+NODE_HOST="${NODE_ADDRESS}:3307"
+
+cmd_usage() {
+  cat <<EOF
+Deploybeta Control Agent for MySQL
+
+Usage:
+  control-agent startup
+      Load configure from deploybeta, generate configuration and start redis-server.
+
+  control-agent command-loop
+      Long polling from deploybeta, receive commands and change configuration.
+EOF
+}
+
+SERVERID_FILE=/var/lib/mysql/server-id
+
+if [ -z "$(ls -A /var/lib/mysql)"]; then
+  mysqld --initialize-insecure
+fi
+
+if [ ! -f ${SERVERID_FILE} ]; then
+  echo "${RANDOM}" > ${SERVERID_FILE}
+fi
+
+cmd_startup() {
+  local status="{\"host\": \"${NODE_HOST}\"}"
+  local response=$(deploybeta_curl POST "/data-sources/${DATASOURCE_NAME}/agents" -H 'Content-Type: application/json' -d "${status}")
+  local role=$(echo ${response} | jq -r .role)
+
+  if [ $role = "master" ]; then
+    local masterHost=$NODE_HOST
+  else
+    local masterHost=$(echo ${response} | jq -r .masterHost)
+    (wait_port 3307 mysql_cmd "CHANGE MASTER TO MASTER_HOST = '${masterHost}', MASTER_PORT = 3307; START SLAVE;") &
+  fi
+
+  SERVERID=$(cat ${SERVERID_FILE}) mysql.conf.sh > /etc/mysql/my.cnf
+  BACKEND_HOST=${masterHost} nginx.conf.sh > /etc/nginx/nginx.conf
+
+  log "startup: ${role} of ${masterHost}"
+
+  (wait_port 3307 mysql_cmd "CREATE USER 'root'@'%'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';") &
+
+  supervisorctl start nginx-proxy
+  exec mysqld
+}
+
+cmd_command_loop() {
+  log "command-loop: started"
+
+  while true; do
+    local response=$(deploybeta_curl GET "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}/commands")
+    local command=$(echo ${response} | jq -r .command)
+
+    case $command in
+      change-role)
+        local role=$(echo ${response} | jq -r .role)
+
+        if [ $role = "master" ]; then
+          local masterHost=$NODE_HOST
+          mysql_cmd "STOP SLAVE;"
+        else
+          local masterHost=$(echo ${response} | jq -r .masterHost)
+          local masterHostname=$(echo ${masterHost} | cut -d: -f1)
+          local masterPort=$(echo ${masterHost} | cut -d: -f2)
+          mysql_cmd "CHANGE MASTER TO MASTER_HOST = '${masterHost}', MASTER_PORT = ${masterPort}, MASTER_USER = 'root'; START SLAVE;"
+        fi
+
+        log "change-role: ${role} of ${masterHost}"
+
+        reload_proxy $masterHost
+        report_status
+      ;;
+
+      report-status) report_status ;;
+      *) log "command-loop: unknown command ${command}" ;;
+    esac
+
+    sleep 1
+  done
+}
+
+reload_proxy() {
+  BACKEND_HOST=${1} nginx.conf.sh > /etc/nginx/nginx.conf
+  supervisorctl signal HUP nginx-proxy
+}
+
+report_status() {
+  local slaveStatus=$(mysql_cmd 'show slave status\G' | grep Master_Host | cut -d: -f2)
+  local masterHost="${slaveStatus## }"
+  local role="slave"
+
+  if [ -z "${masterHost}" ]; then
+    role="master"
+    masterHost=${NODE_HOST}
+  fi
+
+  local status="{\"role\": \"${role}\", \"masterHost\": \"${masterHost}\"}"
+  deploybeta_curl PUT "/data-sources/${DATASOURCE_NAME}/agents/${NODE_HOST}" -H 'Content-Type: application/json' -d "${status}" > /dev/null
+  log "report-status: ${status}"
+}
+
+wait_port() {
+  while ! timeout 1 bash -c "echo > /dev/tcp/localhost/${1}"; do sleep 1; done; shift;
+  "$@"
+}
+
+mysql_cmd() {
+  echo "$@" | mysql --port 3307
+}
+
+deploybeta_curl() {
+  local method="${1}"; shift;
+  local url="${DEPLOYBETA_URL}${1}"; shift;
+  curl -s -H "Authorization: ${AGENT_TOKEN}" -X ${method} ${url} "$@"
+}
+
+log() {
+  echo "[control-agent] ${1}"
+}
+
+case $1 in
+  startup) cmd_startup ;;
+  command-loop) cmd_command_loop ;;
+  *) cmd_usage ;;
+esac

@@ -47,7 +47,7 @@ func UpdateAppService(app *models.Application) error {
 			Target: dataSource.SwarmNetworkName(),
 		})
 
-		key := fmt.Sprintf("DATA_SOURCE_%s", strings.ToUpper(dataSource.Name))
+		key := fmt.Sprintf("DATA_SOURCE_%s", strings.Replace(strings.ToUpper(dataSource.Name), "-", "_", -1))
 		value := fmt.Sprintf("%s:%d", config.HostPrivateAddress, getServicePort(&dataSourceService))
 
 		environments = append(environments, fmt.Sprintf("%s=%s", key, value))

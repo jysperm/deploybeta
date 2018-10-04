@@ -7,6 +7,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/buger/jsonparser"
+	"github.com/hashicorp/errwrap"
 	"github.com/parnurzeal/gorequest"
 
 	"github.com/jysperm/deploybeta/config"
@@ -37,7 +38,7 @@ func (runtime *NodejsRuntime) Dockerfile() (*bytes.Buffer, error) {
 	nodeVersion, err := decideNodejsVersion(packageJson)
 
 	if err != nil {
-		return nil, err
+		return nil, errwrap.Wrapf("decide nodejs version: {{err}}", err)
 	}
 
 	useYarn, err := runtime.fileExists("yarn.lock")
@@ -55,15 +56,17 @@ func (runtime *NodejsRuntime) Dockerfile() (*bytes.Buffer, error) {
 }
 
 func decideNodejsVersion(packageJson []byte) (string, error) {
-	constraint, err := jsonparser.GetString(packageJson, "engines", "node")
-
-	if err != nil {
-		return "", err
-	}
-
 	versions, err := fetchNodejsVerisons()
 
 	if err != nil {
+		return "", errwrap.Wrapf("fetch versions: {{err}}", err)
+	}
+
+	constraint, err := jsonparser.GetString(packageJson, "engines", "node")
+
+	if errwrap.Contains(err, "Key path not found") {
+		return versions[0], nil
+	} else if err != nil {
 		return "", err
 	}
 

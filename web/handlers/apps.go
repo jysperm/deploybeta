@@ -35,13 +35,20 @@ func GetMyApps(ctx echo.Context) error {
 			return err
 		}
 
+		upstreams := make([]models.Upstream, 0)
+		err = app.Upstreams().FetchAll(&upstreams)
+
+		if err != nil {
+			return err
+		}
+
 		nodes, err := swarm.ListNodes(&app)
 
 		if err != nil {
 			log.Println(errwrap.Wrapf("list swarm nodes: {{err}}", err))
 		}
 
-		responses[i] = *NewApplicationResponse(&app, versions, nodes)
+		responses[i] = *NewApplicationResponse(&app, versions, nodes, upstreams)
 	}
 
 	return ctx.JSON(http.StatusOK, responses)
@@ -73,7 +80,7 @@ func CreateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusCreated, NewApplicationResponse(app, nil, nil))
+	return ctx.JSON(http.StatusCreated, NewApplicationResponse(app, nil, nil, nil))
 }
 
 func UpdateApp(ctx echo.Context) error {
@@ -121,7 +128,27 @@ func UpdateApp(ctx echo.Context) error {
 		return NewHTTPError(http.StatusInternalServerError, errwrap.Wrapf("apply changes to swarm: {{err}}", err))
 	}
 
-	return ctx.JSON(http.StatusOK, NewApplicationResponse(&app, nil, nil))
+	return ctx.JSON(http.StatusOK, NewApplicationResponse(&app, nil, nil, nil))
+}
+
+func AddAppDomain(ctx echo.Context) error {
+	app := ctx.Get("app").(models.Application)
+
+	if err := app.AddUpstream(ctx.Param("domain")); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, NewApplicationResponse(&app, nil, nil, nil))
+}
+
+func RemoveAppDomain(ctx echo.Context) error {
+	app := ctx.Get("app").(models.Application)
+
+	if err := app.RemoveUpstream(ctx.Param("domain")); err != nil {
+		return NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, NewApplicationResponse(&app, nil, nil, nil))
 }
 
 func DeleteApp(ctx echo.Context) error {

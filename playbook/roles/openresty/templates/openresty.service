@@ -10,6 +10,7 @@ ExecStartPre=/usr/local/openresty/nginx/sbin/nginx -t
 ExecStart=/usr/local/openresty/nginx/sbin/nginx
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s QUIT $MAINPID
+Environment=WILDCARD_DOMAIN={{ wildcard_domain }}
 Restart=always
 RestartSec=10s
 LimitNOFILE=1048576

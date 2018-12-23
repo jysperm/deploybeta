@@ -70,13 +70,13 @@ func UpdateAppService(app *models.Application) error {
 		return err
 	}
 
-	upstreams := []UpstreamConfig{
-		UpstreamConfig{
+	backends := []models.UpstreamBackend{
+		models.UpstreamBackend{
 			Port: getServicePort(&appService),
 		},
 	}
 
-	if err := db.PutJSON(fmt.Sprintf("/upstreams/%s", app.Name), upstreams); err != nil {
+	if err := models.UpdateUpstreamForApp(app, backends); err != nil {
 		return err
 	}
 

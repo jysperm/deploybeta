@@ -24,6 +24,7 @@ types:
 
   applicationName: string
   versionTag: string
+  domain: string
 
   dataSourceName: string
   dataSourceHost: string
@@ -64,6 +65,7 @@ types:
   applicationExtra:
     type: application
     properties:
+      domains: domain[]
       versions: version[]
       nodes: applicationNode[]
 
@@ -265,6 +267,13 @@ resourceTypes:
         tag: version
 
       type: VersionProgress
+
+    /domains/{domain}:
+      uriParameters:
+        appName: domain
+
+      post:
+      delete:
 
 /data-sources:
   type: DataSources

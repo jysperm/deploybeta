@@ -22,6 +22,7 @@ type ApplicationResponse struct {
 	VersionTag    string            `json:"versionTag"`
 	Versions      []models.Version  `json:"versions"`
 	Nodes         []swarm.Container `json:"nodes"`
+	Domains       []string          `json:"domains"`
 }
 
 type DataSourceResponse struct {
@@ -51,7 +52,13 @@ func NewAccountResponse(account *models.Account) *AccountResponse {
 	}
 }
 
-func NewApplicationResponse(app *models.Application, versions []models.Version, nodes []swarm.Container) *ApplicationResponse {
+func NewApplicationResponse(app *models.Application, versions []models.Version, nodes []swarm.Container, upstreams []models.Upstream) *ApplicationResponse {
+	domains := make([]string, len(upstreams))
+
+	for i, upstream := range upstreams {
+		domains[i] = upstream.Domain
+	}
+
 	return &ApplicationResponse{
 		Name:          app.Name,
 		OwnerUsername: app.OwnerUsername,
@@ -60,6 +67,7 @@ func NewApplicationResponse(app *models.Application, versions []models.Version, 
 		VersionTag:    app.VersionTag,
 		Versions:      versions,
 		Nodes:         nodes,
+		Domains:       domains,
 	}
 }
 
@@ -67,7 +75,7 @@ func NewDataSourceResponse(dataSource *models.DataSource, apps []models.Applicat
 	appsResponses := make([]ApplicationResponse, len(apps))
 
 	for i, app := range apps {
-		appsResponses[i] = *NewApplicationResponse(&app, nil, nil)
+		appsResponses[i] = *NewApplicationResponse(&app, nil, nil, nil)
 	}
 
 	return &DataSourceResponse{

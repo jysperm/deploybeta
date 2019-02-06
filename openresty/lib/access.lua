@@ -12,6 +12,14 @@ function endsWith(str, postfix)
   return postfix == '' or string.sub(str, -string.len(postfix)) == postfix
 end
 
-local upstreams = etcd.getUpstreams(trimPostfix(ngx.var.host, '.deploybeta.site'))
+local backends = etcd.getBackends(ngx.var.host)
 
-ngx.var.target = upstreams[1]
+if backends == nil then
+  backends = etcd.getBackends(trimPostfix(ngx.var.host, os.getenv('WILDCARD_DOMAIN')))
+end
+
+if backends == nil then
+  ngx.exit(404)
+else
+  ngx.var.target = backends[1]
+end

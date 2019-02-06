@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jysperm/deploybeta/lib/db"
-
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/hashicorp/errwrap"
 	"golang.org/x/net/context"
 
+	"github.com/jysperm/deploybeta/lib/db"
 	"github.com/jysperm/deploybeta/lib/models"
 	"github.com/jysperm/deploybeta/lib/runtimes"
 	"github.com/jysperm/deploybeta/lib/utils"
@@ -48,17 +48,17 @@ func BuildVersion(app *models.Application, gitTag string) (*models.Version, erro
 
 	dirPath, err := cloneRepository(app.GitRepository, gitTag)
 	if err != nil {
-		return nil, err
+		return nil, errwrap.Wrapf("clone repository: {{err}}", err)
 	}
 
 	runtime, err := runtimes.DecideRuntime(runtimes.NewBuildContext(dirPath, app.GitRepository))
 	if err != nil {
-		return nil, err
+		return nil, errwrap.Wrapf("decide runtime: {{err}}", err)
 	}
 
 	fileBuffer, err := runtime.Dockerfile()
 	if err != nil {
-		return nil, err
+		return nil, errwrap.Wrapf("generate dockerfile: {{err}}", err)
 	}
 
 	if err := writeDockerfile(dirPath, fileBuffer); err != nil {
@@ -210,7 +210,7 @@ func buildContext(path string) (io.ReadCloser, error) {
 
 func writeDockerfile(path string, buf *bytes.Buffer) error {
 	dockerfilePath := filepath.Join(path, "Dockerfile")
-	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, 0666)
+	Dockerfile, err := os.OpenFile(dockerfilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	defer Dockerfile.Close()
 	if err != nil {
 		return err

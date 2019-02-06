@@ -32,6 +32,7 @@ func (app *Application) ResourceKey() string {
 func (app *Application) Associations() []db.Association {
 	return []db.Association{
 		app.Owner(),
+		app.Upstreams(),
 		app.Version(),
 		app.Versions(),
 		app.DataSources(),
@@ -43,6 +44,10 @@ func (app *Application) Owner() db.HasOneAssociation {
 		(&Account{Username: app.OwnerUsername}).ResourceKey(),
 		fmt.Sprintf("/accounts/%s/apps", app.OwnerUsername),
 	)
+}
+
+func (app *Application) Upstreams() db.HasManyAssociation {
+	return db.HasManyThrough(fmt.Sprintf("/apps/%s/upstreams", app.Name))
 }
 
 func (app *Application) Version() db.HasOneAssociation {
@@ -111,6 +116,29 @@ func (app *Application) Update(updates *Application) error {
 		}
 
 		tran.Update(app)
+	})
+
+	return err
+}
+
+func (app *Application) AddUpstream(domain string) error {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
+		upstream := &Upstream{
+			Domain: domain,
+			Backends: []UpstreamBackend{},
+		}
+
+		tran.Create(upstream)
+	})
+
+	return err
+}
+
+func (app *Application) RemoveUpstream(domain string) error {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
+		tran.Remove(&Upstream{
+			Domain: domain,
+		})
 	})
 
 	return err

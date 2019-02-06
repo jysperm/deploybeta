@@ -35,6 +35,9 @@ func CreateWebServer() *echo.Echo {
 	app.PATCH("/apps/:name", handlers.UpdateApp, auth, appOwner)
 	app.DELETE("/apps/:name", handlers.DeleteApp, auth, appOwner)
 
+	app.POST("/apps/:name/domains/:domain", handlers.AddAppDomain, auth, appOwner)
+	app.DELETE("/apps/:name/domains/:domain", handlers.RemoveAppDomain, auth, appOwner)
+
 	app.GET("/data-sources", handlers.ListDataSources, auth)
 	app.POST("/data-sources", handlers.CreateDataSource, auth)
 	app.PATCH("/data-sources/:name", handlers.UpdateDataSource, auth, dataSource)

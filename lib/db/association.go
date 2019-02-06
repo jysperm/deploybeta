@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	etcdv3 "github.com/coreos/etcd/clientv3"
 	"golang.org/x/net/context"
 )
 
@@ -132,24 +131,7 @@ type hasManyPrefixAssociation struct {
 }
 
 func (assoc *hasManyPrefixAssociation) FetchAll(resources interface{}) error {
-	resp, err := client.Get(context.Background(), assoc.relatedPrefix, etcdv3.WithPrefix())
-
-	if err != nil {
-		return err
-	}
-
-	resourceBytesList := [][]byte{}
-
-	for _, keyValue := range resp.Kvs {
-		resourceBytesList = append(resourceBytesList, keyValue.Value)
-	}
-
-	resourcesBytes := bytes.Buffer{}
-	resourcesBytes.Write([]byte("["))
-	resourcesBytes.Write(bytes.Join(resourceBytesList, []byte(",")))
-	resourcesBytes.Write([]byte("]"))
-
-	return json.Unmarshal(resourcesBytes.Bytes(), resources)
+	return FetchAllFrom(assoc.relatedPrefix, resources)
 }
 
 func (assoc *hasManyPrefixAssociation) onCreate(tran Transaction, resource Resource) {

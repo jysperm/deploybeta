@@ -22,3 +22,7 @@ func (runtime *MongoDBRuntime) ExposeProtocol() swarm.PortConfigProtocol {
 func (runtime *MongoDBRuntime) ExposePort() uint16 {
 	return 27017
 }
+
+func (runtime *MongoDBRuntime) CheckNodeAvailability(host string) error {
+  return checkTcpPort(host)
+}

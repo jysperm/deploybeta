@@ -295,6 +295,14 @@ func (node *DataSourceNode) Update(updates *DataSourceNode) error {
 	return nil
 }
 
+func (node *DataSourceNode) Destroy() error {
+	_, err := db.StartTransaction(func(tran db.Transaction) {
+		tran.Delete(node)
+	})
+
+	return err
+}
+
 func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
 	dataSource := &DataSource{}
 	err := node.DataSource().Fetch(dataSource)

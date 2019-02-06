@@ -22,3 +22,7 @@ func (runtime *RedisRuntime) ExposeProtocol() swarm.PortConfigProtocol {
 func (runtime *RedisRuntime) ExposePort() uint16 {
 	return 6379
 }
+
+func (runtime *RedisRuntime) CheckNodeAvailability(host string) error {
+  return checkTcpPort(host)
+}

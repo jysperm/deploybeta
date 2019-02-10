@@ -63,3 +63,11 @@ func getServicePort(service *swarm.Service) uint32 {
 		return 0
 	}
 }
+
+func getSerciceTasksFilter(service SwarmService) types.TaskListOptions {
+	filter := filters.NewArgs()
+	filter.Add("service", service.SwarmServiceName())
+	return types.TaskListOptions{
+		Filters: filter,
+	}
+}

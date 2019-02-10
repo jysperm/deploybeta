@@ -1,4 +1,5 @@
 ---
 elasticsearch_host: 'es.deploybeta.io:9200'
 registry_hostname: 'registry.deploybeta.io'
+internal_mask: '10.148.0.0/20'
 wildcard_domain: '.deploybeta.site'

@@ -16,7 +16,8 @@ const (
 	ROLE_SLAVE   = "slave"
 	ROLE_UNKNOWN = ""
 
-	COMMAND_CHANGE_ROLE = "change-role"
+	COMMAND_CHANGE_ROLE   = "change-role"
+	COMMAND_REPORT_STATUS = "report-status"
 )
 
 var ErrInvalidDataSourceType = errors.New("invalid datasource type")
@@ -312,7 +313,11 @@ func (node *DataSourceNode) WaitForCommand() (*DataSourceNodeCommand, error) {
 	}
 
 	checkNewCommand := func() *DataSourceNodeCommand {
-		if dataSource.MasterNodeHost == node.Host && node.Role != ROLE_MASTER {
+		if node.Role == ROLE_UNKNOWN {
+			return &DataSourceNodeCommand{
+				Command: COMMAND_REPORT_STATUS,
+			}
+		} else if dataSource.MasterNodeHost == node.Host && node.Role != ROLE_MASTER {
 			return &DataSourceNodeCommand{
 				Command: COMMAND_CHANGE_ROLE,
 				Role:    ROLE_MASTER,

@@ -22,3 +22,7 @@ func (runtime *MySQLRuntime) ExposeProtocol() swarm.PortConfigProtocol {
 func (runtime *MySQLRuntime) ExposePort() uint16 {
 	return 3306
 }
+
+func (runtime *MySQLRuntime) CheckNodeAvailability(host string) error {
+  return checkTcpPort(host)
+}

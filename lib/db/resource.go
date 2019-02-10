@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"bytes"
 
 	"golang.org/x/net/context"
+	etcdv3 "github.com/coreos/etcd/clientv3"
 )
 
 var ErrResourceNotFound = errors.New("resource not found")
@@ -55,6 +57,27 @@ func FetchFrom(key string, resource Resource) error {
 	}
 
 	return nil
+}
+
+func FetchAllFrom(prefix string, resources interface{}) error {
+	resp, err := client.Get(context.Background(), prefix, etcdv3.WithPrefix())
+
+	if err != nil {
+		return err
+	}
+
+	resourceBytesList := [][]byte{}
+
+	for _, keyValue := range resp.Kvs {
+		resourceBytesList = append(resourceBytesList, keyValue.Value)
+	}
+
+	resourcesBytes := bytes.Buffer{}
+	resourcesBytes.Write([]byte("["))
+	resourcesBytes.Write(bytes.Join(resourceBytesList, []byte(",")))
+	resourcesBytes.Write([]byte("]"))
+
+	return json.Unmarshal(resourcesBytes.Bytes(), resources)
 }
 
 func clone(dest Resource, src Resource) {

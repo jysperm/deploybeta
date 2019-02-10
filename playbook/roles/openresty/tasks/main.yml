@@ -1,18 +1,11 @@
 ---
 - name: install apt packages
-  apt: name={{item}}
-  with_items:
-    - build-essential
-    - libncurses5-dev
-    - libpcre3-dev
-    - libreadline-dev
-    - libssl-dev
-    - make
-    - perl
-    - python-pip
+  apt:
+    name: ['build-essential', 'libncurses5-dev', 'libpcre3-dev', 'libreadline-dev', 'libssl-dev', 'make', 'perl', 'python-pip']
 
 - name: install ngxtop
-  pip: name=ngxtop
+  pip:
+    name: ngxtop
 
 - name: create www-data user
   user:
@@ -67,6 +60,7 @@
   with_items:
     - 'conf'
     - 'lib'
+  notify: restart openresty
 
 - name: install lua-resty-http
   command: 'cp -r /root/downloads/lua-resty-http/lib/resty /usr/local/openresty/nginx/lib'

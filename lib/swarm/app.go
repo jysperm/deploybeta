@@ -72,6 +72,7 @@ func UpdateAppService(app *models.Application) error {
 
 	backends := []models.UpstreamBackend{
 		models.UpstreamBackend{
+			// TODO: Should retry ServiceInspectWithRaw if returned port is 0
 			Port: getServicePort(&appService),
 		},
 	}

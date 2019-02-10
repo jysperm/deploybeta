@@ -18,6 +18,7 @@ var NpmMirror string
 var NvmMirror string
 var HostPrivateAddress string
 var DockerPrefix string
+var WildcardDomain string
 
 func init() {
 	err := godotenv.Load()
@@ -41,4 +42,5 @@ func init() {
 	NvmMirror = os.Getenv("NVM_MIRROR")
 	HostPrivateAddress = os.Getenv("HOST_PRIVATE_ADDRESS")
 	DockerPrefix = os.Getenv("DOCKER_PREFIX")
+	WildcardDomain = os.Getenv("WILDCARD_DOMAIN")
 }

@@ -1,3 +1,4 @@
 ---
 elasticsearch_host: 'es.deploybeta.io:9200'
 registry_hostname: 'registry.deploybeta.io'
+wildcard_domain: '.deploybeta.site'

@@ -21,3 +21,4 @@
   with_items:
     - mongodb
     - redis
+    - mysql

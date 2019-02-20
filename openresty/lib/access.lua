@@ -19,6 +19,7 @@ if backends == nil then
 end
 
 if backends == nil then
+  ngx.say('Upstream not found')
   ngx.exit(404)
 else
   ngx.var.target = backends[1]

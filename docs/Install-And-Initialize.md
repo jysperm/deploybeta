@@ -12,11 +12,11 @@ ControlMaster auto
 ControlPersist 60m
 
 Host deploy1
-  HostName 173.255.223.150
+  HostName 35.240.193.189
   User root
 
 Host deploy2
-  HostName 23.239.2.45
+  HostName 35.240.222.194
   User root
 ```
 
@@ -24,26 +24,24 @@ Host deploy2
 
 ```
 # used for provide Deploybeta Web UI
-dashboard.deploybeta.io    A    173.255.223.150
-dashboard.deploybeta.io    A    23.239.2.45
+dashboard.deploybeta.io   A    35.240.193.189
+dashboard.deploybeta.io   A    35.240.222.194
 
-# public and private address
-deploy1.deploybeta.io            A    173.255.223.150
-deploy2.deploybeta.io            A    23.239.2.45
-deploy1-internal.deploybeta.io   A    192.168.204.133
-deploy2-internal.deploybeta.io   A    192.168.167.227
+# Private address
+deploy1.deploybeta.io     A    10.148.0.2
+deploy2.deploybeta.io     A    10.148.0.3
 
 # used for internal use
-es.deploybeta.io         CNAME    deploy1-internal.deploybeta.io
-registry.deploybeta.io   CNAME    deploy2-internal.deploybeta.io
+registry.deploybeta.io    CNAME    deploy1.deploybeta.io
+es.deploybeta.io          CNAME    deploy2.deploybeta.io
 
 # used for provide users' websites
-*.deploybeta.site   A    173.255.223.150
-*.deploybeta.site   A    23.239.2.45
+*.deploybeta.site         A    35.240.193.189
+*.deploybeta.site         A    35.240.222.194
 
 # used for etcd discovery
-_etcd-server._tcp.deploybeta.io  SRV  1 10 2380 deploy1-internal.deploybeta.io
-_etcd-server._tcp.deploybeta.io  SRV  2 10 2380 deploy2-internal.deploybeta.io
+_etcd-server._tcp.deploybeta.io  SRV  1 10 2380 deploy1.deploybeta.io
+_etcd-server._tcp.deploybeta.io  SRV  2 10 2380 deploy2.deploybeta.io
 ```
 
 ## Review ansible playbook

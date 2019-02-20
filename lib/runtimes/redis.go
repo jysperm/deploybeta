@@ -1,4 +1,4 @@
-package datasources
+package runtimes
 
 import (
 	"fmt"
@@ -24,5 +24,5 @@ func (runtime *RedisRuntime) ExposePort() uint16 {
 }
 
 func (runtime *RedisRuntime) CheckNodeAvailability(host string) error {
-  return checkTcpPort(host)
+	return checkTcpPort(host)
 }

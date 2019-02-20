@@ -1,13 +1,14 @@
 package db
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"reflect"
-	"bytes"
+	"strings"
 
-	"golang.org/x/net/context"
 	etcdv3 "github.com/coreos/etcd/clientv3"
+	"golang.org/x/net/context"
 )
 
 var ErrResourceNotFound = errors.New("resource not found")
@@ -59,7 +60,7 @@ func FetchFrom(key string, resource Resource) error {
 	return nil
 }
 
-func FetchAllFrom(prefix string, resources interface{}) error {
+func FetchAllFrom(prefix string, resources interface{}, levels int) error {
 	resp, err := client.Get(context.Background(), prefix, etcdv3.WithPrefix())
 
 	if err != nil {
@@ -69,7 +70,9 @@ func FetchAllFrom(prefix string, resources interface{}) error {
 	resourceBytesList := [][]byte{}
 
 	for _, keyValue := range resp.Kvs {
-		resourceBytesList = append(resourceBytesList, keyValue.Value)
+		if strings.Count(string(keyValue.Key), "/") == levels {
+			resourceBytesList = append(resourceBytesList, keyValue.Value)
+		}
 	}
 
 	resourcesBytes := bytes.Buffer{}

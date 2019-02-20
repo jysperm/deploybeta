@@ -1,4 +1,4 @@
-package datasources
+package runtimes
 
 import (
 	"fmt"
@@ -24,5 +24,5 @@ func (runtime *MongoDBRuntime) ExposePort() uint16 {
 }
 
 func (runtime *MongoDBRuntime) CheckNodeAvailability(host string) error {
-  return checkTcpPort(host)
+	return checkTcpPort(host)
 }

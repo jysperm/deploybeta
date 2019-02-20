@@ -14,10 +14,10 @@ var ErrEtcdTransactionFailed = errors.New("etcd transaction failed")
 
 // Transaction represents a Txn operation of Etcd.
 type Transaction interface {
-	Put(resource Resource)
-	Create(resource Resource)
-	Update(resource Resource)
-	Remove(resource Resource)
+	Put(resource Resource) Resource
+	Create(resource Resource) Resource
+	Update(resource Resource) Resource
+	Remove(resource Resource) Resource
 	Delete(resource Resource)
 	DeleteKey(key string)
 	DeletePrefix(prefix string)
@@ -74,7 +74,7 @@ type transaction struct {
 	err        error
 }
 
-func (tran *transaction) Put(resource Resource) {
+func (tran *transaction) Put(resource Resource) Resource {
 	key := resource.ResourceKey()
 
 	for _, association := range resource.Associations() {
@@ -90,9 +90,11 @@ func (tran *transaction) Put(resource Resource) {
 
 		tran.successOps = append(tran.successOps, successOp)
 	}
+
+	return resource
 }
 
-func (tran *transaction) Create(resource Resource) {
+func (tran *transaction) Create(resource Resource) Resource {
 	key := resource.ResourceKey()
 
 	for _, association := range resource.Associations() {
@@ -110,9 +112,11 @@ func (tran *transaction) Create(resource Resource) {
 		tran.compares = append(tran.compares, compare)
 		tran.successOps = append(tran.successOps, successOp)
 	}
+
+	return resource
 }
 
-func (tran *transaction) Update(resource Resource) {
+func (tran *transaction) Update(resource Resource) Resource {
 	key := resource.ResourceKey()
 	dataBytes, err := json.Marshal(resource)
 
@@ -125,9 +129,11 @@ func (tran *transaction) Update(resource Resource) {
 		tran.compares = append(tran.compares, compare)
 		tran.successOps = append(tran.successOps, successOp)
 	}
+
+	return resource
 }
 
-func (tran *transaction) Remove(resource Resource) {
+func (tran *transaction) Remove(resource Resource) Resource {
 	key := resource.ResourceKey()
 
 	for _, association := range resource.Associations() {
@@ -139,6 +145,8 @@ func (tran *transaction) Remove(resource Resource) {
 
 	tran.compares = append(tran.compares, compare)
 	tran.successOps = append(tran.successOps, successOp)
+
+	return resource
 }
 
 func (tran *transaction) Delete(resource Resource) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"golang.org/x/net/context"
 )
@@ -131,7 +132,7 @@ type hasManyPrefixAssociation struct {
 }
 
 func (assoc *hasManyPrefixAssociation) FetchAll(resources interface{}) error {
-	return FetchAllFrom(assoc.relatedPrefix, resources)
+	return FetchAllFrom(assoc.relatedPrefix, resources, strings.Count(assoc.relatedPrefix, "/"))
 }
 
 func (assoc *hasManyPrefixAssociation) onCreate(tran Transaction, resource Resource) {

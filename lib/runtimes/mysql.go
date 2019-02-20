@@ -1,4 +1,4 @@
-package datasources
+package runtimes
 
 import (
 	"fmt"
@@ -24,5 +24,5 @@ func (runtime *MySQLRuntime) ExposePort() uint16 {
 }
 
 func (runtime *MySQLRuntime) CheckNodeAvailability(host string) error {
-  return checkTcpPort(host)
+	return checkTcpPort(host)
 }

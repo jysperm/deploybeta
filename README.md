@@ -1,4 +1,6 @@
 # DeployBeta
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fjysperm%2Fdeploybeta.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fjysperm%2Fdeploybeta?ref=badge_shield)
+
 A simple container platform based on reliable solutions.
 
 Current status: **Under heavy development**.
@@ -27,3 +29,6 @@ Current status: **Under heavy development**.
 
 ## License
 Apache License 2.0
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fjysperm%2Fdeploybeta.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fjysperm%2Fdeploybeta?ref=badge_large)

@@ -71,6 +71,11 @@ func CreateApp(app *Application) error {
 
 	_, err := db.StartTransaction(func(tran db.Transaction) {
 		tran.Create(app)
+
+		app.Upstreams().Attach(tran, tran.Create(&Upstream{
+			Domain:   fmt.Sprint(app.Name, config.WildcardDomain),
+			Backends: []UpstreamBackend{},
+		}))
 	})
 
 	return err
@@ -123,12 +128,10 @@ func (app *Application) Update(updates *Application) error {
 
 func (app *Application) AddUpstream(domain string) error {
 	_, err := db.StartTransaction(func(tran db.Transaction) {
-		upstream := &Upstream{
-			Domain: domain,
+		app.Upstreams().Attach(tran, tran.Create(&Upstream{
+			Domain:   domain,
 			Backends: []UpstreamBackend{},
-		}
-
-		tran.Create(upstream)
+		}))
 	})
 
 	return err
@@ -136,9 +139,9 @@ func (app *Application) AddUpstream(domain string) error {
 
 func (app *Application) RemoveUpstream(domain string) error {
 	_, err := db.StartTransaction(func(tran db.Transaction) {
-		tran.Remove(&Upstream{
+		app.Upstreams().Detach(tran, tran.Remove(&Upstream{
 			Domain: domain,
-		})
+		}))
 	})
 
 	return err

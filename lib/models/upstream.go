@@ -9,8 +9,8 @@ import (
 type Upstream struct {
 	db.ResourceMeta
 
-	Domain   string `json:"domain"`
-	Backends []UpstreamBackend
+	Domain   string            `json:"domain"`
+	Backends []UpstreamBackend `json:"backends"`
 }
 
 type UpstreamBackend struct {

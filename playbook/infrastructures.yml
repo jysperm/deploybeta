@@ -3,8 +3,18 @@
   vars_files:
     - config.yml
   roles:
-    - common
-    - docker
-    - etcd
-    - openresty
-    - supervisor
+    -
+      role: common
+      tags: [common]
+    -
+      role: docker
+      tags: [docker]
+    -
+      role: etcd
+      tags: [etcd]
+    -
+      role: openresty
+      tags: [openresty]
+    -
+      role: supervisor
+      tags: [supervisor]

@@ -18,7 +18,7 @@ function etcd.getBackends(domain)
 
   local body = cjson.decode(res.body)
 
-  if body['kvs'] && body['kvs'][1] then
+  if body['kvs'] and body['kvs'][1] then
     local backends = {}
 
     for index, key in ipairs(cjson.decode(ngx.decode_base64(body['kvs'][1]['value']))['backends']) do

@@ -22,6 +22,7 @@
     - 22
     - 80
     - 443
+    - 7000
 
 - name: setup iptables allow icmp
   iptables:
@@ -30,13 +31,12 @@
     protocol: icmp
     jump: ACCEPT
 
-# TODO: Should be configure in infrastructures.yml
 - name: setup iptables allow internal hosts
   iptables:
     table: filter
     chain: INPUT
     protocol: all
-    source: '192.168.128.0/17'
+    source: '{{ internal_mask }}'
     jump: ACCEPT
 
 - name: setup iptables allow loopback
@@ -55,14 +55,7 @@
 
 - name: install apt packages
   apt:
-    name: '{{ item }}'
-  with_items:
-    - apt-transport-https
-    - ca-certificates
-    - curl
-    - htop
-    - software-properties-common
-    - vim
+    name: ['apt-transport-https', 'ca-certificates', 'curl', 'htop', 'software-properties-common', 'vim']
 
 - name: ensures directory exists
   file:

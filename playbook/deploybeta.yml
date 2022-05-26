@@ -10,6 +10,14 @@
 
 - hosts: deploy1
   vars:
+    registry:
+      name: registry
+      domain: registry.deploybeta.io
+  roles:
+    - registry
+
+- hosts: deploy2
+  vars:
     elasticsearch:
       name: es
       url: 'http://es.deploybeta.io:9200'
@@ -19,11 +27,3 @@
   roles:
     - elasticsearch
     - kibana
-
-- hosts: deploy2
-  vars:
-    registry:
-      name: registry
-      domain: registry.deploybeta.io
-  roles:
-    - registry

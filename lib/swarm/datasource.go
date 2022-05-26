@@ -1,15 +1,27 @@
 package swarm
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"net"
 
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/hashicorp/errwrap"
+
 	"github.com/jysperm/deploybeta/config"
-	"github.com/jysperm/deploybeta/lib/datasources"
 	"github.com/jysperm/deploybeta/lib/models"
+	"github.com/jysperm/deploybeta/lib/runtimes"
 )
 
 var ErrNetworkNotFound = errors.New("Network not found")
+
+type DataSourceNode struct {
+	// NodeID in swarm cluster
+	NodeID string
+	// overlay address, like `10.0.1.1`
+	Addr string
+}
 
 func UpdateDataSource(dataSource *models.DataSource) error {
 	networkID, err := FindNetworkByName(dataSource.SwarmNetworkName())
@@ -27,7 +39,7 @@ func UpdateDataSource(dataSource *models.DataSource) error {
 		Target: networkID,
 	}
 
-	runtime := datasources.NewDataSourceRuntime(dataSource.Type)
+	runtime := runtimes.NewDataSourceRuntime(dataSource.Type)
 
 	portConfig := swarm.PortConfig{
 		Protocol:   runtime.ExposeProtocol(),
@@ -43,15 +55,54 @@ func UpdateDataSource(dataSource *models.DataSource) error {
 	return UpdateService(dataSource, []swarm.PortConfig{portConfig}, []swarm.NetworkAttachmentConfig{networkOpts}, runtime.DockerImageName(), environments)
 }
 
-func RemoveDataSource(datasource *models.DataSource) error {
-	if err := RemoveService(datasource); err != nil {
+func RemoveDataSource(dataSource *models.DataSource) error {
+	if err := RemoveService(dataSource); err != nil {
 		return err
 	}
 
-	return RemoveOverlay(datasource)
+	return RemoveOverlay(dataSource)
 }
 
-func ListDataSources() []models.DataSource {
-	//TODO
-	return []models.DataSource{}
+func ListDataSourceNodes(dataSource *models.DataSource) ([]DataSourceNode, error) {
+	tasks, err := swarmClient.TaskList(context.Background(), getSerciceTasksFilter(dataSource))
+
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]DataSourceNode, 0)
+
+	for _, task := range tasks {
+		addr, err := findOverlayAddress(dataSource, &task)
+
+		if err != nil {
+			fmt.Println(errwrap.Wrapf("list dataSource nodes: {{err}}", err))
+			continue
+		}
+
+		node := DataSourceNode{
+			NodeID: task.NodeID,
+			Addr:   addr,
+		}
+
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}
+
+func findOverlayAddress(dataSource *models.DataSource, task *swarm.Task) (string, error) {
+	for _, attachment := range task.NetworksAttachments {
+		if attachment.Network.Spec.Name == dataSource.SwarmNetworkName() && len(attachment.Addresses) > 0 {
+			addr, _, err := net.ParseCIDR(attachment.Addresses[0])
+
+			if err != nil {
+				return "", err
+			}
+
+			return addr.String(), nil
+		}
+	}
+
+	return "", fmt.Errorf("network `%s` not found", dataSource.SwarmNetworkName())
 }

@@ -29,4 +29,4 @@
       --env 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
       --mount type=bind,source=/var/lib/{{elasticsearch.name}},destination=/usr/share/elasticsearch/data
         docker.elastic.co/elasticsearch/elasticsearch:5.5.1
-  when: elasticsearch_service.stderr.find('no such service') != -1
+  when: elasticsearch_service.rc != 0

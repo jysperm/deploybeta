@@ -1,7 +1,7 @@
 # DeployBeta
 A simple container platform based on reliable solutions.
 
-Current status: **Under heavy development**.
+Current status: **No longer maintained**.
 
 - [Homepage and Documents](https://deploybeta.io)
 - [Dashboard (Demo)](http://dashboard.deploybeta.io)
